@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+    nginx:
+        image: nginx:latest
+        container_name: nginx
+        restart: unless-stopped
+        tty: true
+        environment:
+            SERVICE_NAME: nginx
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./:/var/www/html
+            - ./nginx:/etc/nginx/conf.d
+        depends_on:
+            - php
+        networks:
+            - phonehospital
+
+    php:
+        image: php:8.1-fpm
+        volumes:
+            - ./php:/var/www/html
+        depends_on:
+            - postgres
+            - redis
+            - mongo
+        networks:
+            - phonehospital
+    postgres:
+        image: postgres:latest
+        environment:
+            POSTGRES_USER: your_username
+            POSTGRES_PASSWORD: your_password
+            POSTGRES_DB: your_database
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        networks:
+            - phonehospital
+    redis:
+        image: redis:latest
+        networks:
+            - phonehospital
+    mongo:
+        image: mongo:latest
+        networks:
+            - phonehospital
+volumes:
+    postgres_data:
+
+#Docker Networks
+networks:
+    phonehospital:
+        driver: bridge
