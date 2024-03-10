@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\AccountingCategory;
+use App\Models\Currency;
+use App\Models\FinansTransaction;
 use App\Models\PersonalAccountMonth;
 use App\Models\Seller;
 use App\Models\SellerAccountMonth;
-use App\Models\FinansTransaction;
-use App\Models\User;
+ use App\Models\User;
 use Carbon\Carbon;
  use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -24,6 +25,7 @@ class CalculationController extends Controller
     protected function index()
     {
         $data['brands'] = 1;
+        $data['currencies'] = Currency::all();
         return view('calculation.index', $data);
     }
 
@@ -36,6 +38,10 @@ class CalculationController extends Controller
     protected function accounting()
     {
         $data['accounting_categories'] = AccountingCategory::all();
+        $data['currencies'] = Currency::all();
+        $data['finantransactions'] = FinansTransaction::all();
+
+
         return view('calculation.accounting', $data);
     }
 
@@ -96,7 +102,7 @@ class CalculationController extends Controller
                 'mounth' => date('m'),
             ],
             [
-                'sallary' => $request->sallary ?? 0,
+                'salary' => $request->salary ?? 0,
                 'overtime' => $request->overtime ?? 0,
                 'way' => $request->way ?? 0,
                 'meal' => $request->meal ?? 0,
@@ -107,19 +113,25 @@ class CalculationController extends Controller
 
     }
 
+    protected function getPerson(Request $request)
+    {
+      return  PersonalAccountMonth::where('staff_id',$request->id)->where( 'mounth',date('m'))->first();
+    }
+
 
 
     public function process_store(Request $request)
     {
-        $transaction = new FinansTransaction();
-        $transaction->user_id = Auth::user()->id;
-        $transaction->safe_id = $request->safe_id;
-        $transaction->model_class = ($request->model == 'staff')?"App\Models\User":"App\Models\Seller";
-        $transaction->model_id = $request->model_id;
-        $transaction->price = $request->price;
-        $transaction->payment_type = $request->payment_type;
-        $transaction->process_type = $request->process_type;
-        $transaction->save();
+        $FinansTransaction = new FinansTransaction();
+        $FinansTransaction->safe_id = 1;
+        $FinansTransaction->currency_id = $request->currency_id;
+        $FinansTransaction->rate = Currency::find($request->currency_id)->exchange_rate;
+        $FinansTransaction->model_class = ($request->model == 'staff')?"App\Models\User":"App\Models\Seller";
+        $FinansTransaction->model_id = $request->model_id;
+        $FinansTransaction->price = $request->price;
+        $FinansTransaction->process_type = $request->process_type;
+        $FinansTransaction->payment_type = $request->payment_type;
+        $FinansTransaction->save();
         return redirect()->back();
     }
 

@@ -10,7 +10,9 @@
                     <thead>
                     <tr>
                         <th>Adi</th>
-                        <th>Maas</th>
+                        <th>G. Maas</th>
+                        <th>O. Maas</th>
+                        <th>Avans</th>
                         <th>Mesai</th>
                         <th>Yol</th>
                         <th>Yemek</th>
@@ -23,7 +25,9 @@
                     @foreach($staffs as $staff)
                         <tr>
                             <td><button class="btn btn-dual" ng-click="onSeller({{$staff->id}},'{{$staff->name}}')"><strong>{{$staff->name}}</strong></button></td>
-                            <td><span class="badge bg-label-warning text-black me-1">{{number_format($staff->account()->sallary ?? 0, 2, '.', ',')}} ₺</span></td>
+                            <td><span class="badge bg-label-warning text-black me-1">{{number_format($staff->salary ?? 0, 2, '.', ',')}} ₺</span></td>
+                            <td><span class="badge bg-label-warning text-black me-1">{{number_format($staff->account()->salary ?? 0, 2, '.', ',')}} ₺</span></td>
+                            <td><span class="badge bg-label-warning text-black me-1">{{number_format($staff->avans() ?? 0, 2, '.', ',')}} ₺</span></td>
                             <td><span class="badge bg-label-warning text-black me-1">{{number_format($staff->account()->overtime ?? 0, 2, '.', ',')}} ₺</span></td>
                             <td><span class="badge bg-label-warning text-black me-1">{{number_format($staff->account()->way ?? 0, 2, '.', ',')}} ₺</span></td>
                             <td><span class="badge bg-label-warning text-black me-1">{{number_format($staff->account()->meal ?? 0, 2, '.', ',')}} ₺</span></td>
@@ -52,31 +56,31 @@
                         <div class="row">
                             <div class="col-lg-6">
                                 <label class="form-label" for="modalRnFEmail">Maas</label>
-                                <input type="text" class="form-control" name="sallary">
+                                <input type="text" class="form-control" value="@{{person.salary}}" name="salary">
                             </div>
                             <div class="col-lg-6">
                                 <label class="form-label" for="modalRnFEmail">Mesai</label>
-                                <input type="text" class="form-control" name="overtime">
+                                <input type="text" class="form-control" value="@{{person.overtime}}" name="overtime">
                             </div>
                             <div class="col-lg-6">
                                 <label class="form-label" for="modalRnFEmail">Yol</label>
-                                <input type="text" class="form-control" name="way">
+                                <input type="text" class="form-control" value="@{{person.way}}" name="way">
                             </div>
                             <div class="col-lg-6">
                                 <label class="form-label" for="modalRnFEmail">Yemek</label>
-                                <input type="text" class="form-control" name="meal">
+                                <input type="text" class="form-control" value="@{{person.meal}}" name="meal">
                             </div>
                             <div class="col-lg-6">
                                 <label class="form-label" for="modalRnFEmail">Prim</label>
-                                <input type="text" class="form-control" name="bounty">
+                                <input type="text" class="form-control" value="@{{person.bounty}}" name="bounty">
                             </div>
                             <div class="col-lg-6">
                                 <label class="form-label" for="modalRnFEmail">Sigorta</label>
-                                <input type="text" class="form-control" name="insurance">
+                                <input type="text" class="form-control" value="@{{person.insurance}}" name="insurance">
                             </div>
                             <div class="col-lg-12">
                                 <label class="form-label" for="modalRnFEmail">Kazanc</label>
-                                <input type="text" class="form-control" name="price" disabled>
+                                <input type="text" class="form-control" value="@{{person.price}}" name="price" disabled>
                             </div>
                         </div>
 
@@ -111,7 +115,26 @@
                 $('#sellerModal').modal("show");
                 $scope.sellerName = name;
                 $scope.sellerid = id;
+                $scope.getPerson(id);
             }
+
+            $scope.getPerson = function (id) {
+                Swal.showLoading();
+                $scope.loading = true; // Show loading image
+                var postUrl = window.location.origin + '/calculation/getPerson?id=' + id + '';   // Returns base URL (https://example.com)
+                $http({
+                    method: 'GET',
+                    url: postUrl,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(function successCallback(response) {
+                    $scope.person = response.data;
+                     Swal.close();
+
+                });
+            }
+
 
             $scope.getFunc = function (id) {
                 Swal.showLoading();

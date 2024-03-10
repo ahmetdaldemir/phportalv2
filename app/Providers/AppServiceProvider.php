@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\FinansTransaction;
+use App\Observers\FinansTransactionObserver;
 use Carbon\Carbon;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
@@ -27,5 +29,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Carbon::setLocale(config('app.locale'));
         Paginator::useBootstrap();
+        FinansTransaction::observe(FinansTransactionObserver::class);
+
     }
 }

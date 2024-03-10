@@ -408,6 +408,7 @@ Route::middleware(['companies', 'activity'])->group(function () {
         Route::get('accounting', [App\Http\Controllers\CalculationController::class, 'accounting'])->name('accounting');
         Route::post('saveSeller', [App\Http\Controllers\CalculationController::class, 'saveSeller'])->name('saveSeller');
         Route::post('saveStaff', [App\Http\Controllers\CalculationController::class, 'saveStaff'])->name('saveStaff');
+        Route::get('getPerson', [App\Http\Controllers\CalculationController::class, 'getPerson'])->name('getPerson');
         Route::post('process_store', [App\Http\Controllers\CalculationController::class, 'process_store'])->name('process_store');
         Route::get('selected', [App\Http\Controllers\CalculationController::class, 'selected'])->name('selected');
         Route::get('getCategories', [App\Http\Controllers\CalculationController::class, 'getCategories'])->name('getCategories');

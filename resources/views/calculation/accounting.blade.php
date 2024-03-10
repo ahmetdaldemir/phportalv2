@@ -78,12 +78,50 @@
                     </div>
                 </div>
             </div>
+            <div class="col-12 order-2 mb-4">
+                <div class="card">
+                    <div class="table-responsive text-nowrap">
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>ModelID</th>
+                                <th>Tutar</th>
+                                <th>Tarih</th>
+                                <th>Odeme Tipi</th>
+                                <th>Islem Tip</th>
+                                <th>Kur</th>
+                                <th>Kur Oran</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody class="table-border-bottom-0">
+                            @foreach($finantransactions as $finantransaction)
+                                <tr>
+                                    <td>{{$finantransaction->model_class}}</td>
+                                    <td>{{$finantransaction->model_id}}</td>
+                                    <td>{{$finantransaction->price}}</td>
+                                    <td>{{$finantransaction->created_date}}</td>
+                                    <td>{{$finantransaction->payment_type}}</td>
+                                    <td>{{$finantransaction->process_type}}</td>
+                                    <td>{{$finantransaction->currenct_id}}</td>
+                                    <td>{{$finantransaction->rate}}</td>
+                                    <td></td>
+                                </tr>
+                            @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div></div>
+    </div>
+    </div>
     <div class="modal fade" id="processModal" data-bs-backdrop="static" tabindex="-1">
         <div class="modal-dialog">
             <form class="modal-content" method="post" action="{{route('calculation.process_store')}}" id="deleteModalForm">
                 @csrf
+                <input type="hidden" name="payment_type" value="@{{paymentType}}">
                 <div class="modal-header">
                     <h5 class="modal-title" id="backDropModalTitle">Gelir / Gider Kaydi</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -99,10 +137,10 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="nameBackdrop" class="form-label">KUR</label>
-                            <select name="currency" class="form-select" >
-                                <option value="tl">TL</option>
-                                <option value="eur">EURO</option>
-                                <option value="usd">DOLAR</option>
+                            <select name="currency_id" class="form-select" >
+                                @foreach($currencies as $currency)
+                                <option value="{{$currency->id}}">{{$currency->code}}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-12 mb-3" id="selectedDiv" style="display: none">
@@ -163,6 +201,8 @@
 
         $scope.income = function () {
             $('#processModal').modal('show');
+            $scope.paymentType = "income";
+
             var postUrl = window.location.origin + '/calculation/getCategories?id=income';   // Returns base URL (https://example.com)
             $http({
                 method: 'GET',
@@ -172,13 +212,14 @@
                 }
             }).then(function successCallback(response) {
                 $scope.processTypeSelect = response.data
-
             });
 
         }
 
         $scope.expense = function () {
             $('#processModal').modal('show');
+            $scope.paymentType = "expense";
+
             var postUrl = window.location.origin + '/calculation/getCategories?id=expense';   // Returns base URL (https://example.com)
             $http({
                 method: 'GET',

@@ -76,6 +76,11 @@ class User extends Authenticatable
         return $this->hasOne(Company::class,'id','company_id');
     }
 
+    public function avans()
+    {
+       return  FinansTransaction::where('model_id',$this->id)->where('process_type','17')->where('model_class','App\Models\User')->sum('price');
+    }
+
     public function amount()
     {
 

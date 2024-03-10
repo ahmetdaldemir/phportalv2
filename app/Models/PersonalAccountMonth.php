@@ -12,7 +12,7 @@ class PersonalAccountMonth extends BaseModel
 
     protected $fillable = [
         'staff_id','mounth',
-        'sallary',
+        'salary',
         'overtime',
         'way',
         'meal',
