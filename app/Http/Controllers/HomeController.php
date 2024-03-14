@@ -114,7 +114,7 @@ class HomeController extends Controller
     {
         return DB::select('SELECT sales.id,sum(sales.customer_price) as total,sales.user_id,sales.type,users.name as username from sales
                     LEFT JOIN users on users.id = sales.user_id
-                    where DATE(sales.created_at) = CURDATE()
+                    where DATE(sales.created_at) = CURDATE() and company_id = '.Auth::user()->company_id.'
                     GROUP BY sales.user_id,sales.type order by  total desc');
     }
 
@@ -122,7 +122,7 @@ class HomeController extends Controller
     {
         return DB::select('SELECT sum(sales.customer_price) as total,sales.user_id,sales.type,users.name as username from sales
                     LEFT JOIN users on users.id = sales.user_id
-                    where MONTH(sales.created_at) = MONTH(now())
+                    where MONTH(sales.created_at) = MONTH(now()) and company_id = '.Auth::user()->company_id.'
                     GROUP BY sales.user_id,sales.type order by  total desc');
 
 
@@ -136,7 +136,7 @@ class HomeController extends Controller
                                             INNER JOIN categories on stock_cards.category_id = categories.id
                                             INNER JOIN users on sales.user_id = users.id
                                             where MONTH(sales.created_at) = MONTH(now()) and
-                                                sales.type =  1
+                                                sales.type =  1 and company_id = '.Auth::user()->company_id.'
                                             GROUP BY sales.user_id');
 
 
