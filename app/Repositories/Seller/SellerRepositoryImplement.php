@@ -21,8 +21,10 @@ class SellerRepositoryImplement extends Eloquent implements SellerRepository{
     }
 
     // Write something awesome :)
+
+
     public function get()
     {
-      return $this->model->get();
+        return $this->model->where('company_id', Auth::user()->company_id)->orderBy('id', 'desc')->get();
     }
 }

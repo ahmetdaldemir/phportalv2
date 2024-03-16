@@ -30,8 +30,7 @@
                     </thead>
                     <tbody class="table-border-bottom-0">
                     @foreach($invoices as $invoice)
-                        @if($invoice->type == $type)
-                        <tr>
+                         <tr>
                             <td><a href="{{route('invoice.stockcardmovementform',['id' => $invoice->id])}}">#{{$invoice->number??"Numara Girilmedi"}}</a> / {{\Carbon\Carbon::parse($invoice->created_at)->format('d-m-Y')}}</td>
                             <td style="text-align: center;"><strong>@if($invoice->customer_id == 0) Genel Cari @else {{$invoice->account->fullname ?? "Genel Cari"}}@endif</strong></td>
                             <td style="text-align: center;">
@@ -88,10 +87,13 @@
                                 </a -->
                             </td>
                         </tr>
-                        @endif
-                    @endforeach
+                     @endforeach
                     </tbody>
                 </table>
+
+                {{ $invoices->appends(['type' => $type])->links() }}
+
+
             </div>
         </div>
         <hr class="my-5">

@@ -28,7 +28,7 @@
                             <td><i class="fab fa-angular fa-lg text-danger me-3"></i>
                                 <strong>{{$user->name}}</strong></td>
                             <td><span class="badge bg-label-primary me-1">{{$user->email}}</span></td>
-                            <td><span class="badge bg-label-primary me-1">{{$user->seller->name}}</span></td>
+                            <td><span class="badge bg-label-primary me-1">{{$user->seller->name ?? 'SYSTEM'}}</span></td>
                             <td><span class="badge bg-label-primary me-1">{{$user->created_at}}</span></td>
                             <td><span class="badge bg-label-primary me-1">{{$user->getRoleNames()}}</span></td>
                             <td>

@@ -68,7 +68,7 @@ class TransferController extends Controller
             $transfers->whereJsonContains('serial_list', $request->serialNumber);
         }
 
-        $x = $transfers->orderBy('is_status', 'asc')->orderBy('created_at', 'desc')->get();
+        $x = $transfers->orderBy('is_status', 'asc')->orderBy('created_at', 'desc')->paginate(20);
 
         $onlyTransfer = Transfer::where('company_id', Auth::user()->company_id)->where('main_seller_id', Auth::user()->seller_id)->get();
 

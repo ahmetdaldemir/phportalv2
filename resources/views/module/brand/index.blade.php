@@ -14,6 +14,7 @@
                     <tr>
                         <th>Marka Adı</th>
                         <th>Kayıt Tarihi</th>
+                        <th>Firma</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -31,6 +32,7 @@
                                            id="flexSwitchCheckChecked" {{$brand->technical == 1 ? 'checked':''}} />
                                 </div>
                             </td>
+                            <td>{{$brand->company_id}}</td>
                             <td>
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox"

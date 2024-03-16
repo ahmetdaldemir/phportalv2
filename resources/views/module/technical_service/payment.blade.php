@@ -3,7 +3,7 @@
 @section('content')
 
     <div class="container-xxl flex-grow-1 container-p-y">
-        <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Teknik Servis /</span> {{$technical_service->customer->fullname?? 'Silinmiş'}} </h4>
+        <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Teknik Servis /</span> {{$technical_service->customer->fullname}} </h4>
         <div class="card">
             <div class="card-header">
                 @if (\Illuminate\Support\Facades\Session::has('msg'))

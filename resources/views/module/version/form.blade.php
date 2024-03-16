@@ -70,6 +70,8 @@
                     <tr>
                         <td>Marka</td>
                         <td>Versiyon</td>
+                        <td>Status</td>
+                        <td>Firma</td>
                         <td>İşlemler</td>
                     </tr>
                     @foreach($versionlist as $version)
@@ -82,6 +84,7 @@
                                            id="flexSwitchCheckChecked" {{$version->technical == 1 ? 'checked':''}} />
                                 </div>
                             </td>
+                            <td>{{$version->company_id}}</td>
                             <td>
                                 <a href="{{route('version.delete',['id' => $version->id])}}"
                                    class="btn btn-icon btn-primary">

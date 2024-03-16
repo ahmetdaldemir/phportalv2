@@ -183,7 +183,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label for="defaultFormControlInput" class="form-label">Teknik Personel - {{$technical_services->technical_person}} </label>
-                                    <select id="technical_person" name="technical_person" class="select2 form-select" disabled>
+                                    <select id="technical_person" name="technical_person" class="select2 form-select" required>
                                         <option value="">Seçiniz</option>
                                         @foreach($users as $user)
                                             @if($user->is_status == 1)

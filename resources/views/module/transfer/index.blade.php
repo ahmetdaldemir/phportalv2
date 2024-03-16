@@ -235,9 +235,9 @@
                                 </tbody>
                             </table>
                         </div>
+                        {{$transfers->links()}}
                     </div>
                     <div class="tab-pane fade" id="navs-top-profile" role="tabpanel">
-
                         <div class="table-responsive text-nowrap">
                             <table class="table" data-detail-view="true">
                                 <thead>

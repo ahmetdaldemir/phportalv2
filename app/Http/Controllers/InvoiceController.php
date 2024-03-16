@@ -94,8 +94,8 @@ class InvoiceController extends Controller
 
     protected function index(Request $request)
     {
-        $data['invoices'] = $this->invoiceService->get();
-        $data['sellers'] = $this->sellerService->get();
+        $data['invoices'] = Invoice::where('type',$request->type)->paginate(15);
+         $data['sellers'] = $this->sellerService->get();
         $data['type'] = $request->type;
         return view('module.invoice.index', $data);
     }

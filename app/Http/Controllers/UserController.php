@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Company;
 use App\Models\Seller;
+use App\Models\User;
 use App\Services\Company\CompanyService;
 use App\Services\Seller\SellerService;
 use App\Services\User\UserService;
@@ -27,7 +28,13 @@ class UserController extends Controller
 
     protected function index()
     {
-        $data['users'] = $this->userService->get();
+        $data['users'] = User::all();
+
+        if(\auth()->user()->company_id != 1)
+        {
+            $data['users'] = $this->userService->get();
+        }
+
         $data['roles'] = Role::all();
         return view('module.users.index', $data);
     }

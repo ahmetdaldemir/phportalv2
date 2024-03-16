@@ -114,7 +114,7 @@ class HomeController extends Controller
     {
         return DB::select('SELECT sales.id,sum(sales.customer_price) as total,sales.user_id,sales.type,users.name as username from sales
                     LEFT JOIN users on users.id = sales.user_id
-                    where DATE(sales.created_at) = CURDATE() and company_id = '.Auth::user()->company_id.'
+                    where DATE(sales.created_at) = CURDATE()  and sales.company_id = '.Auth::user()->company_id.'
                     GROUP BY sales.user_id,sales.type order by  total desc');
     }
 
@@ -122,7 +122,7 @@ class HomeController extends Controller
     {
         return DB::select('SELECT sum(sales.customer_price) as total,sales.user_id,sales.type,users.name as username from sales
                     LEFT JOIN users on users.id = sales.user_id
-                    where MONTH(sales.created_at) = MONTH(now()) and company_id = '.Auth::user()->company_id.'
+                    where MONTH(sales.created_at) = MONTH(now())    and sales.company_id = '.Auth::user()->company_id.'
                     GROUP BY sales.user_id,sales.type order by  total desc');
 
 
@@ -136,7 +136,7 @@ class HomeController extends Controller
                                             INNER JOIN categories on stock_cards.category_id = categories.id
                                             INNER JOIN users on sales.user_id = users.id
                                             where MONTH(sales.created_at) = MONTH(now()) and
-                                                sales.type =  1 and company_id = '.Auth::user()->company_id.'
+                                                sales.type =  1 and sales.company_id = '.Auth::user()->company_id.'
                                             GROUP BY sales.user_id');
 
 
@@ -239,11 +239,15 @@ class HomeController extends Controller
             $dates[] = strip_tags($dt->format("Y-m-d"));
             $alldata[] = DB::select("SELECT DATE(created_at) AS sadece_tarih, SUM(sale_price) AS veri_sayisi
                     FROM sales where created_at LIKE '" . strip_tags($dt->format("Y-m-d")) . "%'
+                    and company_id = '".Auth::user()->company_id."'
                     GROUP BY DATE(created_at)");
         }
 
 $data = [];
-        $aksesuar = DB::table('sales')->where('type', 2)->whereDate('sales.created_at', Carbon::today())
+        $aksesuar = DB::table('sales')->where('type', 2)
+
+            ->where('sales.company_id', Auth::user()->company_id)
+            ->whereDate('sales.created_at', Carbon::today())
             ->join('users', 'users.id', '=', 'sales.user_id')
             ->groupBy('sales.user_id')
             ->get(['users.name as username', DB::raw('sum(sales.customer_price) as total')])->pluck('total', 'username');
@@ -253,7 +257,9 @@ $data = [];
             $data['total'][] = round($value);
         }
 
-        $phone = DB::table('sales')->where('type', 1)->whereDate('sales.created_at', Carbon::today())
+        $phone = DB::table('sales')->where('type', 1)
+            ->where('sales.company_id', Auth::user()->company_id)
+            ->whereDate('sales.created_at', Carbon::today())
             ->join('users', 'users.id', '=', 'sales.user_id')
             ->groupBy('sales.user_id')
             ->get(['users.name as username', DB::raw('sum(sales.sale_price) as total')])->pluck('total', 'username');
@@ -278,7 +284,9 @@ $data = [];
         }
 
 $cover=[];
-        $kaplama = DB::table('sales')->where('type', 4)->whereDate('sales.created_at', Carbon::today())
+        $kaplama = DB::table('sales')->where('type', 4)
+            ->where('sales.company_id', Auth::user()->company_id)
+            ->whereDate('sales.created_at', Carbon::today())
             ->join('users', 'users.id', '=', 'sales.technical_service_person_id')
             ->groupBy('sales.technical_service_person_id')
             ->get(['users.name as username', DB::raw('sum(sales.sale_price) as total')])->pluck('total', 'username');
@@ -289,7 +297,9 @@ $cover=[];
         }
 
 $technicals = [];
-        $technical = DB::table('sales')->where('type', 3)->whereDate('sales.created_at', Carbon::today())
+        $technical = DB::table('sales')->where('type', 3)
+            ->where('sales.company_id', Auth::user()->company_id)
+            ->whereDate('sales.created_at', Carbon::today())
             ->join('users', 'users.id', '=', 'sales.technical_service_person_id')
             ->groupBy('sales.technical_service_person_id')
             ->get(['users.name as username', DB::raw('sum(sales.sale_price) as total')])->pluck('total', 'username');
@@ -327,7 +337,7 @@ $technicals = [];
         $data = [];
         $userss = Cache::get('user_'.\auth()->user()->id);
 
-        $users = User::where('is_status',1)->where('personel',1)->where('company_id', $userss->company_id)->get();
+        $users = User::where('is_status',1)->where('personel',1)->where('company_id', auth()->user()->company_id)->get();
         foreach ($users as $user) {
 
             $data['users'][] = $user->name;
@@ -345,12 +355,12 @@ $technicals = [];
 
     public function getAccesuaries($user)
     {
-        return Sale::where('user_id', $user)->where('type', 2)->whereDate('created_at', Carbon::today())->sum('sale_price') ?? 0;
+        return Sale::where('user_id', $user)->where('company_id', Auth::user()->company_id)->where('type', 2)->whereDate('created_at', Carbon::today())->sum('sale_price') ?? 0;
     }
 
     public function getPhone($user)
     {
-        return Sale::where('user_id', $user)->where('type', 1)->whereDate('created_at', Carbon::today())->sum('sale_price') ?? 0;
+        return Sale::where('user_id', $user)->where('company_id', Auth::user()->company_id)->where('type', 1)->whereDate('created_at', Carbon::today())->sum('sale_price') ?? 0;
     }
 
 
@@ -372,7 +382,7 @@ $technicals = [];
         $technicalReport = DB::select('SELECT u.name as userName,ts.' . $add_db_id . ',sum(salesproduct.base_cost_price) as bTotal,ts.user_id from technical_services ts
 		left join ' . $add_db . ' u on u.id = ts.' . $add_db_id . '
 	    left join (select tsp.technical_service_id,s.base_cost_price from sales s left join technical_service_products tsp on s.stock_card_movement_id = tsp.stock_card_movement_id) salesproduct on salesproduct.technical_service_id = ts.id
-		where ts.payment_status = 1 and ts.updated_at BETWEEN "' . $date1 . '" and "' . $date2 . '"  GROUP BY ts.' . $add_db_id . '');
+		where ts.payment_status = 1 and ts.updated_at BETWEEN "' . $date1 . '" and "' . $date2 . '" and ts.company_id = "'.\auth()->user()->company_id.'"  GROUP BY ts.' . $add_db_id . '');
 
         $a = [];
         $b = [];
@@ -419,7 +429,7 @@ $technicals = [];
 
         $technicalReport1 = DB::select('SELECT u.name as Username,sum(ts.customer_price) as CTotal,ts.user_id from technical_custom_services ts
 		left join '.$add_db.' u on u.id = ts.user_id
- 		where ts.payment_status = 1 and ts.updated_at BETWEEN "' . $date1 . '" and "' . $date2 . '" and ts.user_id = '.$user.' GROUP BY ts.user_id');
+ 		where ts.payment_status = 1 and ts.updated_at BETWEEN "' . $date1 . '" and "' . $date2 . '" and ts.user_id = '.$user.' and ts.company_id = "'.Auth::user()->company_id.'" GROUP BY ts.user_id');
 
         foreach ($technicalReport1 as $item1) {
             $b[$item1->user_id]['price'] = $item1->CTotal ?? NULL;

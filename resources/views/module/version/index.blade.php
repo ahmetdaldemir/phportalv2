@@ -15,6 +15,7 @@
                         <th>Model Adı</th>
                         <th>Resim</th>
                         <th>Kayıt Tarihi</th>
+                        <th>Firma</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -40,6 +41,7 @@
                                            id="flexSwitchCheckChecked" {{$version->is_status == 1 ? 'checked':''}} />
                                 </div>
                             </td>
+                            <td>{{$version->company_id}}</td>
                             <td>
                                 <a href="{{route('version.delete',['id' => $version->id])}}"
                                    onclick="return confirm('Silmek istediğinizden eminmisiniz?')"  class="btn btn-icon btn-primary">
