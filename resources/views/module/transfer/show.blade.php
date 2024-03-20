@@ -79,7 +79,7 @@
                                             <td>{{$value['serial']}}</td>
                                             <td>{{$value['name']}}</td>
                                             <td class="text-nowrap"> {{$value['category']}}</td>
-                                            <td class="text-nowrap">{{$value['brand']}}</td>
+                                            <td class="text-nowrap">{{$value['brand'] ?? 'Bulunamadı'}}</td>
                                             <td class="text-nowrap"><?php
                                                 $as =json_decode($value['version'],JSON_UNESCAPED_UNICODE);
                                                echo $as[0]

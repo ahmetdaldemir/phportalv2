@@ -40,6 +40,7 @@ class CalculationController extends Controller
         $data['accounting_categories'] = AccountingCategory::all();
         $data['currencies'] = Currency::all();
         $data['finantransactions'] = FinansTransaction::all();
+        $data['currencyDifferences'] = FinansTransaction::calculateCurrencyDifferences();
 
 
         return view('calculation.accounting', $data);

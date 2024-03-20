@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Scopes\CompanyScope;
 use App\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +17,7 @@ class Seller extends BaseModel
     protected static function boot()
     {
         parent::boot();
-        static::addGlobalScope(new TenantScope);
+        static::addGlobalScope(new CompanyScope());
     }
 
     public function company()

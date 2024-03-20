@@ -66,13 +66,19 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div class="d-flex flex-column align-items-center gap-1">
-                                <h2 class="mb-2">8,258</h2>
-                                <span>Gunluk Kasa</span>
-                            </div>
-                            <div>
-                                <button class="btn btn-success"  ng-click="income()">Gelir</button>
-                                <button class="btn btn-danger" ng-click="expense()">Gider</button>
-                            </div>
+                                <div class="col-12">
+                                    <button class="btn btn-success"  ng-click="income()">Gelir</button>
+                                    <button class="btn btn-danger" ng-click="expense()">Gider</button>
+                                </div>
+
+                                <div class="clearfix"></div>
+                                <h5 class="mb-2">
+                                    @foreach ($currencyDifferences as $difference)
+                                        <p> kur farkı: {{ $difference->difference }} {{ \App\Models\Currency::find($difference->currency_id)->symbol }}</p>
+                                    @endforeach
+                                 </h5>
+                             </div>
+
                         </div>
 
                     </div>

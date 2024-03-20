@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Scopes\CompanyScope;
+use App\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -45,6 +47,12 @@ class Transfer extends BaseModel
 
     protected $casts = ['stocks' => 'array','serial_list' => 'array','detail' => 'array'];
 
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::addGlobalScope(new CompanyScope());
+    }
 
     public function seller($id)
     {

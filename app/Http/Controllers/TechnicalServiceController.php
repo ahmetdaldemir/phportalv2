@@ -267,10 +267,9 @@ class TechnicalServiceController extends Controller
                     $sale->type = 3;
                     $sale->save();
                 }
-                $stockcardmovement->type = 2;
+                $stockcardmovement->type =2;
                 $stockcardmovement->save();
             }
-
 
             $technicalservice->payment_status = 1;
             $technicalservice->status = 6;
