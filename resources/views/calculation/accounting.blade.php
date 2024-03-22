@@ -74,7 +74,7 @@
                                 <div class="clearfix"></div>
                                 <h5 class="mb-2">
                                     @foreach ($currencyDifferences as $difference)
-                                        <p> kur farkı: {{ $difference->difference }} {{ \App\Models\Currency::find($difference->currency_id)->symbol }}</p>
+                                        <p> Kasa {{ \App\Models\Currency::find($difference->currency_id)->code }} : {{ $difference->difference }} {{ \App\Models\Currency::find($difference->currency_id)->symbol }}</p>
                                     @endforeach
                                  </h5>
                              </div>
