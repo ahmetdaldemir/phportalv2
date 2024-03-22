@@ -107,11 +107,11 @@
                                 <tr style="{{\App\Models\FinansTransaction::MODEL_COLOR[$finantransaction->model_class]}}">
                                     <td>{{\App\Models\FinansTransaction::MODEL_STRING[$finantransaction->model_class]}}</td>
                                     <td>{{$finantransaction->finansModel()}}</td>
-                                    <td>{{$finantransaction->price}}</td>
+                                    <td>{{$finantransaction->price}} {{$finantransaction->currency()}}</td>
                                     <td>{{$finantransaction->created_date}}</td>
                                     <td>{{$finantransaction->payment_type}}</td>
                                     <td>{{$finantransaction->process_type}}</td>
-                                    <td>{{$finantransaction->currenct_id}}</td>
+                                    <td>{{$finantransaction->currency_id}}</td>
                                     <td>{{$finantransaction->rate}}</td>
                                     <td></td>
                                 </tr>

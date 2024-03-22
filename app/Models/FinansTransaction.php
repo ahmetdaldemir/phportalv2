@@ -49,4 +49,9 @@ class FinansTransaction extends BaseModel
             return Seller::find($this->model_id)->name;
         }
     }
+
+    public function currency()
+    {
+        return Currency::find($this->currency_id)->symbol;
+    }
 }
