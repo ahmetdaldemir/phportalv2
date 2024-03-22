@@ -77,6 +77,7 @@ Route::middleware(['companies', 'activity'])->group(function () {
         Route::get('create', [App\Http\Controllers\UserController::class, 'create'])->name('create');
         Route::post('store', [App\Http\Controllers\UserController::class, 'store'])->name('store');
         Route::post('update', [App\Http\Controllers\UserController::class, 'update'])->name('update');
+        Route::post('fieldUpdate', [App\Http\Controllers\UserController::class, 'fieldUpdate'])->name('fieldUpdate');
     });
 
     Route::prefix('category')->name('category.')->middleware([])->group(function () {

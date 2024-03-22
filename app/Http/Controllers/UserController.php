@@ -114,5 +114,11 @@ class UserController extends Controller
         return $this->userService->update($request->id, $data);
     }
 
+    protected function fieldUpdate(Request $request)
+    {
+        dd($request);
+        $data = array('is_status' => $request->is_status);
+        return $this->userService->update($request->id, $data);
+    }
 
 }
