@@ -106,7 +106,7 @@
 
                                 <tr>
                                     <td>{{\App\Models\FinansTransaction::MODEL_STRING[$finantransaction->model_class]}}</td>
-                                    <td>{{$finantransaction->model_id}}</td>
+                                    <td>{{$finantransaction->finansModel()}}</td>
                                     <td>{{$finantransaction->price}}</td>
                                     <td>{{$finantransaction->created_date}}</td>
                                     <td>{{$finantransaction->payment_type}}</td>
