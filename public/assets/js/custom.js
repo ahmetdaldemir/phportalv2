@@ -42,7 +42,11 @@ function updateField(url,id, data,field) {
         url: url,
         data: datas,
         success: function (response) {
-            $("#result").empty().append(response);
+            if (response == 1) {
+                $.MessageBox("Güncellendi");
+            } else {
+                $.MessageBox("Sorun Var");
+            }
         }
     });
 }
