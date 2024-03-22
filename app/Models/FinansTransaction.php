@@ -12,8 +12,8 @@ class FinansTransaction extends BaseModel
 
 
      public const MODEL_STRING = [
-         'APP\MODELS\USER'  => 'Personel',
-         'APP\MODELS\SELLER'  => 'Şube',
+         'App\Models\User'  => 'Personel',
+         'App\Models\Seller'  => 'Şube',
     ];
 
     protected static function boot()
