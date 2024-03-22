@@ -46,23 +46,6 @@ function updateField(url,id, data,field) {
         }
     });
 }
-function updateField(url, id, data,field) {
-
-
-    $.post(url,
-        {
-            id: id,
-            field: data,
-        },
-        function (data, status) {
-            if (data == 1) {
-                $.MessageBox("Güncellendi");
-            } else {
-                $.MessageBox("Sorun Var");
-            }
-
-        });
-}
 
 
 function updateTechnical(url, id, data) {
