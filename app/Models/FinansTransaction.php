@@ -33,4 +33,15 @@ class FinansTransaction extends BaseModel
 
         return $currencyDifferences;
     }
+
+
+    public function finansModel()
+    {
+        if($this->model == 'App\Models\User')
+        {
+            return User::find($this->model_id)->name;
+        }else{
+            return Seller::find($this->model_id)->name;
+        }
+    }
 }

@@ -90,8 +90,8 @@
                         <table class="table">
                             <thead>
                             <tr>
-                                <th>Model</th>
-                                <th>ModelID</th>
+                                <th>Tip</th>
+                                <th>Kullanıcı</th>
                                 <th>Tutar</th>
                                 <th>Tarih</th>
                                 <th>Odeme Tipi</th>
