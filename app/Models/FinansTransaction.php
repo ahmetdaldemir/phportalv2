@@ -54,4 +54,12 @@ class FinansTransaction extends BaseModel
     {
         return Currency::find($this->currency_id)->{$field};
     }
+
+    public function category()
+    {
+        return  $this->hasOne(AccountingCategory::class,$this->process_type);
+    }
+
+
+
 }
