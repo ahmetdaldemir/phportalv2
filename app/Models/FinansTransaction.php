@@ -10,6 +10,12 @@ class FinansTransaction extends BaseModel
 {
     use HasFactory;
 
+
+    const MODELSTRING = [
+         'APP\MODELS\USER'  => 'Personel',
+         'APP\MODELS\SELLER'  => 'Şube',
+    ];
+
     protected static function boot()
     {
         parent::boot();
