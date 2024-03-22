@@ -111,6 +111,7 @@ class UserController extends Controller
     protected function update(Request $request)
     {
         $data = array('is_status' => $request->is_status);
+        dd($data);
         return $this->userService->update($request->id, $data);
     }
 
