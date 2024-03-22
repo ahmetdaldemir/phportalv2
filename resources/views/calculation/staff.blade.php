@@ -25,7 +25,7 @@
                     @foreach($staffs as $staff)
                         <tr>
                             <td><button class="btn btn-dual" ng-click="onSeller({{$staff->id}},'{{$staff->name}}')"><strong>{{$staff->name}}</strong></button></td>
-                            <td><span class="badge bg-label-warning text-black me-1">{{number_format($staff->salary ?? 0, 2, '.', ',')}} ₺</span></td>
+                            <td><span class="badge bg-label-warning text-black me-1">{{number_format($staff->account()->userSallary->price ?? 0, 2, '.', ',')}} ₺</span></td>
                             <td><span class="badge bg-label-warning text-black me-1">{{number_format($staff->account()->salary ?? 0, 2, '.', ',')}} ₺</span></td>
                             <td><span class="badge bg-label-warning text-black me-1">{{number_format($staff->avans() ?? 0, 2, '.', ',')}} ₺</span></td>
                             <td><span class="badge bg-label-warning text-black me-1">{{number_format($staff->account()->overtime ?? 0, 2, '.', ',')}} ₺</span></td>
