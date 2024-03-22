@@ -116,7 +116,8 @@ class CalculationController extends Controller
 
     protected function getPerson(Request $request)
     {
-      dd(PersonalAccountMonth::where('staff_id',$request->id)->where('mounth',date('m'))->first());
+        echo date('m');
+      return PersonalAccountMonth::where('staff_id',$request->id)->where('mounth',date('m'))->first();
     }
 
 
