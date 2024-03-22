@@ -105,7 +105,7 @@
                             @foreach($finantransactions as $finantransaction)
 
                                 <tr>
-                                    <td>{{\App\Models\FinansTransaction::MODEL_STRING[''.$finantransaction->model_class.'']}}</td>
+                                    <td>@if($finantransaction->model_class == 'APP\MODELS\USER') Personel @else Şube @endif</td>
                                     <td>{{$finantransaction->model_id}}</td>
                                     <td>{{$finantransaction->price}}</td>
                                     <td>{{$finantransaction->created_date}}</td>
