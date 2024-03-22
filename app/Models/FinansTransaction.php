@@ -16,6 +16,11 @@ class FinansTransaction extends BaseModel
          'App\Models\Seller'  => 'Şube',
     ];
 
+    public const MODEL_COLOR = [
+        'App\Models\User'  => 'background: aliceblue',
+        'App\Models\Seller'  => 'background: #fff6f0',
+    ];
+
     protected static function boot()
     {
         parent::boot();

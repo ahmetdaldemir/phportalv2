@@ -104,7 +104,7 @@
                             <tbody class="table-border-bottom-0">
                             @foreach($finantransactions as $finantransaction)
 
-                                <tr>
+                                <tr style="{{\App\Models\FinansTransaction::MODEL_COLOR[$finantransaction->model_class]}}">
                                     <td>{{\App\Models\FinansTransaction::MODEL_STRING[$finantransaction->model_class]}}</td>
                                     <td>{{$finantransaction->finansModel()}}</td>
                                     <td>{{$finantransaction->price}}</td>
