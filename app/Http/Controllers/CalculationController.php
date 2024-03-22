@@ -118,10 +118,10 @@ class CalculationController extends Controller
             [
                 'staff_id' => $request->staff_id,
                 'month' => date('m'),
-                'price' => date('m'),
+                'price' => $request->gsalary,
             ],
             [
-                'price' => $request->salary,
+                'price' => $request->gsalary,
             ]
         );
 
