@@ -33,7 +33,7 @@ function updateField(url,id, data,field) {
     var datas =  {
              id: id,
          field:field,
-          value: value
+          value: data
      };
 
     console.log(datas);
