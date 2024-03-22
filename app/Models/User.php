@@ -28,7 +28,9 @@ class User extends Authenticatable
         'password',
         'company_id',
         'seller_id',
-        'is_status'
+        'is_status',
+        'position',
+        'personel'
 
     ];
 
