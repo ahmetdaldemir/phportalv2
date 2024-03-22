@@ -109,7 +109,7 @@
                                     <td>{{$finantransaction->finansModel()}}</td>
                                     <td>{{$finantransaction->price}} {{$finantransaction->currency('symbol')}}</td>
                                     <td>{{$finantransaction->created_date}}</td>
-                                    <td>{{$finantransaction->payment_type}}</td>
+                                    <td>{{\App\Models\FinansTransaction::PAYMENT_TYPE[$finantransaction->payment_type]}}</td>
                                     <td>{{$finantransaction->category->name ?? 'Belirtilmedi'}}</td>
                                     <td>{{$finantransaction->currency('code')}}</td>
                                     <td>{{$finantransaction->rate}}</td>

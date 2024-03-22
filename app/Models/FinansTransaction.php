@@ -21,6 +21,11 @@ class FinansTransaction extends BaseModel
         'App\Models\Seller'  => 'background: #fff6f0',
     ];
 
+    public const PAYMENT_TYPE = [
+        'expense'  => 'Gider',
+        'income'  => 'Gelir',
+    ];
+
     protected static function boot()
     {
         parent::boot();
