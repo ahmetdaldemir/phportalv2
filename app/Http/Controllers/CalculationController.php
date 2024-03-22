@@ -9,6 +9,7 @@ use App\Models\PersonalAccountMonth;
 use App\Models\Seller;
 use App\Models\SellerAccountMonth;
  use App\Models\User;
+use App\Models\UserSallary;
 use Carbon\Carbon;
  use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -111,6 +112,20 @@ class CalculationController extends Controller
                 'insurance' => $request->insurance ?? 0,
             ]
         );
+
+
+        UserSallary::updateOrCreate(
+            [
+                'staff_id' => $request->staff_id,
+                'month' => date('m'),
+                'price' => date('m'),
+            ],
+            [
+                'price' => $request->salary,
+            ]
+        );
+
+
 
     }
 

@@ -10,7 +10,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class UserSallary extends Model
 {
     use HasFactory,SoftDeletes;
-
+    protected $fillable = [
+        'user_id','month',
+        'year',
+        'price',
+    ];
 
 
 }
