@@ -57,7 +57,7 @@ class FinansTransaction extends BaseModel
 
     public function category()
     {
-        return  $this->hasOne(AccountingCategory::class,$this->process_type);
+        return  $this->hasOne(AccountingCategory::class,'process_type','id');
     }
 
 
