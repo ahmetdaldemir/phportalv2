@@ -255,7 +255,7 @@
 @yield('custom-js')
 
 <script src="{{asset('assets/js/main.js')}}"></script>
-<script src="{{asset('assets/js/custom.js')}}"></script>
+<script src="{{asset('assets/js/custom.js?rand='+rand(9,9999999)+'')}}"></script>
 <script src="{{asset('assets/js/forms-selects.js')}}"></script>
 
 
