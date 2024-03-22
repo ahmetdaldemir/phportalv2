@@ -118,7 +118,7 @@ class CalculationController extends Controller
     {
         $month = date('m');
         return PersonalAccountMonth::with(['userSallary' => function($q) use($month) {
-            $q->where('month', $month);
+            $q->where('month', $month)->where('year', date('Y'));
         }])->where('staff_id',$request->id)->where('mounth',date('m'))->first();
      }
 
