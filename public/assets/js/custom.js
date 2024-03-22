@@ -30,23 +30,17 @@ function updateStatus(url, id, data,field) {
 function updateField(url,id, data,field) {
 
 
-    var datas = (id, field, value) => {
-        var data = {
-            id: id
-        };
-
-        data[field] = field;
-        data[value] = value;
-
-        return data;
-    };
-    var myData = datas(id, data,field);
+    var datas =  {
+             id: id,
+         field:field,
+          value: value
+     };
 
     console.log(datas);
     $.ajax({
         type: "POST",
         url: url,
-        data: myData,
+        data: datas,
         success: function (response) {
             $("#result").empty().append(response);
         }
