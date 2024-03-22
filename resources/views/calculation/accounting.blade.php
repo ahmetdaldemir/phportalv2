@@ -72,7 +72,7 @@
                                 </div>
 
                                 <div class="clearfix"></div>
-                                <h5 class="mb-2">
+                                <h5 class="mb-2" style="bottom: 0; position: absolute;right: 19px; font-size: medium;">
                                     @foreach ($currencyDifferences as $difference)
                                         <p> Kasa {{ \App\Models\Currency::find($difference->currency_id)->code }} : {{ $difference->difference }} {{ \App\Models\Currency::find($difference->currency_id)->symbol }}</p>
                                     @endforeach
