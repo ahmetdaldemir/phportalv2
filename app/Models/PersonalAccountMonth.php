@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use function Symfony\Component\Translation\t;
 
 class PersonalAccountMonth extends BaseModel
 {
@@ -32,8 +33,8 @@ class PersonalAccountMonth extends BaseModel
 
     public function userSallary()
     {
-        echo $this->staff_id;
-     }
+        return $this->hasOne(UserSallary::class,'user_id','staff_id');
+    }
 
 
 }
