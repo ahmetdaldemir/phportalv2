@@ -32,7 +32,7 @@ class PersonalAccountMonth extends BaseModel
 
     public function userSallary()
     {
-        dd($this);
+        dd($this->staff_id);
         return UserSallary::where('user_id',$this->staff_id)->where('month',$this->mounth)->where('year',$this->year)->orderBy('id','desc')->first();
     }
 
