@@ -35,7 +35,8 @@ function updateField(url,id, data,field) {
             id: id
         };
 
-        data[''+field+''] = value; // Dinamik olarak field adını kullanarak value değerini atama
+        data[field] = field;
+        data[value] = value;
 
         return data;
     };
