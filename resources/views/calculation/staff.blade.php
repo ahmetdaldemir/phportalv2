@@ -55,6 +55,10 @@
 
                         <div class="row">
                             <div class="col-lg-6">
+                                <label class="form-label" for="modalRnFEmail">G.Maas</label>
+                                <input type="text" class="form-control" value="@{{person.gsalary}}" name="gsalary">
+                            </div>
+                            <div class="col-lg-6">
                                 <label class="form-label" for="modalRnFEmail">Maas</label>
                                 <input type="text" class="form-control" value="@{{person.salary}}" name="salary">
                             </div>
@@ -129,6 +133,7 @@
                         'Content-Type': 'application/x-www-form-urlencoded'
                     }
                 }).then(function successCallback(response) {
+                    console.log(response);
                     $scope.person = response.data;
                      Swal.close();
 
