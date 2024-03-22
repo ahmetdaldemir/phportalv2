@@ -50,8 +50,8 @@ class FinansTransaction extends BaseModel
         }
     }
 
-    public function currency()
+    public function currency($field)
     {
-        return Currency::find($this->currency_id)->symbol;
+        return Currency::find($this->currency_id)->{$field};
     }
 }
