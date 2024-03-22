@@ -11,7 +11,7 @@ class FinansTransaction extends BaseModel
     use HasFactory;
 
 
-     const MODEL_STRING = [
+     public const MODEL_STRING = [
          'APP\MODELS\USER'  => 'Personel',
          'APP\MODELS\SELLER'  => 'Şube',
     ];
