@@ -50,7 +50,7 @@
                             <td>
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox"
-                                           onclick="updateStatus('user/update',{{$user->id}},{{$user->personel == 1 ? 0:1}})"
+                                           onclick="updateStatus('user/update',{{$user->id}},{{$user->personel == 1 ? 0:1}},'personel')"
                                            id="flexSwitchCheckChecked" {{$user->personel == 1 ? 'checked':''}} />
                                 </div>
                             </td>

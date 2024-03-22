@@ -29,17 +29,23 @@ function updateStatus(url, id, data,field) {
 
 function updateField(url,id, data,field) {
 
-    var datas = (id, field,data) => {
-        return {
-            id: id,
-            field: data
-        };
-    };
 
+    var datas = (id, field, value) => {
+        var data = {
+            id: id
+        };
+
+        data[field] = value; // Dinamik olarak field adını kullanarak value değerini atama
+
+        return data;
+    };
+    var myData = datas(id, data,field);
+
+    console.log(datas);
     $.ajax({
         type: "POST",
         url: url,
-        data: datas,
+        data: myData,
         success: function (response) {
             $("#result").empty().append(response);
         }
