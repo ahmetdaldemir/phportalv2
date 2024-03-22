@@ -116,7 +116,7 @@ class UserController extends Controller
 
     protected function fieldUpdate(Request $request)
     {
-        $data = array($request->field => $request->value);
+        $data = array(''.$request->field.'' => $request->value);
         return $this->userService->update($request->id, $data);
     }
 
