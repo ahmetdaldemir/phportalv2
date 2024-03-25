@@ -138,11 +138,10 @@
                                             </div -->
                                             <div class="col-md-2 col-12 mb-md-0 mb-3 ps-md-0">
                                                 <label for="taxInput1" class="form-label">Şube</label>
-                                                <select name="seller_id[]" id="taxInput1"
-                                                        class="form-select tax-select">
+                                                <select name="seller_id[]" id="taxInput1"  class="form-select tax-select" required>
+                                                    <option>Seciniz</option>
                                                     @foreach($sellers as $seller)
-                                                        <option
-                                                            value="{{$seller->id}}">{{$seller->name}}</option>
+                                                        <option  value="{{$seller->id}}">{{$seller->name}}</option>
                                                     @endforeach
                                                 </select>
                                             </div>
