@@ -624,6 +624,10 @@ class TechnicalServiceController extends Controller
             $total = $request->payment_type['cash'] + $request->payment_type['credit_card'];
             if ($total != $request->customer_price) {
                 return redirect()->back()->with(['msg' => 'Tutarlar Eşleşmiyor']);;
+            }else if($total < $request->total_price){
+                return redirect()->back()->with(['msg' => 'Nakıt Veya Kart Tutar toplamı Toplam tutardan küçük olamaz']);;
+            }else if ($total == 0) {
+                return redirect()->back()->with(['msg' => 'Toplam 0 Olamaz']);;
             }
             $technicalservice = \App\Models\TechnicalCustomService::find($request->id);
 
@@ -798,7 +802,7 @@ class TechnicalServiceController extends Controller
 
     protected function coverdetaildelete(Request $request)
     {
-        $technicalService = \App\Models\TechnicalCustomService::find($request->id);
+        $technicalService = \App\Models\TechnicalCustomService::find($request->technical_service_id);
         if ($technicalService->payment_status == "1") {
             $technicalServiceProduct = TechnicalCustomProducts::find($request->id);
             $technicalServiceProduct->delete();
