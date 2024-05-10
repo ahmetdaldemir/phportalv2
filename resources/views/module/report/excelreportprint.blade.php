@@ -36,6 +36,7 @@
                                 <td colspan="2">Teknik Servis</td>
                                 <td colspan="2">Kaplama</td>
                                 <td colspan="2">Telefon</td>
+                                <td colspan="2">Teslim Alan</td>
                             </tr>
                             <tr>
                                 <td colspan="1">-</td>
@@ -45,6 +46,8 @@
                                 <td colspan="1" style="background: red;color: #fff;text-align: center;">Kar</td>
                                 <td colspan="1" style="background: #31a449;color: #fff;text-align: center;">Ciro</td>
                                 <td colspan="1" style="background: #31a449;color: #fff;text-align: center;">Kar</td>
+                                <td colspan="1" style="background: blue;color: #fff;text-align: center;">Ciro</td>
+                                <td colspan="1" style="background: blue;color: #fff;text-align: center;">Kar</td>
                                 <td colspan="1" style="background: blue;color: #fff;text-align: center;">Ciro</td>
                                 <td colspan="1" style="background: blue;color: #fff;text-align: center;">Kar</td>
                             </tr>
@@ -87,6 +90,17 @@
                                     <td colspan="1" style="background: blue;color: #fff;text-align: center;">
                                         @if(isset($phones['ar'][$user->id]))
                                             {{$phones['ar'][$user->id] - $phones['arbc'][$user->id]}}
+                                        @else
+                                            0
+                                        @endif
+                                    </td>
+
+                                    <td colspan="1" style="background: red;color: #fff;text-align: center;">
+                                        @if(isset($teslimalan['arbc'][$user->id])) {{$teslimalan['arbc'][$user->id]}}@else 0 @endif
+                                    </td>
+                                    <td colspan="1" style="background: red;color: #fff;text-align: center;">
+                                        @if(isset($teslimalan['arbc'][$user->id]))
+                                            {{$teslimalan['arbc'][$user->id] - $teslimalan['ar'][$user->id]}}
                                         @else
                                             0
                                         @endif

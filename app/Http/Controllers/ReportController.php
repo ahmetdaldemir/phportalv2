@@ -560,6 +560,7 @@ class ReportController extends Controller
         $data['phones'] = $report->phones($request->date1,$request->date2);
         $data['cover'] = $report->cover($request->date1,$request->date2);
         $data['technical'] = $report->technicals($request->date1,$request->date2);
+        $data['teslimalan'] = $report->teslimalan($request->date1,$request->date2);
         $data['users'] = User::where('company_id',Auth::user()->company_id)->where('is_status',1)->where('personel',1)->get();
         $data['date1'] = $request->date1;
         $data['date2'] = $request->date2;
