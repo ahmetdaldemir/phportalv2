@@ -165,8 +165,8 @@ class EnumerationController extends Controller
             return redirect()->back();
         }
 
-        $dataCollection = json_decode($enumeration->dataCollection, TRUE);
-        $stockCollection = json_decode($enumeration->stockCollection, TRUE);
+        $dataCollection = json_decode($enumeration->dataCollection, TRUE)??[];
+        $stockCollection = json_decode($enumeration->stockCollection, TRUE)??[];
         $differenceArray = array_diff(array_values($stockCollection), array_values($dataCollection));
 
         $dataCollection =  array_values($dataCollection);

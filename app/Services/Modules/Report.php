@@ -181,8 +181,8 @@ class Report
         $date1 = Carbon::parse($calc[0] . " 00:00:00")->format('Y-m-d H:i:s');
         $date2 = Carbon::parse($calc[1] . " 23:59:59")->format('Y-m-d H:i:s');
 
-        $technicalReport = DB::select('	SELECT u.name as userName,technical_person,sum(salesproduct.base_cost_price) as bTotal from technical_services ts
-		left join users u on u.id = ts.technical_person
+        $technicalReport = DB::select('	SELECT u.name as userName,delivery_staff,sum(salesproduct.base_cost_price) as bTotal from technical_services ts
+		left join users u on u.id = ts.delivery_staff
 	    left join (select tsp.technical_service_id,s.base_cost_price from sales s left join technical_service_products tsp on s.stock_card_movement_id = tsp.stock_card_movement_id where s.company_id = "' . Auth::user()->company_id . '" ) salesproduct on salesproduct.technical_service_id = ts.id
 		where ts.payment_status = 1 and ts.updated_at BETWEEN "' . $date1 . '" and "' . $date2 . '" and  ts.company_id = "' . Auth::user()->company_id . '"  GROUP BY delivery_staff
 
@@ -196,8 +196,8 @@ class Report
         }
 
 
-        $technicalReport1 = DB::select('	SELECT u.name as Username,sum(ts.customer_price) as CTotal,technical_person from technical_services ts
-		left join users u on u.id = ts.technical_person
+        $technicalReport1 = DB::select('	SELECT u.name as Username,sum(ts.customer_price) as CTotal,delivery_staff from technical_services ts
+		left join users u on u.id = ts.delivery_staff
  		where ts.payment_status = 1 and ts.updated_at BETWEEN "' . $date1 . '" and "' . $date2 . '" and  ts.company_id = "' . Auth::user()->company_id . '"  GROUP BY delivery_staff
 
 		');
