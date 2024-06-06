@@ -94,8 +94,8 @@ class InvoiceController extends Controller
 
     protected function index(Request $request)
     {
-        $data['invoices'] = Invoice::where('type',$request->type)->orderBy('id','desc')->paginate(15);
-         $data['sellers'] = $this->sellerService->get();
+        $data['invoices'] = Invoice::where('type', $request->type)->orderBy('id', 'desc')->paginate(15);
+        $data['sellers'] = $this->sellerService->get();
         $data['type'] = $request->type;
         return view('module.invoice.index', $data);
     }
@@ -463,18 +463,17 @@ class InvoiceController extends Controller
                 $i++;
             }
 
-            /*
-            foreach ($request->serial as $item) {
 
-                $stockcard = StockCardMovement::where('serial_number', $item)->where('type', 1)->orderBy('id', 'desc')->first();
-                if (!$stockcard) {
-                       return false;
+            if (!Auth::user()->hasRole('super-admin')) // HAsarlı Sorgusu
+            {
+                foreach ($request->serial as $item) {
+                    $stockcard = StockCardMovement::where('serial_number', $item)->where('type', 1)->where('seller_id', Auth::user()->seller_id)->first();
+                    if (!$stockcard) {
+                        return response()->json('Farklı bayiye ait ürün mevcuttur', 405);
+                    }
                 }
-
-                $totalSalePrice += $stockcard->sale_price;
-               // return response()->json($totalSalePrice, 405);
             }
-            */
+
             if (number_format($total, 2) != number_format($totalSalePrice, 2)) {
                 return response()->json("Ürün fiyatı toplam fiyata eşit değil", 405);
             }

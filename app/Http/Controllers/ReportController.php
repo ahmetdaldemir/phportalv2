@@ -561,7 +561,17 @@ class ReportController extends Controller
         $data['cover'] = $report->cover($request->date1,$request->date2);
         $data['technical'] = $report->technicals($request->date1,$request->date2);
         $data['teslimalan'] = $report->teslimalan($request->date1,$request->date2);
+
+
+        $data['accessorySeller'] = $report->accessorySeller($request->date1,$request->date2);
+        $data['phonesSeller'] = $report->phonesSeller($request->date1,$request->date2);
+        $data['coverSeller'] = $report->coverSeller($request->date1,$request->date2);
+        $data['technicalSeller'] = $report->technicalsSeller($request->date1,$request->date2);
+        $data['teslimalanSeller'] = $report->teslimalanSeller($request->date1,$request->date2);
+
+
         $data['users'] = User::where('company_id',Auth::user()->company_id)->where('is_status',1)->where('personel',1)->get();
+        $data['sellers'] = Seller::where('company_id',Auth::user()->company_id)->get();
         $data['date1'] = $request->date1;
         $data['date2'] = $request->date2;
         return view("module.report.excelreportprint",$data);

@@ -118,6 +118,15 @@
                 </div>
             </div>
         </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div id="newMonthChart"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="mt-3"></div>
         <div class="row">
             <div class="col-md-12">
@@ -129,97 +138,7 @@
             </div>
         </div>
         <div class="mt-3"></div>
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card">
 
-                    <div class="card-body">
-                        <div id="chart"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4"  style="    margin: 2% 0;">
-                <div class="card">
-                    <div class="card-header header-elements">
-                        <h5 class="card-title mb-0">Günlük Teknik Servis</h5>
-                    </div>
-                    <div class="card-body" style="height: 248px;">
-                        <div id="technicalChart"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4" style="    margin: 2% 0;">
-                <div class="card">
-                    <div class="card-header">Günlük Kaplama Ciro</div>
-                    <div class="card-body" style="height: 248px;">
-                        <div id="dailyCover"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4" style="    margin: 2% 0;">
-                <div class="card">
-                    <div class="card-header">Günlük Telefon Ciro</div>
-                    <div class="card-body" style="height: 248px;">
-                        <div id="phoneChart"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="mt-3"></div>
-        <div class="row">
-            <div class="col-md-3">
-                <div class="card">
-                    <div class="card-header">Aylık Aksesuar Ciro</div>
-                    <div class="card-body">
-                        @foreach($salesMonth as $item)
-                            @if($item->type == 2)
-                                <li>{{$item->username}} - {{$item->total}}</li>
-                            @endif
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card">
-                    <div class="card-header">Aylık Telefon Ciro</div>
-                    <div class="card-body">
-                        @foreach($salesMonth as $item)
-                            @if($item->type == 1)
-                                <li>{{$item->username}} - {{$item->total}}</li>
-                            @endif
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card">
-                    <div class="card-header">Aylık Teknik Ciro</div>
-                    <div class="card-body">
-                        @foreach($salesMonth as $item)
-                            @if($item->type == 3)
-                                <li>{{$item->username}} - {{$item->total}}</li>
-                            @endif
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card">
-                    <div class="card-header">Aylık Kaplama Ciro</div>
-                    <div class="card-body">
-                        @foreach($salesMonth as $item)
-                            @if($item->type == 4)
-                                <li>{{$item->username}} - {{$item->total}}</li>
-                            @endif
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-        <div class="mt-3"></div>
         <div class="row">
             <div class="col-md-6 col-lg-6 order-2 mb-4">
                 <div class="card h-100">

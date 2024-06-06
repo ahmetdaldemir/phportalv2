@@ -114,7 +114,7 @@ class HomeController extends Controller
     {
         return DB::select('SELECT sales.id,sum(sales.customer_price) as total,sales.user_id,sales.type,users.name as username from sales
                     LEFT JOIN users on users.id = sales.user_id
-                    where DATE(sales.created_at) = CURDATE()  and sales.company_id = '.Auth::user()->company_id.'
+                    where DATE(sales.created_at) = CURDATE()  and sales.company_id = ' . Auth::user()->company_id . '
                     GROUP BY sales.user_id,sales.type order by  total desc');
     }
 
@@ -122,7 +122,7 @@ class HomeController extends Controller
     {
         return DB::select('SELECT sum(sales.customer_price) as total,sales.user_id,sales.type,users.name as username from sales
                     LEFT JOIN users on users.id = sales.user_id
-                    where MONTH(sales.created_at) = MONTH(now())    and sales.company_id = '.Auth::user()->company_id.'
+                    where MONTH(sales.created_at) = MONTH(now())    and sales.company_id = ' . Auth::user()->company_id . '
                     GROUP BY sales.user_id,sales.type order by  total desc');
 
 
@@ -136,7 +136,7 @@ class HomeController extends Controller
                                             INNER JOIN categories on stock_cards.category_id = categories.id
                                             INNER JOIN users on sales.user_id = users.id
                                             where MONTH(sales.created_at) = MONTH(now()) and
-                                                sales.type =  1 and sales.company_id = '.Auth::user()->company_id.'
+                                                sales.type =  1 and sales.company_id = ' . Auth::user()->company_id . '
                                             GROUP BY sales.user_id');
 
 
@@ -201,7 +201,7 @@ class HomeController extends Controller
 
     public function getParentList($category_id = 0)
     {
-        $user = Cache::get('user_'.\auth()->user()->id);
+        $user = Cache::get('user_' . \auth()->user()->id);
 
         $data = null;
         $categories = Category::where('company_id', $user->company_id)->where('parent_id', $category_id)->get();
@@ -239,39 +239,8 @@ class HomeController extends Controller
             $dates[] = strip_tags($dt->format("Y-m-d"));
             $alldata[] = DB::select("SELECT DATE(created_at) AS sadece_tarih, SUM(sale_price) AS veri_sayisi
                     FROM sales where created_at LIKE '" . strip_tags($dt->format("Y-m-d")) . "%'
-                    and company_id = '".Auth::user()->company_id."'
+                    and company_id = '" . Auth::user()->company_id . "'
                     GROUP BY DATE(created_at)");
-        }
-
-$data = [];
-        $aksesuar = DB::table('sales')->where('type', 2)
-
-            ->where('sales.company_id', Auth::user()->company_id)
-            ->whereDate('sales.created_at', Carbon::today())
-            ->join('users', 'users.id', '=', 'sales.user_id')
-            ->groupBy('sales.user_id')
-            ->get(['users.name as username', DB::raw('sum(sales.customer_price) as total')])->pluck('total', 'username');
-
-        foreach ($aksesuar as $key => $value) {
-            $data['username'][] = '' . $key . '-' . round($value) . ' ₺';
-            $data['total'][] = round($value);
-        }
-
-        $phone = DB::table('sales')->where('type', 1)
-            ->where('sales.company_id', Auth::user()->company_id)
-            ->whereDate('sales.created_at', Carbon::today())
-            ->join('users', 'users.id', '=', 'sales.user_id')
-            ->groupBy('sales.user_id')
-            ->get(['users.name as username', DB::raw('sum(sales.sale_price) as total')])->pluck('total', 'username');
-        $phones = [];
-        if ($phone) {
-            foreach ($phone as $key => $value) {
-                $phones['username'][] = '' . $key . '-' . round($value) . ' ₺';
-                $phones['total'][] = round($value) ?? 0;
-            }
-        } else {
-            $phones['username'][] = 'Boş';
-            $phones['total'][] = 0;
         }
 
 
@@ -282,42 +251,9 @@ $data = [];
                 }
             }
         }
-
-$cover=[];
-        $kaplama = DB::table('sales')->where('type', 4)
-            ->where('sales.company_id', Auth::user()->company_id)
-            ->whereDate('sales.created_at', Carbon::today())
-            ->join('users', 'users.id', '=', 'sales.technical_service_person_id')
-            ->groupBy('sales.technical_service_person_id')
-            ->get(['users.name as username', DB::raw('sum(sales.sale_price) as total')])->pluck('total', 'username');
-
-        foreach ($kaplama as $key => $value) {
-            $cover['username'][] = '' . $key . '-' . round($value) . ' ₺';
-            $cover['total'][] = round($value);
-        }
-
-$technicals = [];
-        $technical = DB::table('sales')->where('type', 3)
-            ->where('sales.company_id', Auth::user()->company_id)
-            ->whereDate('sales.created_at', Carbon::today())
-            ->join('users', 'users.id', '=', 'sales.technical_service_person_id')
-            ->groupBy('sales.technical_service_person_id')
-            ->get(['users.name as username', DB::raw('sum(sales.sale_price) as total')])->pluck('total', 'username');
-
-        foreach ($technical as $key => $value) {
-            $technicals['username'][] = '' . $key . '-' . round($value) . ' ₺';
-            $technicals['total'][] = round($value);
-        }
-
-        arsort($data);
-
         return response()->json([
             'dates' => $dates,
-            'aksesuar' => $data,
-            'phone' => $phones,
             'alldata' => $aasd,
-            'cover' => $cover,
-            'technical' => $technicals,
         ], 200);
 
     }
@@ -335,74 +271,82 @@ $technicals = [];
     public function dashboardNewReport(Request $request)
     {
         $data = [];
-        $userss = Cache::get('user_'.\auth()->user()->id);
+        $userss = Cache::get('user_' . \auth()->user()->id);
 
-        $users = User::where('is_status',1)->where('personel',1)->where('company_id', auth()->user()->company_id)->get();
-        foreach ($users as $user) {
+        $users = User::where('is_status', 1)->where('personel', 1)->where('company_id', auth()->user()->company_id)->get();
 
-            $data['users'][] = $user->name;
-            $data['aksesuar'][] = $this->getAccesuaries($user->id);
-            $data['teknikservis'][] = $this->getTechnical($user->id, $request);
-            $data['kaplama'][] = $this->getCover($user->id,$request);
-            $data['telefon'][] = $this->getPhone($user->id);
+
+        // Tüm kullanıcıların aksesuar satışlarını ve diğer bilgilerini almak
+        $usersWithSales = $users->map(function ($user) use ($request) {
+            return [
+                'name' => $user->name,
+                'aksesuar' => Sale::totalMonthlySales($user->id, 2, 'daily'),
+                'teknikservis' => Sale::getTechnical($user->id, $request, false),
+                'kaplama' => Sale::getCover($user->id, $request, false),
+                'telefon' => Sale::totalMonthlySales($user->id, 1, 'daily'),
+            ];
+        });
+
+// Kullanıcıları aksesuar satışlarına göre azalan sırayla sıralamak
+        $sortedUsers = $usersWithSales->sortByDesc('aksesuar');
+
+// Sıralanmış kullanıcıları işlemek
+        $data = ['users' => [], 'aksesuar' => [], 'teknikservis' => [], 'kaplama' => [], 'telefon' => []];
+
+        foreach ($sortedUsers as $user) {
+            $data['users'][] = $user['name'];
+            $data['aksesuar'][] = $user['aksesuar'];
+            $data['teknikservis'][] = $user['teknikservis'];
+            $data['kaplama'][] = $user['kaplama'];
+            $data['telefon'][] = $user['telefon'];
         }
 
 
-        return [
+
+         return [
             'data' => $data,
         ];
     }
 
-    public function getAccesuaries($user)
+    public function dashboardMounthNewReport(Request $request)
     {
-        return Sale::where('user_id', $user)->where('company_id', Auth::user()->company_id)->where('type', 2)->whereDate('created_at', Carbon::today())->sum('sale_price') ?? 0;
+        $data = [];
+        $userss = Cache::get('user_' . \auth()->user()->id);
+
+        $users = User::where('is_status', 1)->where('personel', 1)->where('company_id', auth()->user()->company_id)->get();
+
+
+
+        // Tüm kullanıcıların aksesuar satışlarını ve diğer bilgilerini almak
+        $usersWithSales = $users->map(function ($user) use ($request) {
+            return [
+                'name' => $user->name,
+                'aksesuar' => Sale::totalMonthlySales($user->id, 2, 'monthly'),
+                'teknikservis' => Sale::getTechnical($user->id, $request, true),
+                'kaplama' => Sale::getCover($user->id, $request, true),
+                'telefon' => Sale::totalMonthlySales($user->id, 1, 'monthly'),
+            ];
+        });
+
+// Kullanıcıları aksesuar satışlarına göre azalan sırayla sıralamak
+        $sortedUsers = $usersWithSales->sortByDesc('aksesuar');
+
+// Sıralanmış kullanıcıları işlemek
+        $data = ['users' => [], 'aksesuar' => [], 'teknikservis' => [], 'kaplama' => [], 'telefon' => []];
+
+        foreach ($sortedUsers as $user) {
+            $data['users'][] = $user['name'];
+            $data['aksesuar'][] = $user['aksesuar'];
+            $data['teknikservis'][] = $user['teknikservis'];
+            $data['kaplama'][] = $user['kaplama'];
+            $data['telefon'][] = $user['telefon'];
+        }
+
+ 
+        return [
+            'data' => $data,
+        ];
     }
-
-    public function getPhone($user)
-    {
-        return Sale::where('user_id', $user)->where('company_id', Auth::user()->company_id)->where('type', 1)->whereDate('created_at', Carbon::today())->sum('sale_price') ?? 0;
-    }
-
-
-    public function getTechnical($user, $request)
-    {
-        $personData = [];
-        $date1 = Carbon::today()->format('Y-m-d H:i:s');
-        $date2 = Carbon::today()->format('Y-m-d H:i:s');
-
-        if (!$request->filled('person')) {
-            $add_db = 'users';
-            $add_db_id = 'user_id';
-        } else {
-
-            $add_db = 'sellers';
-            $add_db_id = 'seller_id';
-        }
-
-        $technicalReport = DB::select('SELECT u.name as userName,ts.' . $add_db_id . ',sum(salesproduct.base_cost_price) as bTotal,ts.user_id from technical_services ts
-		left join ' . $add_db . ' u on u.id = ts.' . $add_db_id . '
-	    left join (select tsp.technical_service_id,s.base_cost_price from sales s left join technical_service_products tsp on s.stock_card_movement_id = tsp.stock_card_movement_id) salesproduct on salesproduct.technical_service_id = ts.id
-		where ts.payment_status = 1 and ts.updated_at BETWEEN "' . $date1 . '" and "' . $date2 . '" and ts.company_id = "'.\auth()->user()->company_id.'"  GROUP BY ts.' . $add_db_id . '');
-
-        $a = [];
-        $b = [];
-        foreach ($technicalReport as $item) {
-            $a[$item->{$add_db_id}]['price'] = $item->bTotal ?? NULL;
-        }
-
-        /*
-
-        $technicalReport1 = DB::select('SELECT u.name as Username,sum(ts.customer_price) as CTotal,ts.'.$add_db_id.' from technical_custom_services ts
-		left join '.$add_db.' u on u.id = ts.'.$add_db_id.'
- 		where ts.payment_status = 1 and ts.updated_at BETWEEN "' . $date1 . '" and "' . $date2 . '"  GROUP BY ts.'.$add_db_id.'');
-
-        foreach ($technicalReport1 as $item1) {
-            $b[$item1->{$add_db_id}]['name'] = $item1->Username ?? NULL;
-            $b[$item1->{$add_db_id}]['price'] = $item1->CTotal ?? NULL;
-        }
-*/
-        return $b[$user]['price'] ?? 0;
-     }
 
 
     public function getCover($user, $request)
@@ -413,23 +357,20 @@ $technicals = [];
 
         $add_db = 'users';
         $add_db_id = 'user_id';
-      /*  if (!$request->filled('person')) {
-            $add_db = 'users';
-            $add_db_id = 'user_id';
-        } else {
+        /*  if (!$request->filled('person')) {
+              $add_db = 'users';
+              $add_db_id = 'user_id';
+          } else {
 
-            $add_db = 'sellers';
-            $add_db_id = 'seller_id';
-        }*/
+              $add_db = 'sellers';
+              $add_db_id = 'seller_id';
+          }*/
 
         $b = [];
 
-
-
-
         $technicalReport1 = DB::select('SELECT u.name as Username,sum(ts.customer_price) as CTotal,ts.user_id from technical_custom_services ts
-		left join '.$add_db.' u on u.id = ts.user_id
- 		where ts.payment_status = 1 and ts.updated_at BETWEEN "' . $date1 . '" and "' . $date2 . '" and ts.user_id = '.$user.' and ts.company_id = "'.Auth::user()->company_id.'" GROUP BY ts.user_id');
+		left join ' . $add_db . ' u on u.id = ts.user_id
+ 		where ts.payment_status = 1 and ts.updated_at BETWEEN "' . $date1 . '" and "' . $date2 . '" and ts.delivery_staff = ' . $user . ' and ts.company_id = "' . Auth::user()->company_id . '" GROUP BY ts.user_id');
 
         foreach ($technicalReport1 as $item1) {
             $b[$item1->user_id]['price'] = $item1->CTotal ?? NULL;

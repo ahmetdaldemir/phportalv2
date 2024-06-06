@@ -29,7 +29,7 @@
                             <td><span class="badge bg-label-warning text-black  me-1">{{number_format($seller->account()->invoice ?? 0, 2, '.', ',')}} ₺</span></td>
                             <td><span class="badge bg-label-warning text-black  me-1">{{number_format($seller->account()->tax ?? 0, 2, '.', ',')}} ₺</span></td>
                             <td><span class="badge bg-label-warning text-black  me-1">{{number_format($seller->account()->additional_expense ?? 0, 2, '.', ',')}} ₺</span></td>
-                            <td><span class="badge bg-label-success me-1">{{number_format($seller->amount() ?? 0, 2, '.', ',')}} ₺</span></td>
+                            <td><span class="badge bg-label-success me-1">{{number_format($seller->totalCost() ?? 0, 2, '.', ',')}} ₺</span></td>
                          </tr>
                     @endforeach
                     </tbody>
