@@ -7,11 +7,14 @@
                 class="text-muted fw-light">Teknik Servis Formu /</span> @if(isset($technical_services))
                 {{$technical_services->name}}
             @endif</h4>
-        <form action="javascript():;" id="technicalForm" method="post">
-            @csrf
-            <input type="hidden" name="id" @if(isset($technical_services)) value="{{$technical_services->id}}" @endif />
+
             <div class="row">
                 <div class="col-md-8">
+                  <form action="javascript():;" id="technicalForm" method="post">
+                    @csrf
+                   <input type="hidden" name="id" @if(isset($technical_services)) value="{{$technical_services->id}}" @endif />
+                      <div class="row">
+                   <div class="col-md-6">
                     <div class="card mb-4">
                         <h5 class="card-header">Cihaz Bilgileri</h5>
                         <div class="card-body">
@@ -90,8 +93,7 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="col-md-4">
+                   <div class="col-md-6">
                     <div class="card mb-4">
                         <h5 class="card-header">Özellikler</h5>
                         <div class="card-body">
@@ -183,7 +185,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label for="defaultFormControlInput" class="form-label">Teknik Personel - {{$technical_services->technical_person}} </label>
-                                    <select id="technical_person" name="technical_person" class="select2 form-select" required>
+                                    <select id="technical_person" name="technical_person" class="select2 form-select" disabled>
                                         <option value="">Seçiniz</option>
                                         @foreach($users as $user)
                                             @if($user->is_status == 1)
@@ -206,64 +208,77 @@
                         </div>
                     @endif
                 </div>
-            </div>
+                      </div>
+                </form>
+                </div>
+                <div class="col-md-4">
+                    <div class="card mb-4">
+                        <h5 class="card-header">Urun Ekle</h5>
+                        <div class="card-body">
 
 
-        </form>
-        <hr class="my-1">
+                            <div class="row">
+                                <form method="post" id="detailForm"
+                                      @if($technical_services->payment_status == 0) action="{{route('technical_service.detailstore')}}" @endif>
+                                    @csrf
+                                    <input type="hidden" name="id" value="{{$technical_services->id}}">
+                                    <input type="hidden" name="stock_card_movement_id" id="stock_card_movement_id">
+                                    <div class="mb-3">
+                                        <div class="pt-0 pt-md-4">
+                                            <div class="d-flex border rounded position-relative pe-0">
+                                                <div class="row w-100 m-0 p-3">
+                                                    <div class="col-md-12 col-12 mb-md-0 mb-3 ps-md-0">
+                                                        <p class="mb-2 ">Stok</p>
+                                                        <!-- onchange="stockCardId(this.value)" -->
+                                                        <select name="stock_card_id" id="stock_card_id"
+                                                                class="form-select item-details mb-2" disabled>
+                                                            <option>Seçiniz</option>
+                                                            @foreach($stocks as $stock)
+                                                                <option value="{{$stock->id}}">{{$stock->name}}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-12 col-12 mb-md-0 mb-3 ps-md-0">
+                                                        <p class="mb-2 ">Seri No</p>
+                                                        <input type="text" class="form-control" name="serial" id="serial"
+                                                               placeholder="11111111" required/>
+                                                    </div>
+                                                    <div class="col-md-12 col-12 mb-md-0 mb-3 ps-md-0">
+                                                        <p class="mb-2 ">Satış Fiyatı</p>
+                                                        <input type="text" class="form-control invoice-item-price" name="sale_price"
+                                                               id="sale_price"/>
+                                                    </div>
+                                                    <div class="col-md-12 col-12 mb-md-0 mb-3">
+                                                        <p class="mb-2 ">Adet</p>
+                                                        <input type="number" class="form-control invoice-item-qty" name="quantity"
+                                                               id="quantity" min="1" max="50">
+                                                    </div>
+                                                </div>
 
-        <div class="row">
-            <form method="post" id="detailForm"
-                  @if($technical_services->payment_status == 0) action="{{route('technical_service.detailstore')}}" @endif>
-                @csrf
-                <input type="hidden" name="id" value="{{$technical_services->id}}">
-                <input type="hidden" name="stock_card_movement_id" id="stock_card_movement_id">
-                <div class="mb-3">
-                    <div class="pt-0 pt-md-4">
-                        <div class="d-flex border rounded position-relative pe-0">
-                            <div class="row w-100 m-0 p-3">
-                                <div class="col-md-4 col-12 mb-md-0 mb-3 ps-md-0">
-                                    <p class="mb-2 ">Stok</p>
-                                    <!-- onchange="stockCardId(this.value)" -->
-                                    <select name="stock_card_id" id="stock_card_id"
-                                            class="form-select item-details mb-2" disabled>
-                                        <option>Seçiniz</option>
-                                        @foreach($stocks as $stock)
-                                            <option value="{{$stock->id}}">{{$stock->name}}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-2 col-12 mb-md-0 mb-3 ps-md-0">
-                                    <p class="mb-2 ">Seri No</p>
-                                    <input type="text" class="form-control" name="serial" id="serial"
-                                           placeholder="11111111" required/>
-                                </div>
-                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                    <p class="mb-2 ">Satış Fiyatı</p>
-                                    <input type="text" class="form-control invoice-item-price" name="sale_price"
-                                           id="sale_price"/>
-                                </div>
-                                <div class="col-md-1 col-12 mb-md-0 mb-3">
-                                    <p class="mb-2 ">Adet</p>
-                                    <input type="number" class="form-control invoice-item-qty" name="quantity"
-                                           id="quantity" min="1" max="50">
-                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @if($technical_services->payment_status == 0)
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <button type="submit" class="btn btn-primary">Ürün Ekle</button>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </form>
                             </div>
 
                         </div>
+
                     </div>
                 </div>
-                @if($technical_services->payment_status == 0)
-                    <div class="row">
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary">Ürün Ekle</button>
-                        </div>
-                    </div>
-                @endif
-            </form>
-        </div>
-        <hr class="my-5">
-        <div class="card">
+            </div>
+
+
+
+        <hr class="my-1">
+
+         <div class="card">
             <div class="card-header">ÜRÜNLER</div>
             <div class="card-body">
                 <table class="table table-responsive">

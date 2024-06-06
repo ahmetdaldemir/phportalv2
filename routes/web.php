@@ -31,6 +31,7 @@ Route::middleware(['companies', 'activity'])->group(function () {
     Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
     Route::get('/dashboardReport', [App\Http\Controllers\HomeController::class, 'dashboardReport'])->name('dashboardReport');
     Route::get('/dashboardNewReport', [App\Http\Controllers\HomeController::class, 'dashboardNewReport'])->name('dashboardNewReport');
+    Route::get('/dashboardMounthNewReport', [App\Http\Controllers\HomeController::class, 'dashboardMounthNewReport'])->name('dashboardMounthNewReport');
 
     Route::prefix('seller')->name('seller.')->middleware([])->group(function () {
         Route::get('/', [App\Http\Controllers\SellerController::class, 'index'])->name('index');
