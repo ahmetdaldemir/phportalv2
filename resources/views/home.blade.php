@@ -239,6 +239,27 @@
                     </form>
                 </div>
             </div>
+            <div class="col-12 col-md-12 col-lg-12 order-3 order-md-2 mb-4">
+                <div class="card">
+                    <form action="{{route('deleted_at_serial_number_store')}}" id="deleted_at_serial_number_storeForm" method="post">
+                        @csrf
+                        <div class="card-header">Silinecek Seri Numaralari</div>
+                        <div class="card-body">
+                            <div class="row g-2">
+                                <div class="col mb-0">
+                                    <label for="sellerBackdrop" class="form-label">Seri Numarasi</label>
+                                    <input type="text" name="serial_number" class="form-control" id="serial_number">
+                                </div>
+                                <div class="col mb-0">
+                                    <label for="sellerBackdrop" class="form-label"></label>
+                                    <button type="submit" class="btn btn-primary" style="display: flex;">Kaydet</button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 

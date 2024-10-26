@@ -400,7 +400,7 @@ SELECT * FROM category_path ORDER BY path;");
             $this->stockcardService->update($request->id, $data);
             $id = $request->id;
         }
-
+        Cache::set('stock_cards_all', StockCard::all());
         return redirect()->route('invoice.create', ['id' => $id]);
     }
 
@@ -832,7 +832,7 @@ SELECT * FROM category_path ORDER BY path;");
 
         $stockcard_id = $request->stock_id;
         if ($request->filled('serial_number')) {
-            $stockcardmovemet = StockCardMovement::where('serial_number', $request->serial_number)->where('seller_id', Auth::user()->seller_id)->first();
+            $stockcardmovemet = StockCardMovement::where('serial_number', $request->serial_number)->first();
             if (!$stockcardmovemet) {
                 return response()->json('Stock Bulunamadı', 400);
             }
@@ -884,7 +884,7 @@ SELECT * FROM category_path ORDER BY path;");
             $x->where('serial_number', $request->serial_number);
         }
 
-        $data['refunds'] = $x->get();
+        $data['refunds'] = $x->orderBy('id','desc')->get();
         $data['brands'] = $this->brandService->get();
         $data['sellers'] = $this->sellerService->get();
         $data['colors'] = $this->colorService->get();
@@ -1142,70 +1142,72 @@ SELECT * FROM category_path ORDER BY path;");
 
     public function getStockMovementList(Request $request)
     {
+        $user = Cache::get('user_' . \auth()->user()->id);
+        $ids = explode(',', $request->id);
 
-        $type = array('1,3,4,5');
-        $user = Cache::get('user_'.\auth()->user()->id);
-$ids = explode(',',$request->id);
-        $y = StockCardMovement::whereIn('stock_card_id', $ids)->where('company_id', $user->company_id)->whereIn('type', ['1','3','4','5']);
+        $query = StockCardMovement::whereIn('stock_card_id', $ids)
+            ->where('company_id', $user->company_id)
+            ->whereIn('type', ['1', '3', '4', '5'])
+            ->with(['stock.category', 'stock.brand', 'color', 'seller']);
 
         if ($request->serialNumber != 'undefined') {
-
-            $y->where('serial_number', $request->serialNumber);
+            $query->where('serial_number', $request->serialNumber);
         }
-        if ($user->hasRole('super-admin') || $user->hasRole('Depo Sorumlusu')) // HAsarlı Sorgusu
-        {
 
+        if ($user->hasRole('super-admin') || $user->hasRole('Depo Sorumlusu')) {
             if ($request->seller != 'undefined' && $request->seller != 'all') {
-                $y->where('seller_id', $request->seller);
+                $query->where('seller_id', $request->seller);
             }
-
         } else {
-            if ($request->seller != 'undefined' && $request->seller != 'all') {
-                $y->where('seller_id', $user->seller_id);
-            }
-
-            if ($request->seller == 'undefined') {
-                $y->where('seller_id', $user->seller_id);
-            }
+            $query->where('seller_id', $user->seller_id);
         }
 
-         if ($request->color != 'undefined') {
-
-            $y->where('color_id', $request->color);
+        if ($request->color != 'undefined') {
+            $query->where('color_id', $request->color);
         }
-        $a = $y->get();
 
-        $data = [];
-        foreach ($a as $item) {
-            $vesions = [];
-            foreach ($item->stock->version_id as $key) {
-                $vesions[] = \App\Models\Version::find($key)->name ?? "Bulunamadı";
-            }
-            $data[] = array('serial_number' => $item->serial_number,
-                //'test' => $item->stock->version_id,
+        $movements = $query->get();
+
+        // Tüm version_id değerlerini topluyoruz
+        $allVersionIds = $movements->flatMap(function ($item) {
+            return $item->stock->version_id; // JSON formatında saklanmış array'i decode ediyoruz
+        })->unique()->toArray(); // Benzersiz ID'leri alıyoruz
+
+        $versions = \App\Models\Version::whereIn('id', $allVersionIds)->pluck('name', 'id');
+
+
+        $data = $movements->map(function ($item) use ($versions) {
+            $versionIds = $item->stock->version_id; // version_id'yi array olarak çözüyoruz
+            $versionNames = collect($versionIds)->map(function ($id) use ($versions) {
+                return $versions[$id] ?? 'Bulunamadı'; // Version ismini array'den alıyoruz
+            })->implode('/');
+
+
+            return [
+                'serial_number' => $item->serial_number,
                 'id' => $item->id,
                 'stock_name' => $item->stock->name,
                 'category_name' => $item->stock->category->name,
-                'category_sperator_name' => '',// $this->categorySeperator($item->testParent($item->stock->category->id)),
+                'category_sperator_name' => '',
                 'brand_name' => $item->stock->brand->name,
                 'sale_price' => number_format($item->sale_price ?? 0, 2),
                 'cost_price' => number_format($item->cost_price ?? 0, 2),
                 'base_cost_price' => number_format($item->base_cost_price ?? 0, 2),
                 'color_name' => $item->color->name,
                 'color_id' => $item->color->id,
-                'versions' => implode("/", $vesions),
+                'versions' => $versions,
                 'assigned_device' => $item->assigned_device == 1 ? 'Temlikli Cihaz' : '',
                 'assigned_accessory' => $item->assigned_accessory == 1 ? 'Temlikli Aksesuar' : '',
                 'seller_name' => $item->seller->name,
-                'quantity' => 1,//$item->quantityCheckDataNew(),
+                'quantity' => 1,
                 'type' => $item->type,
-            );
-        }
+            ];
+        })->toArray();
 
         $array['data'] = $this->sortByField($data, 'quantity', SORT_DESC);
-        $array['ids'] = array_column($data,'id');
+        $array['ids'] = array_column($data, 'id');
 
-        return response()->json($array,200);
+        return response()->json($array, 200);
     }
 
     public function getStockquantity($id, ...$arg)

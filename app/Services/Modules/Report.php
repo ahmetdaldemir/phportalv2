@@ -42,12 +42,11 @@ class Report
 
     public function sellerAccessory($invoiceIds)
     {
-        $result = Invoice::select(DB::raw('SUM(total_price) as ciro'), 'invoices.staff_id')
-            ->join('users', 'users.id', '=', 'invoices.staff_id')
-            ->join('sellers', 'sellers.user_id', '=', 'users.id')
+        $result = Invoice::select(DB::raw('SUM(total_price) as ciro'), 'sales.seller_id')
+            ->join('sales', 'sales.invoice_id', '=', 'invoices.id')
             ->whereIn('invoices.id', $invoiceIds)
             ->where('invoices.type', 2)
-            ->groupBy('invoices.staff_id')
+            ->groupBy('sales.seller_id')
             ->get();
         return $result;
     }
@@ -57,7 +56,6 @@ class Report
     {
         $result = Sale::select(DB::raw('SUM(base_cost_price) as ciro'), 'sales.seller_id')
             ->join('users', 'users.id', '=', 'sales.user_id')
-            ->join('sellers', 'sellers.user_id', '=', 'users.id')
             ->where('sales.type', $type)
             ->whereIn('sales.invoice_id', $invoiceIds)
             ->whereDate('sales.created_at', '>=', $date1)

@@ -89,7 +89,10 @@
                                         @endif
                                     </td>
                                     <td style="font-size: 10px;">{{$stockData->id}}</td>
-                                    <td style="font-size: 10px;">{{$stockData->serial_number}}</td>
+                                    <td style="font-size: 10px;">
+                                        {{$stockData->serial_number}}
+                                        <a href="{{route('invoice.stockcardmovementform',['id' => $stockData->invoice_id])}}"> {{$stockData->invoice_id}}</a>
+                                    </td>
                                     @role(['Depo Sorumlusu','super-admin'])
                                     <td style="font-size: 10px;"><strong>{{$stockData->cost_price}} ₺</strong></td>
                                     <td style="font-size: 10px;"><strong>{{$stockData->base_cost_price}} ₺</strong></td>
@@ -109,7 +112,10 @@
                                         @elseif($stockData->type == 3)
                                             <span class="badge bg-primary">HASARLI ÜRÜN</span>
                                         @elseif($stockData->type == 2)
-                                            <span class="badge bg-primary">ÜRÜN SATILDI</span>
+                                                <div style="width: 100%">ÜRÜN SATILDI</div>
+                                                <div style="width: 100%">{{$stockData->sale->user->name}}</div>
+                                                <div style="width: 100%">{{$stockData->sale->created_at}}</div>
+
                                         @elseif($stockData->type == 5)
                                             <span class="badge bg-primary">TEKNİK SERVİS SÜRECİNDE</span>
                                         @else

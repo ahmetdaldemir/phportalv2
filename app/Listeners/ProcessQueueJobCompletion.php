@@ -50,6 +50,7 @@ class ProcessQueueJobCompletion
                  $dataCol['seller'] = Seller::find($stockcardmovement->seller_id)->name;
                  $dataCol['seller_id'] = $stockcardmovement->seller_id;
                  $dataCol['read'] = 1;
+                 $dataCol['price'] = $stockcardmovement->sale_price;;
              } else {
                  $dataCol['name'] = 'Hatali Urun';
                  $dataCol['serial'] = $event->serial;
@@ -59,6 +60,7 @@ class ProcessQueueJobCompletion
                  $dataCol['seller'] = 'Hatali Urun';
                  $dataCol['seller_id'] = 0;
                  $dataCol['read'] = 0;
+                 $dataCol['price'] = 0;
              }
           echo json_encode($dataCol);
         // İşlemi loglama, veritabanına kaydetme gibi işlemler yapılabilir

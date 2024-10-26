@@ -3,6 +3,7 @@
 namespace App\Services\Brand;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use LaravelEasyRepository\Service;
 use App\Repositories\Brand\BrandRepository;
@@ -23,7 +24,9 @@ class BrandServiceImplement extends Service implements BrandService{
     public function all(): ?Collection
     {
         try {
-            return $this->mainRepository->all();
+            return Cache::remember('brands_all', 180 * 60, function () {
+                return $this->mainRepository->all();
+            });
         } catch (\Exception $exception) {
             Log::debug($exception->getMessage());
             return [];

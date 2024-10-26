@@ -22,8 +22,11 @@ class ColorServiceImplement extends Service implements ColorService{
 
     public function all(): ?Collection
     {
+        $cacheKey = 'colors_all';
         try {
-            return $this->mainRepository->all();
+            return cache()->remember($cacheKey, 60, function () {
+                return $this->mainRepository->all();
+            });
         } catch (\Exception $exception) {
             Log::debug($exception->getMessage());
             return [];

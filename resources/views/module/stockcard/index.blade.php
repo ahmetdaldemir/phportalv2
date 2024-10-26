@@ -53,6 +53,7 @@
                                          </tr>
                                          </thead>
                                          <tbody>
+
                                          @foreach($stockcard['stockData'] as $stockData)
                                              <tr class="info">
                                                  <td><strong>{{$stockData['name']}}</strong></td>
@@ -87,6 +88,7 @@
                                                  <td>
 
                                                      @role(['Depo Sorumlusu','super-admin'])
+
                                                      <a href="{{route('invoice.create',['id' => $stockData['id']])}}" title="Fatura Ekle"  class="btn btn-icon btn-danger">
                                                          <span class="bx bx-list-plus"></span>
                                                      </a>

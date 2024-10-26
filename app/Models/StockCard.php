@@ -161,4 +161,9 @@ class StockCard extends BaseModel
     {
         return $this->belongsTo(StockCardMovement::class,'stock_card_id','id');
     }
+
+    public function versions()
+    {
+        return $this->belongsToMany(Version::class, 'versions', 'stock_id', 'version_id');
+    }
 }

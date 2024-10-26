@@ -104,6 +104,10 @@
                                                     <p class="mb-2 repeater-title">Stok Takibi</p>
                                                     <input type="text" class="form-control"  value="{{$item['tracking_quantity']}}" name="tracking_quantity[]" required />
                                                 </div>
+                                                <div class="col-md-1 col-12 mb-md-0 mb-3 ps-md-0">
+                                                    <p class="mb-2 repeater-title">Prefix</p>
+                                                    <input type="text" class="form-control" @if(isset($item['prefix'])) value="{{$item['prefix']}}"  @endif name="prefix[]" required />
+                                                </div>
                                                 <!-- div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
                                                     <p class="mb-2 repeater-title">Neden</p>
                                                     <select name="reason_id[]"

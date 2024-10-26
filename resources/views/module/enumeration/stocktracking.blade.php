@@ -46,6 +46,8 @@
                                 <td>Stok Renk</td>
                                 <td>Stok Bayi</td>
                                 <td>Seri</td>
+                                <td>Durum</td>
+                                <td>Price</td>
                             </tr>
                             </thead>
                             <tbody>
@@ -54,6 +56,8 @@
                                 <td>@{{lastserial.color}}</td>
                                 <td>@{{lastserial.seller}}</td>
                                 <td>@{{lastserial.serial}}</td>
+                                <td>@{{lastserial.type}}</td>
+                                <td>@{{lastserial.price}}</td>
                             </tr>
 
                             </tbody>

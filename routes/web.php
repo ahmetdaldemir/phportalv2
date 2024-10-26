@@ -401,6 +401,7 @@ Route::middleware(['companies', 'activity'])->group(function () {
 
     Route::post('/startTracking', [App\Http\Controllers\EnumerationController::class, 'start'])->name('startTracking');
     Route::post('/updateTracking', [App\Http\Controllers\EnumerationController::class, 'update'])->name('updateTracking');
+    Route::post('/deleted_at_serial_number_store', [App\Http\Controllers\HomeController::class, 'deleted_at_serial_number_store'])->name('deleted_at_serial_number_store');
 
     Route::prefix('calculation')->name('calculation.')->middleware([])->group(function () {
         Route::get('/', [App\Http\Controllers\CalculationController::class, 'index'])->name('index');

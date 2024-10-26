@@ -4,6 +4,7 @@ namespace App\Services\Category;
 
 use App\Repositories\Category\CategoryRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use LaravelEasyRepository\Service;
 
@@ -24,7 +25,9 @@ class CategoryServiceImplement extends Service implements CategoryService{
     public function all(): ?Collection
     {
         try {
-            return $this->mainRepository->all();
+            return Cache::remember('categories_all', 43200, function () {
+                return $this->mainRepository->all();
+            });
         } catch (\Exception $exception) {
             Log::debug($exception->getMessage());
             return [];

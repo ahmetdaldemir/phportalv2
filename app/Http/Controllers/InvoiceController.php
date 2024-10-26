@@ -718,6 +718,7 @@ class InvoiceController extends Controller
             $stockcardlist[$a]['assigned_device'] = isset($request->assigned_device[$a]) and $item->assigned_device[$a] == 'on' ? 1 : 0;
             $stockcardlist[$a]['tax'] = $request->tax[$a] ?? null;
             $stockcardlist[$a]['cost_price'] = str_replace(",", ".", $request->cost_price[$a]);
+            $stockcardlist[$a]['prefix'] = $request->prefix[$a];
             $stockcardlist[$a]['base_cost_price'] = str_replace(",", ".", $request->base_cost_price[$a]);
             $stockcardlist[$a]['sale_price'] = str_replace(",", ".", $request->sale_price[$a]);
             $stockcardlist[$a]['description'] = $request->description[$a] ?? null;
@@ -733,7 +734,7 @@ class InvoiceController extends Controller
 
                 $timer = date('');
 
-                $newSerial = $this->newSerialNumberCreate();
+                $newSerial = $this->newSerialNumberCreate(7);
 
 
                 $stockcardmovement = new StockCardMovement();
@@ -752,6 +753,7 @@ class InvoiceController extends Controller
                 $stockcardmovement->assigned_device = isset($request->assigned_device[$a]) and $item->assigned_device[$a] == 'on' ? 1 : 0;
                 $stockcardmovement->serial_number = $request->serial[$a] ?? $newSerial;
                 $stockcardmovement->tax = $request->tax[$a] ?? null;
+                $stockcardmovement->prefix = $request->prefix[$a] ?? null;
                 $stockcardmovement->cost_price = str_replace(",", ".", $request->cost_price[$a]);
                 $stockcardmovement->base_cost_price = str_replace(",", ".", $request->base_cost_price[$a]);
                 $stockcardmovement->sale_price = str_replace(",", ".", $request->sale_price[$a]);
@@ -845,6 +847,7 @@ class InvoiceController extends Controller
             $stockcardmovement->sale_price = $stockcardmovements->sale_price;
             $stockcardmovement->description = $stockcardmovements->description;
             $stockcardmovement->discount = $stockcardmovements->discount;
+            $stockcardmovement->prefix = $stockcardmovements->prefix;
             $stockcardmovement->tracking_quantity = $stockcardmovements->tracking_quantity ?? 0;
             $stockcardmovement->save();
 
@@ -903,7 +906,7 @@ class InvoiceController extends Controller
          return $newSerial;
      }
     */
-    function newSerialNumberCreate($lenght = 7)
+    function newSerialNumberCreate($lenght = 6)
     {
 
         // uniqid gives 13 chars, but you could adjust it to your needs.
@@ -914,7 +917,7 @@ class InvoiceController extends Controller
         } else {
             throw new Exception("no cryptographically secure random function available");
         }
-        $newSerial = mb_strtoupper(substr(bin2hex($bytes), 0, $lenght), "UTF-8");
+        $newSerial =  mb_strtoupper(substr(bin2hex($bytes), 0, $lenght), "UTF-8");
         $newSerialNumberCheck = StockCardMovement::where('serial_number', $newSerial)->first();
         if ($newSerialNumberCheck) {
             $this->newSerialNumberCreate();

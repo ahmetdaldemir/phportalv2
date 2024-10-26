@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Currency;
+use App\Models\DeletedAtSerialNumber;
 use App\Models\Sale;
 use App\Models\Seller;
 use App\Models\StockCard;
@@ -93,18 +94,10 @@ class HomeController extends Controller
     {
 
         $data['stocks'] = $this->stockCardService->get();
-        $data['sellers'] = $this->sellerService->get();
-        $data['colors'] = $this->colorService->get();
+         $data['colors'] = $this->colorService->get();
         $data['reasons'] = $this->reasonService->get();
-        $data['brands'] = $this->brandService->get();
-        $data['versions'] = $this->versionService->get();
-        $data['categories'] = $this->categoryService->get();
-        $data['transfers'] = Transfer::where('delivery_seller_id', Auth::user()->seller_id)->get();
-        $data['stockTracks'] = $this->stockTraking();
-
-        //$data['salesDaily'] = $this->dailyCalculate();
-        $data['salesMonth'] = $this->mounthCalculate();
-
+        //$data['transfers'] = Transfer::where('delivery_seller_id', Auth::user()->seller_id)->get();
+        $data['stockTracks'] = [];
 
         return view('home', $data);
     }
@@ -145,43 +138,6 @@ class HomeController extends Controller
     public function stockTraking()
     {
         $data = [];
-
-        /*
-        if (Auth::user()->hasRole('super-admin') || Auth::user()->hasRole('Depo Sorumlusu')) {
-            $stockcards = StockCard::where("tracking", 1)->get();
-            foreach ($stockcards as $item) {
-                if ($item->quantity() <= $item->tracking_quantity) {
-                    $data[] = array(
-                        'id' => $item->id,
-                        'name' => $item->name,
-                        'quantity' => $item->quantity(),
-                        'brand' => $item->brand->name,
-                        'version' => $item->version(),
-                        'tracking_quantity' => $item->tracking_quantity,
-                    );
-                }
-            }
-        }else{
-            $stockcards = DB::select("SELECT sum(scm.quantity),sc.`name`,brand_id,sc.version_id,scm.tracking_quantity
-            from stock_cards as sc
-            left JOIN stock_card_movements as scm  on sc.id = scm.stock_card_id
-            where scm.tracking_quantity != 0 and sc.tracking = '1' and scm.type=1 and scmçseller_id = Auth::user()->seller_id
-            GROUP BY scm.color_id");
-
-                foreach ($stockcards as $item) {
-                    if ($item->quantity() <= $item->tracking_quantity) {
-                        $data[] = array(
-                            'id' => $item->stock->id,
-                            'name' => $item->stock->name,
-                            'quantity' => $item->stock->quantity(),
-                            'brand' => $item->stock->brand->name,
-                            'version' => $item->stock->version(),
-                            'tracking_quantity' => $item->tracking_quantity,
-                        );
-                    }
-            }
-        }
-*/
         $stockcards = StockCard::where("tracking", 1)->get();
         foreach ($stockcards as $item) {
             if ($item->quantity() <= $item->tracking_quantity) {
@@ -378,6 +334,14 @@ class HomeController extends Controller
 
         return $b[$user]['price'] ?? 0;
     }
+
+
+    public function deleted_at_serial_number_store(Request $request)
+    {
+        DeletedAtSerialNumber::firstOrCreate(['serial_number' => $request->serial_number]);
+        return redirect()->back();
+    }
+
 
 }
 

@@ -43,7 +43,8 @@ class StockCardMovement extends BaseModel
         'description',
         'assigned_accessory',
         'assigned_device',
-        'company_id'
+        'company_id',
+        'prefix'
     ];
 
 
@@ -134,6 +135,11 @@ class StockCardMovement extends BaseModel
         return $this->hasOne(Warehouse::class, 'id', 'warehouse_id');
     }
 
+    public function invoice()
+    {
+        return $this->hasOne(Invoice::class, 'id', 'invoice_id');
+    }
+
     public function brand()
     {
         return $this->hasOne(Brand::class, 'id', 'brand_id');
@@ -148,6 +154,13 @@ class StockCardMovement extends BaseModel
     {
         return $this->hasOne(Transfer::class, 'stock_card_movement_id', 'id');
     }
+
+
+    public function sale()
+    {
+        return $this->hasOne(Sale::class, 'stock_card_movement_id', 'id');
+    }
+
 
     public function stockcard()
     {

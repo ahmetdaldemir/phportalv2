@@ -66,33 +66,6 @@ class EnumerationController extends Controller
     {
         EnumerationJob::dispatch($request->id, $request->serial)->onQueue('enumeration');
         event(new QueueJobCompleted($request->id, $request->serial));
-
-        /*  $jsonData=[];
-          $datas=[];
-          $record = Enumeration::find($request->id);
-          $stock_card_movement = StockCardMovement::where('serial_number',$request->serial);
-          if($stock_card_movement->count() == 1)
-          {
-              if(!empty($record->dataCollection))
-              {
-                  $jsonData = json_decode($record->dataCollection, true);
-
-                  $datas = array_values($jsonData);
-
-              }
-              $key = array_search($request->serial, $datas);
-              if($key == "")
-              {
-                  $jsonData[rand(9,99999)] =  $request->serial;
-                  $updatedJsonColumn = json_encode($jsonData);
-                  $record->update(['dataCollection' => $updatedJsonColumn]);
-                  return response()->json('0',200);
-              }
-
-          }else{
-              return response()->json('Cift Seri Numarasi',200);
-          }
-        */
     }
 
     public function finish(Request $request)
@@ -291,6 +264,7 @@ class EnumerationController extends Controller
                         $dataCol[$i]['seller'] = Seller::find($stockcardmovement->seller_id)->name;
                         $dataCol[$i]['seller_id'] = $stockcardmovement->seller_id;
                         $dataCol[$i]['read'] = 1;
+                        $dataCol[$i]['price'] = $stockcardmovement->sale_price;;
                     } else {
                         $dataCol[$i]['name'] = 'Hatali Urun';
                         $dataCol[$i]['serial'] = $item;
@@ -300,6 +274,7 @@ class EnumerationController extends Controller
                         $dataCol[$i]['seller'] = 'Hatali Urun';
                         $dataCol[$i]['seller_id'] = 0;
                         $dataCol[$i]['read'] = 0;
+                        $dataCol[$i]['price'] = 0;
                     }
 
                     $i++;
@@ -320,6 +295,7 @@ class EnumerationController extends Controller
                 $dataCol1[$a]['seller'] = Seller::find($items->seller_id)->name;
                 $dataCol1[$a]['seller_id'] = -1;
                 $dataCol1[$a]['read'] = 2;
+                $dataCol1[$a]['price'] = $items->sale_price;
                 $a++;
             }
         }
@@ -346,6 +322,7 @@ class EnumerationController extends Controller
                 $dataCol['seller'] = Seller::find($stockcardmovement->seller_id)->name;
                 $dataCol['seller_id'] = $stockcardmovement->seller_id;
                 $dataCol['read'] = 1;
+                $dataCol['price'] = $stockcardmovement->sale_price;;
             } else {
                 $dataCol['name'] = 'Hatali Urun';
                 $dataCol['serial'] = $request->id;
@@ -355,6 +332,7 @@ class EnumerationController extends Controller
                 $dataCol['seller'] = 'Hatali Urun';
                 $dataCol['seller_id'] = 0;
                 $dataCol['read'] = 0;
+                $dataCol['price'] = 0;
             }
         }
 

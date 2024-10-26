@@ -10,6 +10,7 @@ use App\Models\StockCardPrice;
 use App\Models\Version;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use SN;
@@ -33,7 +34,11 @@ class StockCardServiceImplement extends Service implements StockCardService
     public function all(): ?Collection
     {
         try {
-            return $this->mainRepository->all();
+            if (Cache::has('stock_cards_all')) {
+                return  Cache::get('stock_cards_all');
+            } else {
+                return $this->mainRepository->all();
+            }
         } catch (\Exception $exception) {
             Log::debug($exception->getMessage());
             return [];
