@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Invoice;
 
-use LaravelEasyRepository\Repository;
+use App\Repositories\BaseRepository;
 
-interface InvoiceRepository extends Repository{
+interface InvoiceRepository extends BaseRepository{
 
     public function get();
 

@@ -30,23 +30,6 @@ class HyperRequest implements HyperRequestInterface
 
     protected $requestObjectForLog;
 
-
-
-
-//$array = [
-//'base_url' => 'https://api.n11.com/ws/ProductService.wsdl',
-//'path' => 'GetProductQuestionList',
-//'type' => 'rest_api',
-//'key' => config('services.'.$this->platform.'.key'),
-//'password' => config('services.'.$this->platform.'.password'),
-//$type = $this->argument('type');
-//$sort = $this->argument('sort');
-//$company = $this->argument('company');
-//];
-//
-//$getService = new GetInvoice($array);
-
-
     public function __construct()
     {
         $this->log = new RemoteApiLog();
@@ -114,6 +97,7 @@ class HyperRequest implements HyperRequestInterface
 
     public function rest_api()
     {
+
         try {
             $client = new Client(['base_uri' => $this->base_uri]);
             $response = $client->request($this->method, $this->path, $this->options);
@@ -187,14 +171,16 @@ class HyperRequest implements HyperRequestInterface
             'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
         ];
         $this->opt = array("trace" => 1, 'soap_version' => SOAP_1_1, 'style' => SOAP_DOCUMENT, 'encoding' => SOAP_LITERAL, 'cache_wsdl' => WSDL_CACHE_NONE, 'stream_context' => stream_context_create($opts));
+
         $client = new SoapClient($base_uri, $this->opt);
+        dd($client->GetTopLevelCategories());
         $AuthHeader = $auth;
         $header = new SoapHeader($headers['url'], $headers['Authentication'], $AuthHeader, false);
         $client->__setSoapHeaders([$header]);
         return $client;
     }
 
-    private function soapStatusCode(SoapClient $client): string
+    private function soapStatusCode(SoapClient $client)
     {
         $clientHeader = $client->__getLastResponseHeaders();
         preg_match("/HTTP\/\d\.\d\s*\K[\d]+/", $clientHeader, $matches);

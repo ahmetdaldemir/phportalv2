@@ -3,9 +3,9 @@
 namespace App\Services\Refund;
 
 use Illuminate\Database\Eloquent\Collection;
-use LaravelEasyRepository\BaseService;
 
-interface RefundService extends BaseService{
+
+interface RefundService {
 
     public function all(): ?Collection;
     public function get(): ?Collection;

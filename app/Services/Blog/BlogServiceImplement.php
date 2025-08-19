@@ -2,10 +2,10 @@
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use LaravelEasyRepository\Service;
+use App\Services\BaseService;
 use App\Repositories\Blog\BlogRepository;
 
-class BlogServiceImplement extends Service implements BlogService{
+class BlogServiceImplement extends BaseService implements BlogService{
 
     /**
      * don't change $this->mainRepository variable name

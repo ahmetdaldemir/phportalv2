@@ -5,10 +5,10 @@ namespace App\Repositories\StockCard;
 use App\Models\StockCardMovement;
 use App\Models\StockCardPrice;
 use Illuminate\Support\Facades\Auth;
-use LaravelEasyRepository\Implementations\Eloquent;
+use App\Repositories\BaseRepositoryImplement;
 use App\Models\StockCard;
 
-class StockCardRepositoryImplement extends Eloquent implements StockCardRepository
+class StockCardRepositoryImplement extends BaseRepositoryImplement implements StockCardRepository
 {
 
     /**

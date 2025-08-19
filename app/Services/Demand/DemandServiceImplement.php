@@ -2,10 +2,10 @@
 
 namespace App\Services\Demand;
 
-use LaravelEasyRepository\Service;
+use App\Services\BaseService;
 use App\Repositories\Demand\DemandRepository;
 
-class DemandServiceImplement extends Service implements DemandService{
+class DemandServiceImplement extends BaseService implements DemandService{
 
      /**
      * don't change $this->mainRepository variable name

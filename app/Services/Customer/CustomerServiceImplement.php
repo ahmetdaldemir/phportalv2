@@ -4,10 +4,10 @@ namespace App\Services\Customer;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use LaravelEasyRepository\Service;
+use App\Services\BaseService;
 use App\Repositories\Customer\CustomerRepository;
 
-class CustomerServiceImplement extends Service implements CustomerService{
+class CustomerServiceImplement extends BaseService implements CustomerService{
 
      /**
      * don't change $this->mainRepository variable name

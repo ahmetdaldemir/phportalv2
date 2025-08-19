@@ -113,7 +113,7 @@
                                             <span class="badge bg-primary">HASARLI ÜRÜN</span>
                                         @elseif($stockData->type == 2)
                                                 <div style="width: 100%">ÜRÜN SATILDI</div>
-                                                <div style="width: 100%">{{$stockData->sale->user->name}}</div>
+                                                <div style="width: 100%">{{$stockData->sale->user->name??'Kullanıcı Silinmiş'}}</div>
                                                 <div style="width: 100%">{{$stockData->sale->created_at}}</div>
 
                                         @elseif($stockData->type == 5)

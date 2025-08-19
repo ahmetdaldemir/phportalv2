@@ -4,10 +4,10 @@ namespace App\Services\Technical;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use LaravelEasyRepository\Service;
+use App\Services\BaseService;
 use App\Repositories\Technical\TechnicalRepository;
 
-class TechnicalServiceImplement extends Service implements TechnicalService{
+class TechnicalServiceImplement extends BaseService implements TechnicalService{
 
     /**
      * don't change $this->mainRepository variable name

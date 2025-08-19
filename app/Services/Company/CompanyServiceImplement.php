@@ -4,10 +4,10 @@ namespace App\Services\Company;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use LaravelEasyRepository\Service;
+use App\Services\BaseService;
 use App\Repositories\Company\CompanyRepository;
 
-class CompanyServiceImplement extends Service implements CompanyService{
+class CompanyServiceImplement extends BaseService implements CompanyService{
 
      /**
      * don't change $this->mainRepository variable name

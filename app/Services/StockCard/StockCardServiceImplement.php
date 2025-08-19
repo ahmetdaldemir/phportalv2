@@ -14,17 +14,17 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use SN;
-use LaravelEasyRepository\Service;
+use App\Services\BaseService;
 use App\Repositories\StockCard\StockCardRepository;
 
-class StockCardServiceImplement extends Service implements StockCardService
+class StockCardServiceImplement extends BaseService implements StockCardService
 {
 
     /**
      * don't change $this->mainRepository variable name
      * because used in extends service class
      */
-    protected StockCardRepository $mainRepository;
+    protected $mainRepository;
 
     public function __construct(StockCardRepository $mainRepository)
     {

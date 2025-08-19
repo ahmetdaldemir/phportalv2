@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Demand;
 
-use LaravelEasyRepository\Repository;
+use App\Repositories\BaseRepository;
 
-interface DemandRepository extends Repository{
+interface DemandRepository extends BaseRepository{
 
     // Write something awesome :)
 }

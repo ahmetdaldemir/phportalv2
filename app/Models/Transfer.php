@@ -56,12 +56,20 @@ class Transfer extends BaseModel
 
     public function seller($id)
     {
-      return Seller::find($id);
+        $seller =  Seller::find($id);
+        if($seller){
+            return $seller;
+        }
+        return null;
     }
 
     public function user($id)
     {
-        return User::find($id);
+        $user = User::find($id);
+        if($user){
+            return $user;
+        }
+        return null;
     }
 
     public function hasStaff($id): string

@@ -4,10 +4,10 @@ namespace App\Services\Transfer;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use LaravelEasyRepository\Service;
+use App\Services\BaseService;
 use App\Repositories\Transfer\TransferRepository;
 
-class TransferServiceImplement extends Service implements TransferService{
+class TransferServiceImplement extends BaseService implements TransferService{
 
      /**
      * don't change $this->mainRepository variable name

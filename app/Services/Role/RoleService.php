@@ -3,9 +3,9 @@
 namespace App\Services\Role;
 
 use Illuminate\Database\Eloquent\Collection;
-use LaravelEasyRepository\BaseService;
 
-interface RoleService extends BaseService{
+
+interface RoleService {
 
     public function get(): ?Collection;
 

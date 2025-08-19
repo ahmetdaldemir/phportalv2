@@ -3,10 +3,10 @@
 namespace App\Repositories\Warehouse;
 
 use Illuminate\Support\Facades\Auth;
-use LaravelEasyRepository\Implementations\Eloquent;
+use App\Repositories\BaseRepositoryImplement;
 use App\Models\Warehouse;
 
-class WarehouseRepositoryImplement extends Eloquent implements WarehouseRepository{
+class WarehouseRepositoryImplement extends BaseRepositoryImplement implements WarehouseRepository{
 
     /**
     * Model class to be used in this repository for the common methods inside Eloquent

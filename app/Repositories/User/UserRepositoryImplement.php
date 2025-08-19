@@ -3,11 +3,11 @@
 namespace App\Repositories\User;
 
 use Illuminate\Support\Facades\Auth;
-use LaravelEasyRepository\Implementations\Eloquent;
+use App\Repositories\BaseRepositoryImplement;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
 
-class UserRepositoryImplement extends Eloquent implements UserRepository{
+class UserRepositoryImplement extends BaseRepositoryImplement implements UserRepository{
 
     /**
     * Model class to be used in this repository for the common methods inside Eloquent

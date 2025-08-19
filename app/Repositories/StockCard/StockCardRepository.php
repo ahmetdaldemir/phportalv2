@@ -2,9 +2,9 @@
 
 namespace App\Repositories\StockCard;
 
-use LaravelEasyRepository\Repository;
+use App\Repositories\BaseRepository;
 
-interface StockCardRepository extends Repository{
+interface StockCardRepository extends BaseRepository{
 
     public function get();
     public function filter($arg);

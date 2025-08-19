@@ -2,9 +2,9 @@
 
 namespace App\Repositories\AccountingCategory;
 
-use LaravelEasyRepository\Repository;
+use App\Repositories\BaseRepository;
 
-interface AccountingCategoryRepository extends Repository{
+interface AccountingCategoryRepository extends BaseRepository{
 
     public function get();
 }

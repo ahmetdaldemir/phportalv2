@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Technical;
 
-use LaravelEasyRepository\Repository;
+use App\Repositories\BaseRepository;
 
-interface TechnicalRepository extends Repository{
+interface TechnicalRepository extends BaseRepository{
 
     public function get();
 }

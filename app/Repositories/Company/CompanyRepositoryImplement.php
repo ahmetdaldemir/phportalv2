@@ -3,10 +3,10 @@
 namespace App\Repositories\Company;
 
 use Illuminate\Support\Collection;
-use LaravelEasyRepository\Implementations\Eloquent;
+use App\Repositories\BaseRepositoryImplement;
 use App\Models\Company;
 
-class CompanyRepositoryImplement extends Eloquent implements CompanyRepository{
+class CompanyRepositoryImplement extends BaseRepositoryImplement implements CompanyRepository{
 
     /**
     * Model class to be used in this repository for the common methods inside Eloquent

@@ -4,10 +4,10 @@ namespace App\Services\Role;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use LaravelEasyRepository\Service;
+use App\Services\BaseService;
 use App\Repositories\Role\RoleRepository;
 
-class RoleServiceImplement extends Service implements RoleService{
+class RoleServiceImplement extends BaseService implements RoleService{
 
      /**
      * don't change $this->mainRepository variable name

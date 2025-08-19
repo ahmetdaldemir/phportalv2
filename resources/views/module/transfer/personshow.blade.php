@@ -11,9 +11,9 @@
                             class="d-flex justify-content-between flex-xl-row flex-md-column flex-sm-row flex-column p-sm-3 p-0">
                             <div class="mb-xl-0 mb-4">
                                 <div class="d-flex svg-illustration mb-3 gap-2">
-                                    <span class="app-brand-text demo text-body fw-bolder">{{$transfer->user($transfer->delivery_id)->name}}</span>
+                                    <span class="app-brand-text demo text-body fw-bolder">{{$transfer->deliverySeller?->name ?? 'Bilinmiyor'}}</span>
                                 </div>
-                                <p class="mb-1">Şube :  {{$transfer->user($transfer->delivery_id)->seller->name}}</p>
+                                <p class="mb-1">Şube :  {{$transfer->deliverySeller?->name ?? 'Bilinmiyor'}}</p>
                             </div>
                             <div>
                                 <h4>#{{$transfer->number}}</h4>
@@ -66,7 +66,7 @@
                                 <td colspan="3" class="align-top px-4 py-5">
                                     <p class="mb-2">
                                         <span class="me-1 fw-semibold">Personel:</span>
-                                        <span>{{$transfer->user($transfer->user_id)->name}}</span>
+                                        <span>{{$transfer->user?->name ?? 'Bilinmiyor'}}</span>
                                     </p>
                                 </td>
 

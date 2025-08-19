@@ -3,10 +3,10 @@
 namespace App\Repositories\Transfer;
 
 use Illuminate\Support\Facades\Auth;
-use LaravelEasyRepository\Implementations\Eloquent;
+use App\Repositories\BaseRepositoryImplement;
 use App\Models\Transfer;
 
-class TransferRepositoryImplement extends Eloquent implements TransferRepository{
+class TransferRepositoryImplement extends BaseRepositoryImplement implements TransferRepository{
 
     /**
     * Model class to be used in this repository for the common methods inside Eloquent

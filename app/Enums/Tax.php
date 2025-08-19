@@ -4,10 +4,11 @@ namespace App\Enums;
 
 use BenSampo\Enum\Enum;
 
- class Tax extends Enum
+/**
+ * @method static static Unit()
+
+ */
+final class Tax extends Enum
 {
-    public function taxes(): array
-    {
-       return ['0' => '%0','1' => '%1','8' => '%8','18' => '%18'];
-    }
- }
+    const Unit = ['1' => 'Adet'];
+}

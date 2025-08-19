@@ -2,9 +2,9 @@
 
 namespace App\Services\Demand;
 
-use LaravelEasyRepository\BaseService;
 
-interface DemandService extends BaseService{
+
+interface DemandService {
 
     // Write something awesome :)
 }

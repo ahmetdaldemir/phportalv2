@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Role;
 
-use LaravelEasyRepository\Repository;
+use App\Repositories\BaseRepository;
 
-interface RoleRepository extends Repository{
+interface RoleRepository extends BaseRepository{
 
     public function get();
 

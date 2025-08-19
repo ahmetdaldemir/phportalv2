@@ -5,16 +5,16 @@ namespace App\Services\Safe;
 use App\Repositories\Safe\SafeRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use LaravelEasyRepository\Service;
+use App\Services\BaseService;
 
-class SafeServiceImplement extends Service implements SafeService{
+class SafeServiceImplement extends BaseService implements SafeService{
 
 
     /**
      * don't change $this->mainRepository variable name
      * because used in extends service class
      */
-    protected SafeRepository $mainRepository;
+    protected $mainRepository;
 
     public function __construct(SafeRepository $mainRepository)
     {

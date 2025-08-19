@@ -2,10 +2,10 @@
 
 namespace App\Repositories\Demand;
 
-use LaravelEasyRepository\Implementations\Eloquent;
+use App\Repositories\BaseRepositoryImplement;
 use App\Models\Demand;
 
-class DemandRepositoryImplement extends Eloquent implements DemandRepository{
+class DemandRepositoryImplement extends BaseRepositoryImplement implements DemandRepository{
 
     /**
     * Model class to be used in this repository for the common methods inside Eloquent

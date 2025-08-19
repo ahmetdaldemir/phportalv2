@@ -3,17 +3,17 @@
 namespace App\Services\Version;
 
 use Illuminate\Support\Facades\Log;
-use LaravelEasyRepository\Service;
+use App\Services\BaseService;
 use App\Repositories\Version\VersionRepository;
 use Illuminate\Database\Eloquent\Collection;
 
-class VersionServiceImplement extends Service implements VersionService{
+class VersionServiceImplement extends BaseService implements VersionService{
 
     /**
      * don't change $this->mainRepository variable name
      * because used in extends service class
      */
-    protected VersionRepository $mainRepository;
+    protected $mainRepository;
 
     public function __construct(VersionRepository $mainRepository)
     {

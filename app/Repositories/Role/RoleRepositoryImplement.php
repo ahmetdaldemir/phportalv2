@@ -3,10 +3,10 @@
 namespace App\Repositories\Role;
 
 use Illuminate\Support\Facades\Auth;
-use LaravelEasyRepository\Implementations\Eloquent;
+use App\Repositories\BaseRepositoryImplement;
 use Spatie\Permission\Models\Role;
 
-class RoleRepositoryImplement extends Eloquent implements RoleRepository{
+class RoleRepositoryImplement extends BaseRepositoryImplement implements RoleRepository{
 
     /**
     * Model class to be used in this repository for the common methods inside Eloquent

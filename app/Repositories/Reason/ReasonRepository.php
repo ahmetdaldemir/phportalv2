@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Reason;
 
-use LaravelEasyRepository\Repository;
+use App\Repositories\BaseRepository;
 
-interface ReasonRepository extends Repository{
+interface ReasonRepository extends BaseRepository{
 
     public function get();
 

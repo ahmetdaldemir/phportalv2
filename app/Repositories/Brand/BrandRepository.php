@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Brand;
 
-use LaravelEasyRepository\Repository;
+use App\Repositories\BaseRepository;
 
-interface BrandRepository extends Repository{
+interface BrandRepository extends BaseRepository{
 
     public function get();
 

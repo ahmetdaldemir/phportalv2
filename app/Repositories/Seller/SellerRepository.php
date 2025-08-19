@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Seller;
 
-use LaravelEasyRepository\Repository;
+use App\Repositories\BaseRepository;
 
-interface SellerRepository extends Repository{
+interface SellerRepository extends BaseRepository{
 
     public function get();
 

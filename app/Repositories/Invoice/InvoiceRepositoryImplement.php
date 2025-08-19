@@ -3,10 +3,10 @@
 namespace App\Repositories\Invoice;
 
 use Illuminate\Support\Facades\Auth;
-use LaravelEasyRepository\Implementations\Eloquent;
+use App\Repositories\BaseRepositoryImplement;
 use App\Models\Invoice;
 
-class InvoiceRepositoryImplement extends Eloquent implements InvoiceRepository{
+class InvoiceRepositoryImplement extends BaseRepositoryImplement implements InvoiceRepository{
 
     /**
     * Model class to be used in this repository for the common methods inside Eloquent

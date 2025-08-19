@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Color;
 
-use LaravelEasyRepository\Repository;
+use App\Repositories\BaseRepository;
 
-interface ColorRepository extends Repository{
+interface ColorRepository extends BaseRepository{
 
     public function get();
 }

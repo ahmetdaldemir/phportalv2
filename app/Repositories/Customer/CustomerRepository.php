@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Customer;
 
-use LaravelEasyRepository\Repository;
+use App\Repositories\BaseRepository;
 
-interface CustomerRepository extends Repository{
+interface CustomerRepository extends BaseRepository{
 
     public function site_customer();
     public function fileUpload($file);

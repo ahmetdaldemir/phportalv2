@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Permission;
 
-use LaravelEasyRepository\Repository;
+use App\Repositories\BaseRepository;
 
-interface PermissionRepository extends Repository{
+interface PermissionRepository extends BaseRepository{
 
     public function get();
 }

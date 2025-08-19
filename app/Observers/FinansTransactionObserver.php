@@ -10,7 +10,6 @@ class FinansTransactionObserver
 
     public function creating(FinansTransaction $FinansTransaction)
     {
-        $FinansTransaction->user_id = auth()->user()->id;
         $FinansTransaction->company_id = auth()->user()->company_id;
     }
     /**

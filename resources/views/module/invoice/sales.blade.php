@@ -86,7 +86,7 @@
                                                     @foreach($stocks as $stock)
                                                         <option @if($product['stock_card']['id'] == $stock->id) selected
                                                                 @endif value="{{$stock->id}}">{{$stock->name}} -
-                                                            <small> {{$stock->brand->name}}</small> - <b>  <?php
+                                                            <small> {{$stock->brand->name ?? 'Bulunamadi'}}</small> - <b>  <?php
                                                                                                                $datas = json_decode($stock->version(), TRUE);
                                                                                                                foreach ($datas as $mykey => $myValue) {
                                                                                                                    echo "$myValue,";

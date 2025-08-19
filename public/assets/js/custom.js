@@ -9,7 +9,7 @@ $.ajaxSetup({
     }
 });
 
-function updateStatus(url, id, data,field) {
+function updateStatus(url, id, data) {
 
 
     $.post(url,
@@ -26,31 +26,6 @@ function updateStatus(url, id, data,field) {
 
         });
 }
-
-function updateField(url,id, data,field) {
-
-
-    var datas =  {
-             id: id,
-         field:field,
-          value: data
-     };
-
-    console.log(datas);
-    $.ajax({
-        type: "POST",
-        url: url,
-        data: datas,
-        success: function (response) {
-            if (response == 1) {
-                $.MessageBox("Güncellendi");
-            } else {
-                $.MessageBox("Sorun Var");
-            }
-        }
-    });
-}
-
 
 function updateTechnical(url, id, data) {
 
@@ -97,6 +72,7 @@ function saveStockMovement(url) {
             $("#result").empty().append(response);
         }
     });
+
 }
 
 function getTown(sel) {

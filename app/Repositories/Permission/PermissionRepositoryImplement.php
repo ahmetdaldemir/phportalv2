@@ -3,10 +3,10 @@
 namespace App\Repositories\Permission;
 
 use Illuminate\Support\Facades\Auth;
-use LaravelEasyRepository\Implementations\Eloquent;
+use App\Repositories\BaseRepositoryImplement;
 use Spatie\Permission\Models\Permission;
 
-class PermissionRepositoryImplement extends Eloquent implements PermissionRepository{
+class PermissionRepositoryImplement extends BaseRepositoryImplement implements PermissionRepository{
 
     /**
      * Model class to be used in this repository for the common methods inside Eloquent

@@ -3,9 +3,9 @@
 namespace App\Services\Version;
 
 use Illuminate\Database\Eloquent\Collection;
-use LaravelEasyRepository\BaseService;
 
-interface VersionService extends BaseService{
+
+interface VersionService {
 
     public function all(): ?Collection;
 

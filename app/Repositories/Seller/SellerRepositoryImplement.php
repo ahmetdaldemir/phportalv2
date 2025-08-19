@@ -3,10 +3,10 @@
 namespace App\Repositories\Seller;
 
 use Illuminate\Support\Facades\Auth;
-use LaravelEasyRepository\Implementations\Eloquent;
+use App\Repositories\BaseRepositoryImplement;
 use App\Models\Seller;
 
-class SellerRepositoryImplement extends Eloquent implements SellerRepository{
+class SellerRepositoryImplement extends BaseRepositoryImplement implements SellerRepository{
 
     /**
     * Model class to be used in this repository for the common methods inside Eloquent
