@@ -16,9 +16,9 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('is_status');
             $table->double('total_price');
-            $table->unsignedInteger('customer_id');
+            $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('user_id');
-            $table->unsignedInteger('staff_id')->nullable();
+            $table->unsignedBigInteger('staff_id')->nullable();
             $table->unsignedBigInteger('company_id');
             $table->decimal('tax_total', 10, 2)->default(0);
             $table->decimal('discount_total', 10, 2)->default(0);
@@ -32,7 +32,7 @@ return new class extends Migration
             $table->year('periodYear')->nullable();
             $table->unsignedBigInteger('accounting_category_id')->nullable();
             $table->decimal('currency', 10, 2)->default(0)->comment('Vergiler Dahil');
-            $table->unsignedInteger('safe_id')->nullable();
+            $table->unsignedBigInteger('safe_id')->nullable();
             $table->decimal('credit_card', 10, 2)->default(0);
             $table->decimal('cash', 10, 2)->default(0);
             $table->decimal('installment', 10, 2)->default(0);

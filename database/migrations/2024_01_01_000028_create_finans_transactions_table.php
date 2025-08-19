@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('price', 10, 2);
             $table->string('process_type');
             $table->string('payment_type');
-            $table->integer('currency_id');
+            $table->unsignedInteger('currency_id');
             $table->decimal('rate', 10, 2);
             $table->timestamps();
             

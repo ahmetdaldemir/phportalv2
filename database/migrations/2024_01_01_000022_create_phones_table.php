@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('batery')->nullable();
             $table->string('warranty')->nullable();
             $table->boolean('status')->default(1);
-            $table->integer('invoice_id')->nullable();
+            $table->unsignedBigInteger('invoice_id')->nullable();
             $table->boolean('is_confirm')->default(0);
             $table->string('sales_person')->nullable();
             $table->timestamps();
