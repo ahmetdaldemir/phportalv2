@@ -30,25 +30,6 @@ jobs:
           composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
           composer dump-autoload --optimize
 
-      - name: 🔑 Create .env file
-        run: |
-          echo "APP_NAME=PHPPortal" >> .env
-          echo "APP_ENV=production" >> .env
-          echo "APP_KEY=${{ secrets.APP_KEY }}" >> .env
-          echo "APP_DEBUG=false" >> .env
-          echo "APP_URL=https://irepair.com.tr" >> .env
-          echo "" >> .env
-          echo "DB_CONNECTION=mysql" >> .env
-          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
-          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
-          echo "DB_DATABASE=${{ secrets.DB_DATABASE }}" >> .env
-          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-          echo "" >> .env
-          echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" >> .env
-          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
-          echo "REDIS_PORT=6379" >> .env
-
       - name: 🎨 Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -66,49 +47,37 @@ jobs:
           php artisan route:cache
           php artisan view:cache
 
-      - name: 📂 Prepare Deployment Files
+      - name: 📂 Prepare Deployment Package
         run: |
-          # Remove unnecessary files
-          rm -rf tests/
-          rm -rf database/migrations/backup/
-          rm -rf .git/
-          rm -f .gitignore .gitattributes
-          rm -f phpunit.xml
-          rm -f generate-migrations-from-sql.php
-          rm -f generate-migrations.sh
-          rm -f generate-migrations.ps1
-          rm -f *.md
+          # Create deployment directory
+          mkdir -p deploy_package
           
-          # Create deployment archive
-          tar -czf deployment.tar.gz \
-            --exclude='node_modules' \
-            --exclude='storage/logs/*' \
-            --exclude='storage/framework/cache/*' \
-            --exclude='storage/framework/sessions/*' \
-            --exclude='storage/framework/views/*' \
-            .
+          # Copy files using rsync (preserves structure)
+          rsync -av --exclude='.git' \
+                   --exclude='node_modules' \
+                   --exclude='tests' \
+                   --exclude='.env' \
+                   --exclude='.env.example' \
+                   --exclude='phpunit.xml' \
+                   --exclude='*.md' \
+                   --exclude='database/migrations/backup' \
+                   --exclude='deploy_package' \
+                   --exclude='*.old' \
+                   --exclude='*.backup' \
+                   --exclude='generate-*.php' \
+                   --exclude='generate-*.sh' \
+                   --exclude='generate-*.ps1' \
+                   ./ deploy_package/
 
       - name: 📤 Deploy to FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
+          server: 153.92.220.80
+          username: u529018053.irepair.com.tr
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./
+          local-dir: ./deploy_package/
           server-dir: /public_html/
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/tests/**
-            **/.env.example
-            **/phpunit.xml
-            **/README.md
-            **/*.md
-            **/storage/logs/**
-            **/storage/framework/cache/**
-            **/storage/framework/sessions/**
-            **/storage/framework/views/**
+          dangerous-clean-slate: false
 
       - name: 🔄 Run Post-Deployment Commands via SSH
         uses: appleboy/ssh-action@v1.0.0

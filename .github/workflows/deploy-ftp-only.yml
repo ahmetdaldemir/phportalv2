@@ -41,15 +41,35 @@ jobs:
           php artisan route:cache
           php artisan view:cache
 
+      - name: 📦 Create Deployment Package
+        run: |
+          # Create a clean deployment directory
+          mkdir -p deploy_package
+          
+          # Copy only necessary files (excluding development files)
+          rsync -av --exclude='.git' \
+                   --exclude='node_modules' \
+                   --exclude='tests' \
+                   --exclude='.env' \
+                   --exclude='.env.example' \
+                   --exclude='phpunit.xml' \
+                   --exclude='*.md' \
+                   --exclude='database/migrations/backup' \
+                   --exclude='deploy_package' \
+                   --exclude='*.old' \
+                   --exclude='*.backup' \
+                   ./ deploy_package/
+
       - name: 📤 Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: 153.92.220.80
           username: u529018053.irepair.com.tr
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./
+          local-dir: ./deploy_package/
           server-dir: /public_html/
           dangerous-clean-slate: false
+          dry-run: false
           exclude: |
             **/.git*
             **/.git*/**
