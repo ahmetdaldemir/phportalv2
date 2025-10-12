@@ -1,0 +1,82 @@
+name: Deploy to Production (FTP Only)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: 🚀 FTP Deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v3
+
+      - name: 🔧 Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, redis, soap
+
+      - name: 📦 Install Composer Dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+      - name: 🎨 Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: 📦 Install and Build Frontend Assets
+        run: |
+          npm ci
+          npm run production
+
+      - name: 🗜️ Laravel Optimization
+        run: |
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+
+      - name: 📤 Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: 153.92.220.80
+          username: u529018053.irepair.com.tr
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./
+          server-dir: /public_html/
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/tests/**
+            **/.env.example
+            **/phpunit.xml
+            **/*.md
+            **/database/migrations/backup/**
+            **/storage/logs/**
+            **/storage/framework/cache/data/**
+            **/storage/framework/sessions/**
+            **/storage/framework/views/**
+            **/vendor/**/.git/**
+            **/.DS_Store
+            **/Thumbs.db
+
+      - name: 📢 Success Notification
+        if: success()
+        run: |
+          echo "✅ Deployment successful!"
+          echo "🌐 Site: https://irepair.com.tr"
+          echo "📅 Time: $(date)"
+
+      - name: ❌ Failure Notification
+        if: failure()
+        run: |
+          echo "❌ Deployment failed!"
+          echo "Please check the logs above"
+

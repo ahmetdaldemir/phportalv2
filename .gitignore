@@ -2,3 +2,11 @@ vendor
 .env
 composer.lock
 node_modules
+
+# Migration backup
+database/migrations/backup/
+
+# Generated files
+PROJECT_ANALYSIS_REPORT.md
+MIGRATION_GENERATION_SUMMARY.md
+MIGRATION_CREATION_GUIDE.md

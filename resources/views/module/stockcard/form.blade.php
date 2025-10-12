@@ -45,7 +45,7 @@
                                     </div>
                                     
                                     <!-- Autocomplete Suggestions -->
-                                    <div v-if="showSuggestions" 
+                                    <div v-show="showSuggestions" 
                                          id="name-suggestions" 
                                          class="autocomplete-suggestions">
                                         <div v-if="loading.stockSearch" class="autocomplete-loading">
@@ -55,14 +55,14 @@
                                         <div v-else-if="stockSuggestions.length === 0" class="autocomplete-no-results">
                                             Sonuç bulunamadı
                                         </div>
-                                        <template v-else>
+                                        <div v-else>
                                             <div v-for="(suggestion, index) in stockSuggestions" 
-                                                 :key="index"
+                                                 :key="'suggestion-' + index"
                                                  :class="['autocomplete-suggestion', { 'active': selectedSuggestionIndex === index }]"
                                                  @click="selectSuggestion(index)">
                                                 @{{ suggestion }}
                                             </div>
-                                        </template>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="form-text">Mevcut stoklardan seçebilir veya yeni stok adı girebilirsiniz</div>
@@ -904,8 +904,9 @@
             
             // Stok adı arama
             async searchStockNames() {
-                if (this.formData.name.length < 2) {
+                if (!this.formData.name || this.formData.name.length < 2) {
                     this.showSuggestions = false;
+                    this.stockSuggestions = [];
                     return;
                 }
                 
@@ -914,11 +915,20 @@
                 
                 try {
                     const response = await fetch(`/stockcard/stock-names-ajax?q=${encodeURIComponent(this.formData.name)}`);
-                    this.stockSuggestions = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Ensure data is array
+                    this.stockSuggestions = Array.isArray(data) ? data : [];
                     this.selectedSuggestionIndex = -1;
                 } catch (error) {
-                    console.error('Stok arama hatası:', error);
+                    console.error('Autocomplete verisi yüklenemedi:', error);
                     this.stockSuggestions = [];
+                    this.showSuggestions = false;
                 } finally {
                     this.loading.stockSearch = false;
                 }
