@@ -1,4 +1,4 @@
-name: Deploy to Production (FTP Only)
+name: Deploy to Production (SFTP)
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   deploy:
-    name: 🚀 FTP Deploy
+    name: 🚀 SFTP Deploy
     runs-on: ubuntu-latest
     
     steps:
@@ -41,12 +41,10 @@ jobs:
           php artisan route:cache
           php artisan view:cache
 
-      - name: 📦 Create Deployment Package
+      - name: 📂 Prepare Deployment Package
         run: |
-          # Create a clean deployment directory
           mkdir -p deploy_package
           
-          # Copy only necessary files (excluding development files)
           rsync -av --exclude='.git' \
                    --exclude='node_modules' \
                    --exclude='tests' \
@@ -60,34 +58,17 @@ jobs:
                    --exclude='*.backup' \
                    ./ deploy_package/
 
-      - name: 📤 Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      - name: 📤 Deploy via SFTP
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
         with:
-          server: 153.92.220.80
-          username: u529018053.irepair.com.tr
+          server: irepair.com.tr
+          port: 22
+          username: u529018053
           password: '@198711Ad@'
-          local-dir: ./deploy_package/
-          server-dir: /public_html/
-          dangerous-clean-slate: false
-          dry-run: false
-          protocol: ftp
-          port: 21
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/tests/**
-            **/.env.example
-            **/phpunit.xml
-            **/*.md
-            **/database/migrations/backup/**
-            **/storage/logs/**
-            **/storage/framework/cache/data/**
-            **/storage/framework/sessions/**
-            **/storage/framework/views/**
-            **/vendor/**/.git/**
-            **/.DS_Store
-            **/Thumbs.db
+          local_path: ./deploy_package/*
+          remote_path: /home/u529018053/public_html
+          sftp_only: true
+          delete_remote_files: false
 
       - name: 📢 Success Notification
         if: success()

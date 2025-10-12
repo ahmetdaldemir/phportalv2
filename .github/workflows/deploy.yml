@@ -78,6 +78,8 @@ jobs:
           local-dir: ./deploy_package/
           server-dir: /public_html/
           dangerous-clean-slate: false
+          protocol: ftp
+          port: 21
 
       - name: 🔄 Run Post-Deployment Commands via SSH
         uses: appleboy/ssh-action@v1.0.0

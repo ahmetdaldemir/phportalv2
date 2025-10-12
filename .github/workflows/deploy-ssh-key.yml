@@ -1,4 +1,4 @@
-name: Deploy to Production (FTP Only)
+name: Deploy to Production (SSH Key)
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   deploy:
-    name: 🚀 FTP Deploy
+    name: 🚀 SSH Deploy
     runs-on: ubuntu-latest
     
     steps:
@@ -41,12 +41,10 @@ jobs:
           php artisan route:cache
           php artisan view:cache
 
-      - name: 📦 Create Deployment Package
+      - name: 📂 Prepare Deployment Package
         run: |
-          # Create a clean deployment directory
           mkdir -p deploy_package
           
-          # Copy only necessary files (excluding development files)
           rsync -av --exclude='.git' \
                    --exclude='node_modules' \
                    --exclude='tests' \
@@ -60,34 +58,30 @@ jobs:
                    --exclude='*.backup' \
                    ./ deploy_package/
 
-      - name: 📤 Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      - name: 📤 Deploy via SSH + rsync
+        uses: easingthemes/ssh-deploy@main
         with:
-          server: 153.92.220.80
-          username: u529018053.irepair.com.tr
-          password: '@198711Ad@'
-          local-dir: ./deploy_package/
-          server-dir: /public_html/
-          dangerous-clean-slate: false
-          dry-run: false
-          protocol: ftp
-          port: 21
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/tests/**
-            **/.env.example
-            **/phpunit.xml
-            **/*.md
-            **/database/migrations/backup/**
-            **/storage/logs/**
-            **/storage/framework/cache/data/**
-            **/storage/framework/sessions/**
-            **/storage/framework/views/**
-            **/vendor/**/.git/**
-            **/.DS_Store
-            **/Thumbs.db
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: irepair.com.tr
+          REMOTE_USER: u529018053
+          REMOTE_PORT: 22
+          SOURCE: deploy_package/
+          TARGET: /home/u529018053/public_html/
+          EXCLUDE: .git,.github,node_modules,tests,.env,.env.example,*.md
+          SCRIPT_BEFORE: |
+            echo "🔄 Pre-deployment backup..."
+            cd /home/u529018053
+            tar -czf backup_$(date +%Y%m%d_%H%M%S).tar.gz public_html/
+          SCRIPT_AFTER: |
+            echo "🔧 Post-deployment commands..."
+            cd /home/u529018053/public_html
+            chmod -R 755 storage bootstrap/cache
+            php artisan cache:clear
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            php artisan queue:restart || true
+            echo "✅ Deployment completed!"
 
       - name: 📢 Success Notification
         if: success()
@@ -95,10 +89,4 @@ jobs:
           echo "✅ Deployment successful!"
           echo "🌐 Site: https://irepair.com.tr"
           echo "📅 Time: $(date)"
-
-      - name: ❌ Failure Notification
-        if: failure()
-        run: |
-          echo "❌ Deployment failed!"
-          echo "Please check the logs above"
 
