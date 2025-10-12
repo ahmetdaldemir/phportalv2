@@ -74,7 +74,7 @@ jobs:
         with:
           server: 153.92.220.80
           username: u529018053.irepair.com.tr
-          password: ${{ secrets.FTP_PASSWORD }}
+          password: '@198711Ad@'
           local-dir: ./deploy_package/
           server-dir: /public_html/
           dangerous-clean-slate: false
