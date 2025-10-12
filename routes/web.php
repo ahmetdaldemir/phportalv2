@@ -21,7 +21,9 @@ Route::get('/', [App\Http\Controllers\HomeController::class, 'index']);
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
-Route::get('/logout', [App\Http\Controllers\Auth\LogoutController::class, 'logout'])->name('logout');
+// logout route is already included in Auth::routes()
+// Custom logout route (overrides Auth::routes logout if needed)
+Route::post('/logout', [App\Http\Controllers\Auth\LogoutController::class, 'logout'])->name('logout');
 
 // AJAX endpoints - performans optimizasyonu
 Route::get('/api/stocks', [App\Http\Controllers\HomeController::class, 'getStocksAjax'])->name('stocks.ajax');
@@ -98,11 +100,13 @@ Route::get('/phone/versions-ajax', [App\Http\Controllers\PhoneController::class,
 Route::get('/stockcard/movements-ajax', [App\Http\Controllers\StockCardController::class, 'getMovementsAjax'])->name('stockcard.movements.ajax');
 
 
-Auth::routes();
+// Auth routes already defined above (line 21)
+// Removed duplicate Auth::routes()
 
 Route::middleware(['companies'])->group(function () {
 
-    Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+    // /home route already defined above (line 23)
+    // Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
     Route::get('/dashboardReport', [App\Http\Controllers\HomeController::class, 'dashboardReport'])->name('dashboardReport');
     Route::get('/dashboardNewReport', [App\Http\Controllers\HomeController::class, 'dashboardNewReport'])->name('dashboardNewReport');
     Route::get('/dashboardMounthNewReport', [App\Http\Controllers\HomeController::class, 'dashboardMounthNewReport'])->name('dashboardMounthNewReport');
@@ -387,7 +391,7 @@ Route::middleware(['companies'])->group(function () {
         Route::post('statusCgange', [App\Http\Controllers\TechnicalServiceController::class, 'statusCgange'])->name('statusCgange');
 
         Route::get('print', [App\Http\Controllers\TechnicalServiceController::class, 'print'])->name('print');
-        Route::post('payment', [App\Http\Controllers\TechnicalServiceController::class, 'payment'])->name('payment');
+        Route::post('paymentstore', [App\Http\Controllers\TechnicalServiceController::class, 'payment'])->name('paymentstore');
         Route::post('sms', [App\Http\Controllers\TechnicalServiceController::class, 'sms'])->name('sms');
         Route::get('show', [App\Http\Controllers\TechnicalServiceController::class, 'show'])->name('show');
         Route::get('category', [App\Http\Controllers\TechnicalServiceController::class, 'category'])->name('category');
