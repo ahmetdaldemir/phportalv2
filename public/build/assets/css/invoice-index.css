@@ -1,0 +1,278 @@
+/* Invoice Index Page Styles - Gradient Free */
+
+/* Page Header */
+.page-header {
+    background: var(--primary-color, #2c3e50);
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.page-header h1 {
+    color: white;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.page-header p {
+    color: rgba(255,255,255,0.9);
+    font-size: 1.1rem;
+    margin: 0.5rem 0 0 0;
+}
+
+/* Professional Card Styling */
+.professional-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.professional-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.professional-card .card-header {
+    background: var(--bg-secondary, #f8f9fa);
+    border-bottom: 1px solid var(--border-color, #e9ecef);
+    padding: 1.5rem;
+    border-radius: 15px 15px 0 0;
+}
+
+.professional-card .card-body {
+    padding: 2rem;
+}
+
+/* Table Styling - Consistent with other pages */
+.table {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: none;
+    background: white;
+}
+
+.table thead th {
+    background: var(--primary-color, #2c3e50);
+    color: white !important;
+    border: none;
+    font-weight: 700;
+    padding: 1rem 0.75rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+}
+
+.table tbody tr {
+    transition: all 0.3s ease;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.table tbody tr:hover {
+    background: var(--hover-bg, #f8f9fa);
+    transform: scale(1.01);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.table tbody td {
+    padding: 0.75rem;
+    border: none;
+    vertical-align: middle;
+    font-size: 0.85rem;
+    color: var(--text-primary, #495057);
+}
+
+.table tbody tr:nth-child(even) {
+    background: rgba(248, 249, 250, 0.5);
+}
+
+/* Buttons - Consistent styling */
+.btn {
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.btn-primary {
+    background: var(--primary-color, #2c3e50);
+    border-color: var(--primary-color, #2c3e50);
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover, #34495e);
+    border-color: var(--primary-hover, #34495e);
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    background: var(--danger-color, #dc3545);
+    border-color: var(--danger-color, #dc3545);
+}
+
+.btn-danger:hover {
+    background: var(--danger-hover, #c82333);
+    border-color: var(--danger-hover, #c82333);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: var(--secondary-color, #6c757d);
+    border-color: var(--secondary-color, #6c757d);
+}
+
+.btn-secondary:hover {
+    background: var(--secondary-hover, #5a6268);
+    border-color: var(--secondary-hover, #5a6268);
+    transform: translateY(-1px);
+}
+
+.btn-warning {
+    background: var(--warning-color, #ffc107);
+    border-color: var(--warning-color, #ffc107);
+    color: #212529;
+}
+
+.btn-warning:hover {
+    background: var(--warning-hover, #e0a800);
+    border-color: var(--warning-hover, #e0a800);
+    transform: translateY(-1px);
+}
+
+/* Badge Styling */
+.badge {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+.badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.badge.bg-warning {
+    background: var(--warning-color, #ffc107) !important;
+    color: #212529 !important;
+}
+
+.badge.bg-success {
+    background: var(--success-color, #28a745) !important;
+}
+
+.badge.bg-danger {
+    background: var(--danger-color, #dc3545) !important;
+}
+
+/* Invoice Row Styling */
+.invoice-row {
+    cursor: pointer;
+}
+
+.invoice-row:hover {
+    background: var(--hover-bg, #f8f9fa) !important;
+}
+
+/* Modal Styling */
+.modal-content {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    background: var(--primary-color, #2c3e50);
+    color: white;
+    border-radius: 15px 15px 0 0;
+    border: none;
+}
+
+.modal-title {
+    font-weight: 700;
+    color: white;
+}
+
+.btn-close {
+    filter: invert(1);
+}
+
+/* Form Controls */
+.form-control, .form-select {
+    border: 2px solid var(--border-color, #e9ecef);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color, #2c3e50);
+    box-shadow: 0 0 0 0.2rem rgba(44, 62, 80, 0.25);
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--text-primary, #495057);
+    margin-bottom: 0.75rem;
+}
+
+/* Pagination */
+.pagination {
+    justify-content: center;
+}
+
+.page-link {
+    border-radius: 8px;
+    margin: 0 2px;
+    border: none;
+    color: var(--primary-color, #2c3e50);
+    font-weight: 600;
+}
+
+.page-link:hover {
+    background: var(--primary-color, #2c3e50);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.page-item.active .page-link {
+    background: var(--primary-color, #2c3e50);
+    border: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .page-header {
+        padding: 1.5rem;
+    }
+    
+    .page-header h1 {
+        font-size: 2rem;
+    }
+    
+    .professional-card .card-body {
+        padding: 1rem;
+    }
+    
+    .table thead th {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .table tbody td {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+}

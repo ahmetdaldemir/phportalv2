@@ -1,0 +1,936 @@
+/* ====================================
+   PROJECT BASE CSS - UNIFIED STYLING
+   ==================================== */
+
+/* ====================================
+   COLOR VARIABLES
+   ==================================== */
+:root {
+    /* Primary Colors */
+    --primary-color: #2c3e50;
+    --primary-light: #34495e;
+    --primary-dark: #1e2831;
+    
+    /* Secondary Colors */
+    --secondary-color: #95a5a6;
+    --secondary-light: #bdc3c7;
+    --secondary-dark: #7f8c8d;
+    
+    /* Success/Error/Warning */
+    --success-color: #27ae60;
+    --error-color: #e74c3c;
+    --warning-color: #f39c12;
+    --info-color: #3498db;
+    
+    /* Text Colors */
+    --text-primary: #2c3e50;
+    --text-secondary: #566a7f;
+    --text-muted: #6c757d;
+    --text-light: #ffffff;
+    
+    /* Background Colors */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-light: #fafbfc;
+    --bg-dark: #2c3e50;
+    
+    /* Border Colors */
+    --border-color: #dee2e6;
+    --border-light: #e9ecef;
+    --border-dark: #adb5bd;
+    
+    /* Spacing */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    
+    /* Typography */
+    --font-size-xs: 0.7rem;
+    --font-size-sm: 0.8rem;
+    --font-size-base: 0.9rem;
+    --font-size-lg: 1.1rem;
+    --font-size-xl: 1.3rem;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.12);
+    --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
+    
+    /* Border Radius */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 12px;
+}
+
+/* ====================================
+   TABLE STYLES - UNIFIED
+   ==================================== */
+
+/* Modern Table Header */
+.table-header-modern {
+    background-color: var(--primary-color) !important;
+}
+
+.table-header-modern th {
+    background-color: var(--primary-color) !important;
+    color: var(--text-light) !important;
+    font-weight: 600;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    padding: 0.4rem 0.3rem;
+    border: none;
+    white-space: nowrap;
+    vertical-align: middle;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    text-align: center;
+}
+
+.table-header-modern th:first-child {
+    border-top-left-radius: var(--radius-md);
+}
+
+.table-header-modern th:last-child {
+    border-top-right-radius: var(--radius-md);
+}
+
+.compact-header {
+    min-width: 70px;
+    max-width: 110px;
+    padding: 0.3rem 0.2rem !important;
+}
+
+.header-text {
+    display: block;
+    line-height: 1.1;
+    font-size: 0.65rem;
+}
+
+.header-text small {
+    font-size: 0.6rem;
+    opacity: 0.9;
+    font-weight: 400;
+    display: block;
+    margin-top: 1px;
+}
+
+/* Table Body */
+.table tbody td {
+    padding: 0.25rem 0.15rem;
+    border: none;
+    vertical-align: middle;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100px;
+}
+
+/* Text alignment overrides for td */
+.table tbody td.text-start {
+    text-align: left !important;
+}
+
+.table tbody td.text-center {
+    text-align: center !important;
+}
+
+.table tbody td.text-end {
+    text-align: right !important;
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.table tbody tr:hover {
+    background-color: var(--bg-secondary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.table tbody tr:nth-child(even) {
+    background-color: var(--bg-light);
+}
+
+.table {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: none;
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-md);
+    table-layout: fixed;
+    width: 100%;
+    margin-bottom: 0;
+}
+
+/* ====================================
+   BUTTON STYLES - UNIFIED
+   ==================================== */
+
+/* Primary Buttons */
+.btn-primary {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: var(--text-light) !important;
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark) !important;
+    border-color: var(--primary-dark) !important;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Secondary Buttons */
+.btn-secondary {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+    color: var(--text-light) !important;
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background-color: var(--secondary-dark) !important;
+    border-color: var(--secondary-dark) !important;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Outline Buttons */
+.btn-outline-primary {
+    background-color: transparent !important;
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: var(--text-light) !important;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-outline-secondary {
+    background-color: transparent !important;
+    border-color: var(--secondary-color) !important;
+    color: var(--secondary-color) !important;
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+    color: var(--text-light) !important;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Status Buttons */
+.btn-success {
+    background-color: var(--success-color) !important;
+    border-color: var(--success-color) !important;
+    color: var(--text-light) !important;
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+}
+
+.btn-danger {
+    background-color: var(--error-color) !important;
+    border-color: var(--error-color) !important;
+    color: var(--text-light) !important;
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+}
+
+.btn-warning {
+    background-color: var(--warning-color) !important;
+    border-color: var(--warning-color) !important;
+    color: var(--text-light) !important;
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+}
+
+.btn-info {
+    background-color: var(--info-color) !important;
+    border-color: var(--info-color) !important;
+    color: var(--text-light) !important;
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+}
+
+/* Small Buttons */
+.btn-sm {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    border-radius: var(--radius-sm);
+}
+
+/* Extra Small Buttons */
+.btn-xs {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.6rem;
+    border-radius: var(--radius-sm);
+    line-height: 1;
+}
+
+/* Large Buttons */
+.btn-lg {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-base);
+    border-radius: var(--radius-lg);
+}
+
+/* ====================================
+   CARD STYLES - UNIFIED
+   ==================================== */
+
+.card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-md);
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.card-header h4,
+.card-header h5,
+.card-header h6 {
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+.card-body {
+    padding: var(--spacing-md);
+}
+
+.card-footer {
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    padding: var(--spacing-md);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+/* ====================================
+   FORM STYLES - UNIFIED
+   ==================================== */
+
+.form-control,
+.form-select {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    transition: all 0.2s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(44, 62, 80, 0.25);
+    outline: 0;
+}
+
+.form-control-sm,
+.form-select-sm {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    border-radius: var(--radius-sm);
+}
+
+.form-control-lg,
+.form-select-lg {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-base);
+    border-radius: var(--radius-lg);
+}
+
+.form-label {
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-xs);
+}
+
+.form-label.fw-semibold {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Input Groups */
+.input-group-text {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+/* ====================================
+   BADGE STYLES - UNIFIED
+   ==================================== */
+
+.badge {
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+}
+
+.badge.bg-primary {
+    background-color: var(--primary-color) !important;
+    color: var(--text-light);
+}
+
+.badge.bg-secondary {
+    background-color: var(--secondary-color) !important;
+    color: var(--text-light);
+}
+
+.badge.bg-success {
+    background-color: var(--success-color) !important;
+    color: var(--text-light);
+}
+
+.badge.bg-danger {
+    background-color: var(--error-color) !important;
+    color: var(--text-light);
+}
+
+.badge.bg-warning {
+    background-color: var(--warning-color) !important;
+    color: var(--text-light);
+}
+
+.badge.bg-info {
+    background-color: var(--info-color) !important;
+    color: var(--text-light);
+}
+
+/* ====================================
+   MODAL STYLES - UNIFIED
+   ==================================== */
+
+.modal-content {
+    border: none;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: var(--spacing-lg);
+}
+
+.modal-header h4,
+.modal-header h5 {
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+.modal-body {
+    padding: var(--spacing-lg);
+}
+
+.modal-footer {
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    padding: var(--spacing-lg);
+}
+
+.btn-close {
+    background-color: var(--bg-primary);
+    border-radius: var(--radius-md);
+    opacity: 1;
+    padding: var(--spacing-sm);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+}
+
+.btn-close:hover {
+    background-color: var(--error-color);
+    transform: scale(1.1);
+}
+
+/* ====================================
+   ALERT STYLES - UNIFIED
+   ==================================== */
+
+.alert {
+    border: none;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    font-size: var(--font-size-sm);
+    box-shadow: var(--shadow-sm);
+}
+
+.alert-primary {
+    background-color: rgba(44, 62, 80, 0.1);
+    color: var(--primary-color);
+    border-left: 4px solid var(--primary-color);
+}
+
+.alert-success {
+    background-color: rgba(39, 174, 96, 0.1);
+    color: var(--success-color);
+    border-left: 4px solid var(--success-color);
+}
+
+.alert-danger {
+    background-color: rgba(231, 76, 60, 0.1);
+    color: var(--error-color);
+    border-left: 4px solid var(--error-color);
+}
+
+.alert-warning {
+    background-color: rgba(243, 156, 18, 0.1);
+    color: var(--warning-color);
+    border-left: 4px solid var(--warning-color);
+}
+
+.alert-info {
+    background-color: rgba(52, 152, 219, 0.1);
+    color: var(--info-color);
+    border-left: 4px solid var(--info-color);
+}
+
+/* ====================================
+   PAGE HEADER STYLES - UNIFIED
+   ==================================== */
+
+.page-header {
+    background-color: var(--primary-color);
+    color: var(--text-light);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+}
+
+.page-header h1,
+.page-header h2,
+.page-header h3,
+.page-header h4 {
+    color: var(--text-light);
+    font-weight: 600;
+    margin-bottom: var(--spacing-xs);
+}
+
+.page-header p {
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 0;
+    font-size: var(--font-size-sm);
+}
+
+/* ====================================
+   LOADING STYLES - UNIFIED
+   ==================================== */
+
+.loading-container {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--text-secondary);
+}
+
+.loading-spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 3px solid var(--border-light);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto var(--spacing-md) auto;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 2px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    font-size: var(--font-size-base);
+    color: var(--text-secondary);
+    margin-top: var(--spacing-md);
+}
+
+/* ====================================
+   SEARCH FORM STYLES - UNIFIED
+   ==================================== */
+
+.search-form {
+    background-color: var(--bg-secondary);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+    margin-bottom: var(--spacing-lg);
+}
+
+.search-form .form-label {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: var(--font-size-xs);
+}
+
+/* ====================================
+   PROFESSIONAL CARD STYLES - UNIFIED
+   ==================================== */
+
+.professional-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.professional-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-3px);
+}
+
+.professional-card .card-header {
+    background-color: var(--primary-color);
+    color: var(--text-light);
+    border-bottom: none;
+    padding: var(--spacing-lg);
+}
+
+.professional-card .card-body {
+    padding: var(--spacing-lg);
+}
+
+/* ====================================
+   STATISTICS CARDS - UNIFIED
+   ==================================== */
+
+.stat-card {
+    text-align: center;
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+    transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-card-primary {
+    border-left: 4px solid var(--primary-color);
+}
+
+.stat-card-success {
+    border-left: 4px solid var(--success-color);
+}
+
+.stat-card-warning {
+    border-left: 4px solid var(--warning-color);
+}
+
+.stat-card-danger {
+    border-left: 4px solid var(--error-color);
+}
+
+.stat-value {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.stat-label {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+/* ====================================
+   PAGINATION STYLES - UNIFIED
+   ==================================== */
+
+.pagination .page-link {
+    color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    margin: 0 2px;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+}
+
+.pagination .page-link:hover {
+    background-color: var(--primary-color);
+    color: var(--text-light);
+    border-color: var(--primary-color);
+}
+
+.pagination .page-item.active .page-link {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--text-light);
+}
+
+/* ====================================
+   RESPONSIVE UTILITIES
+   ==================================== */
+
+.table-responsive {
+    border-radius: var(--radius-lg);
+    overflow-x: auto;
+    overflow-y: hidden;
+    box-shadow: var(--shadow-md);
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Custom scrollbar for table */
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: var(--secondary-color);
+    border-radius: var(--radius-sm);
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-dark);
+}
+
+/* Compact text for mobile */
+@media (max-width: 768px) {
+    .table tbody td {
+        font-size: var(--font-size-xs);
+        padding: var(--spacing-xs);
+    }
+    
+    .compact-header {
+        min-width: 60px;
+        max-width: 80px;
+    }
+    
+    .header-text {
+        font-size: var(--font-size-xs);
+    }
+}
+
+/* ====================================
+   UTILITY CLASSES
+   ==================================== */
+
+.text-compact {
+    font-size: var(--font-size-xs);
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.text-truncate-custom {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100px;
+}
+
+.clickable-row {
+    cursor: pointer;
+}
+
+.clickable-row:hover {
+    background-color: var(--bg-secondary) !important;
+    transform: scale(1.01);
+}
+
+.price-display {
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
+    font-size: var(--font-size-xs);
+}
+
+.border-left-primary {
+    border-left: 3px solid var(--primary-color);
+}
+
+.border-left-success {
+    border-left: 3px solid var(--success-color);
+}
+
+.border-left-warning {
+    border-left: 3px solid var(--warning-color);
+}
+
+.border-left-danger {
+    border-left: 3px solid var(--error-color);
+}
+
+/* ====================================
+   OVERRIDE BOOTSTRAP DEFAULTS
+   ==================================== */
+
+/* Remove all gradients */
+.bg-gradient-primary,
+.bg-gradient-secondary,
+.bg-gradient-success,
+.bg-gradient-danger,
+.bg-gradient-warning,
+.bg-gradient-info {
+    background-image: none !important;
+}
+
+/* Ensure consistent focus states */
+.form-control:focus,
+.form-select:focus,
+.btn:focus {
+    box-shadow: 0 0 0 0.2rem rgba(44, 62, 80, 0.25) !important;
+}
+
+/* ====================================
+   PRINT STYLES
+   ==================================== */
+
+@media print {
+    .table-header-modern th {
+        background-color: var(--primary-color) !important;
+        color: var(--text-light) !important;
+        -webkit-print-color-adjust: exact;
+    }
+    
+    .btn,
+    .modal,
+    .dropdown-menu {
+        display: none !important;
+    }
+}
+
+/* ====================================
+   DROPDOWN Z-INDEX FIXES
+   ==================================== */
+.dropdown-menu {
+    z-index: 99999 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.position-relative .dropdown-menu {
+    z-index: 99999 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.table td .dropdown-menu {
+    z-index: 99999 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.table-responsive .dropdown-menu {
+    z-index: 99999 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* ====================================
+   TABLE ROW OVERFLOW FIXES
+   ==================================== */
+.table tbody tr {
+    position: relative !important;
+    overflow: visible !important;
+}
+
+.table tbody td {
+    position: relative !important;
+    overflow: visible !important;
+}
+
+.table-responsive {
+    overflow: visible !important;
+}
+
+.table-responsive .table {
+    overflow: visible !important;
+}
+
+.table-responsive .table tbody tr {
+    overflow: visible !important;
+}
+
+.table-responsive .table tbody td {
+    overflow: visible !important;
+    border-right: 1px solid #454545;
+}

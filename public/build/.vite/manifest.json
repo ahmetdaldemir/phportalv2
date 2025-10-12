@@ -1,0 +1,23 @@
+{
+  "_utils-0uXGQZeQ.js": {
+    "file": "assets/utils-0uXGQZeQ.js",
+    "name": "utils"
+  },
+  "_vendor-Du7Ql2sK.js": {
+    "file": "assets/vendor-Du7Ql2sK.js",
+    "name": "vendor"
+  },
+  "resources/js/app.ts": {
+    "file": "assets/app-Y0l-W42Z.js",
+    "name": "app",
+    "src": "resources/js/app.ts",
+    "isEntry": true,
+    "imports": [
+      "_vendor-Du7Ql2sK.js",
+      "_utils-0uXGQZeQ.js"
+    ],
+    "css": [
+      "assets/app-CtoP1VY-.css"
+    ]
+  }
+}

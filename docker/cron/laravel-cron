@@ -1,0 +1,27 @@
+# Laravel Cron Jobs
+# Run Laravel scheduler every minute
+* * * * * cd /var/www && php artisan schedule:run --verbose --no-interaction >> /dev/null 2>&1
+
+# Run queue worker every 5 minutes (as backup to supervisor)
+*/5 * * * * cd /var/www && php artisan queue:work --stop-when-empty >> /dev/null 2>&1
+
+# Clear caches daily at 2 AM
+0 2 * * * cd /var/www && php artisan cache:clear >> /dev/null 2>&1
+0 2 * * * cd /var/www && php artisan config:clear >> /dev/null 2>&1
+0 2 * * * cd /var/www && php artisan route:clear >> /dev/null 2>&1
+0 2 * * * cd /var/www && php artisan view:clear >> /dev/null 2>&1
+
+# Create storage link weekly
+0 3 * * 0 cd /var/www && php artisan storage:link >> /dev/null 2>&1
+
+# Database backup daily at 4 AM
+0 4 * * * cd /var/www && php artisan backup:run >> /dev/null 2>&1
+
+# Clean up logs weekly
+0 5 * * 0 find /var/www/storage/logs -name "*.log" -mtime +7 -delete >> /dev/null 2>&1
+
+# Clean up temporary files daily
+0 6 * * * find /tmp -name "laravel-*" -mtime +1 -delete >> /dev/null 2>&1
+
+# Clean up sessions daily
+0 7 * * * find /var/www/storage/framework/sessions -name "sess_*" -mtime +1 -delete >> /dev/null 2>&1

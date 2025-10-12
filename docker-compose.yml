@@ -1,0 +1,50 @@
+services:
+
+    php:
+        image: webdevops/php-nginx:8.4
+        ports:
+            - "90:80"
+            - "443:443"
+        volumes:
+            - .:/var/www/html
+        environment:
+            - WEB_DOCUMENT_ROOT=/var/www/html/public
+        depends_on:
+            - mysql
+            - redis
+            - mongo
+        networks:
+            - phonehospital
+    mysql:
+        image: mysql:8.0
+        container_name: mysql
+        restart: unless-stopped
+        tty: true
+        ports:
+            - "3306:3306"
+        environment:
+            MYSQL_DATABASE: phportal
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_USER: phportal
+            MYSQL_PASSWORD: phportal
+            SERVICE_TAGS: dev
+            SERVICE_NAME: mysql
+        volumes:
+            - mysql_data:/var/lib/mysql
+        networks:
+            - phonehospital
+    redis:
+        image: redis:latest
+        networks:
+            - phonehospital
+    mongo:
+        image: mongo:latest
+        networks:
+            - phonehospital
+volumes:
+    mysql_data:
+
+#Docker Networks
+networks:
+    phonehospital:
+        driver: bridge
