@@ -380,6 +380,11 @@ class StockCardController extends Controller
     public function getStockNamesAjax(Request $request)
     {
         try {
+            // Authentication check
+            if (!Auth::check()) {
+                return response()->json([], 401);
+            }
+            
             $query = $request->get('q', '');
 
             if (strlen($query) < 2) {
@@ -392,11 +397,13 @@ class StockCardController extends Controller
                 ->distinct()
                 ->limit(10)
                 ->get()
-                ->pluck('name');
+                ->pluck('name')
+                ->values(); // Re-index array
 
             return response()->json($stockNames);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Stok isimleri yüklenemedi'], 500);
+            \Log::error('Stock names ajax error: ' . $e->getMessage());
+            return response()->json([], 500);
         }
     }
 
