@@ -188,16 +188,9 @@
                     <tr>
                         <th><i class="bx bx-mobile me-1"></i>IMEI</th>
                         <th><i class="bx bx-barcode me-1"></i>Barkod</th>
-                        <th><i class="bx bx-package me-1"></i>Marka</th>
-                        <th><i class="bx bx-mobile-alt me-1"></i>Model</th>
-                        <th><i class="bx bx-category me-1"></i>Tipi</th>
-                        <th><i class="bx bx-memory-card me-1"></i>Hafıza</th>
-                        <th><i class="bx bx-palette me-1"></i>Renk</th>
-                        <th><i class="bx bx-battery me-1"></i>Pil</th>
-                        <th><i class="bx bx-shield me-1"></i>Garanti</th>
+                        <th><i class="bx bx-package me-1"></i>Ürün</th>
                         <th><i class="bx bx-store me-1"></i>Bayi</th>
-                        <th><i class="bx bx-money me-1"></i>Alış F</th>
-                        <th><i class="bx bx-money me-1"></i>Satış F</th>
+                        <th><i class="bx bx-money me-1"></i>Satış Fiyatı</th>
                         <th><i class="bx bx-cog me-1"></i>İşlemler</th>
                     </tr>
                     </thead>
@@ -205,24 +198,23 @@
                     <tr v-for="phone in phones" :key="phone.id">
                         <td>@{{ phone.imei }}</td>
                         <td>@{{ phone.barcode }}</td>
-                        <td>@{{ phone.brand.name }}</td>
-                        <td>@{{ phone.version ? phone.version.name : 'Bulunamadı' }}</td>
-                        <td>@{{ phone.type_text }}</td>
-                        <td>@{{ phone.memory }} GB</td>
-                        <td>@{{ phone.color.name }}</td>
-                        <td>@{{ phone.battery_text }}</td>
                         <td>
-                            <span :style="{ color: '#f00' }">@{{ phone.warranty_text }}</span>
+                            <div class="d-flex flex-column">
+                                <strong>@{{ phone.brand.name }}</strong>
+                                <small class="text-muted">@{{ phone.version ? phone.version.name : 'Model Yok' }}</small>
+                            </div>
                         </td>
                         <td>@{{ phone.seller.name }}</td>
-                        <td>
-                            @role('Depo Sorumlusu|super-admin')
-                            @{{ phone.cost_price_formatted }} <b>₺</b>
-                            @endrole
-                        </td>
                         <td>@{{ phone.sale_price_formatted }} <b>₺</b></td>
                         <td>
                             <div class="d-flex gap-1 align-items-center">
+                                <!-- Detay Modal Butonu -->
+                                <button @click="showPhoneDetails(phone)" 
+                                        class="btn btn-sm btn-info" 
+                                        title="Detayları Görüntüle">
+                                    <i class="bx bx-info-circle"></i>
+                                </button>
+                                
                                 <span v-if="phone.status == 2" class="badge bg-primary">Transfer Sürecinde</span>
                                 
                                 <template v-if="phone.status == 0 && phone.is_confirm == 1">
@@ -259,15 +251,11 @@
                                 @endrole
                                 
                                 <a :href="`/phone/barcode/${phone.id}`" target="_blank"
-                                   class="btn btn-sm btn-info" title="Barkod">
+                                   class="btn btn-sm btn-secondary" title="Barkod">
                                     <i class="bx bx-barcode"></i>
                                 </a>
-                                <a :href="`/phone/show/${phone.id}`"
-                                   class="btn btn-sm btn-dark" title="Görüntüle">
-                                    <i class="bx bx-show"></i>
-                                </a>
                                 <a :href="`/phone/printconfirm/${phone.id}`"
-                                   class="btn btn-sm btn-secondary" title="Yazdır">
+                                   class="btn btn-sm btn-dark" title="Yazdır">
                                     <i class="bx bx-printer"></i>
                                 </a>
                             </div>
@@ -307,6 +295,148 @@
                     <button type="submit" class="btn btn-primary">Sil</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Telefon Detay Modal -->
+    <div class="modal fade" id="phoneDetailsModal" data-bs-backdrop="static" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bx bx-mobile me-2"></i>
+                        Telefon Detayları
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div v-if="selectedPhone" class="row">
+                        <!-- Sol Kolon - Temel Bilgiler -->
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">
+                                <i class="bx bx-info-circle me-1"></i>
+                                Temel Bilgiler
+                            </h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">IMEI:</label>
+                                <p class="mb-0">@{{ selectedPhone.imei }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Barkod:</label>
+                                <p class="mb-0">@{{ selectedPhone.barcode }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Marka:</label>
+                                <p class="mb-0">@{{ selectedPhone.brand.name }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Model:</label>
+                                <p class="mb-0">@{{ selectedPhone.version ? selectedPhone.version.name : 'Model Yok' }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Tip:</label>
+                                <p class="mb-0">@{{ selectedPhone.type_text }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Bayi:</label>
+                                <p class="mb-0">@{{ selectedPhone.seller.name }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Sağ Kolon - Teknik Özellikler -->
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">
+                                <i class="bx bx-cog me-1"></i>
+                                Teknik Özellikler
+                            </h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Hafıza:</label>
+                                <p class="mb-0">@{{ selectedPhone.memory }} GB</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Renk:</label>
+                                <p class="mb-0">@{{ selectedPhone.color.name }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Pil:</label>
+                                <p class="mb-0">@{{ selectedPhone.battery_text }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Garanti:</label>
+                                <p class="mb-0">
+                                    <span :class="selectedPhone.warranty_text === 'Var' ? 'text-success' : 'text-danger'">
+                                        @{{ selectedPhone.warranty_text }}
+                                    </span>
+                                </p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Durum:</label>
+                                <p class="mb-0">
+                                    <span v-if="selectedPhone.status == 0" class="badge bg-warning">Beklemede</span>
+                                    <span v-else-if="selectedPhone.status == 1" class="badge bg-success">Satıldı</span>
+                                    <span v-else-if="selectedPhone.status == 2" class="badge bg-primary">Transfer Sürecinde</span>
+                                </p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Onay Durumu:</label>
+                                <p class="mb-0">
+                                    <span v-if="selectedPhone.is_confirm == 1" class="badge bg-success">Onaylandı</span>
+                                    <span v-else class="badge bg-warning">Onay Bekliyor</span>
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Fiyat Bilgileri -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-primary mb-3">
+                                <i class="bx bx-money me-1"></i>
+                                Fiyat Bilgileri
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Satış Fiyatı:</label>
+                                        <p class="mb-0 fs-5 text-success">@{{ selectedPhone.sale_price_formatted }} ₺</p>
+                                    </div>
+                                </div>
+                                
+                                @role('Depo Sorumlusu|super-admin')
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Alış Fiyatı:</label>
+                                        <p class="mb-0 fs-5 text-info">@{{ selectedPhone.cost_price_formatted }} ₺</p>
+                                    </div>
+                                </div>
+                                @endrole
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bx bx-x me-1"></i>
+                        Kapat
+                    </button>
+                    <a v-if="selectedPhone" :href="`/phone/show/${selectedPhone.id}`" 
+                       class="btn btn-primary">
+                        <i class="bx bx-show me-1"></i>
+                        Tam Detay
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -369,6 +499,75 @@
 
 @section('custom-css')
     <link rel="stylesheet" href="{{asset('assets/css/list-page-base.css')}}">
+    <style>
+        /* Telefon Detay Modal Stilleri */
+        #phoneDetailsModal .modal-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        #phoneDetailsModal .form-label {
+            color: #495057;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        #phoneDetailsModal .form-label.fw-bold {
+            color: #212529;
+        }
+        
+        #phoneDetailsModal p {
+            color: #6c757d;
+            font-size: 0.95rem;
+        }
+        
+        #phoneDetailsModal .text-primary {
+            color: #667eea !important;
+        }
+        
+        #phoneDetailsModal .badge {
+            font-size: 0.75rem;
+        }
+        
+        #phoneDetailsModal .fs-5 {
+            font-weight: 600;
+        }
+        
+        /* Tablo kompakt görünüm */
+        .professional-table th,
+        .professional-table td {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.85rem;
+        }
+        
+        .professional-table th {
+            font-weight: 600;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+        
+        .professional-table tbody tr:hover {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%);
+        }
+        
+        /* Kompakt butonlar */
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+        
+        /* Detay butonu özel stil */
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            border: none;
+        }
+        
+        .btn-info:hover {
+            background: linear-gradient(135deg, #138496 0%, #0f6674 100%);
+            transform: translateY(-1px);
+        }
+    </style>
 @endsection
 
 @section('custom-js')
@@ -398,6 +597,7 @@
                     colors: @json($colors),
                     sellers: @json($sellers),
                     versions: [],
+                    selectedPhone: null,
                     
                     // Loading states
                     loading: {
@@ -530,6 +730,12 @@
                         console.error('Phone deletion error:', error);
                         this.showNotification('Hata', 'Telefon silinirken bir hata oluştu', 'error');
                     }
+                },
+                
+                showPhoneDetails(phone) {
+                    this.selectedPhone = phone;
+                    const modal = new bootstrap.Modal(document.getElementById('phoneDetailsModal'));
+                    modal.show();
                 },
                 
                 showNotification(title, message, type = 'info') {

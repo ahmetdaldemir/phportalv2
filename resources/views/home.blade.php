@@ -163,53 +163,55 @@
         </div>
         <div class="mt-3"></div>
 
+        <!-- Analytics Section -->
         <div class="row">
             <div class="col-md-12">
                 <div class="card modern-card">
                     <div class="card-header">
                         <h6 class="card-title">
                             <i class="bx bx-bar-chart me-2"></i>
-                            Satış Grafikleri
+                            Satış Analizi
                         </h6>
                     </div>
                     <div class="card-body">
                         <div class="chart-container">
-                            <div id="newChart"></div>
-                        </div>
+                        <div id="newChart"></div>
                     </div>
                 </div>
             </div>
         </div>
+        </div>
+        
         <div class="row">
             <div class="col-md-12">
                 <div class="card modern-card">
                     <div class="card-header">
                         <h6 class="card-title">
                             <i class="bx bx-trending-up me-2"></i>
-                            Aylık Satış Grafikleri
+                            Aylık Performans
                         </h6>
                     </div>
                     <div class="card-body">
                         <div class="chart-container">
-                            <div id="newMonthChart"></div>
-                        </div>
+                        <div id="newMonthChart"></div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="mt-3"></div>
+        </div>
+        
         <div class="row">
             <div class="col-md-12">
                 <div class="card modern-card">
                     <div class="card-header">
                         <h6 class="card-title">
                             <i class="bx bx-pie-chart me-2"></i>
-                            Toplam Aylık Analiz
+                            Genel Analiz
                         </h6>
                     </div>
                     <div class="card-body">
                         <div class="chart-container">
-                            <div id="totalAylik"></div>
+                        <div id="totalAylik"></div>
                         </div>
                     </div>
                 </div>
@@ -222,8 +224,8 @@
                 <div class="card h-100 modern-card">
                     <div class="card-header">
                         <h6 class="card-title mb-0" style="font-size: 1rem; font-weight: 600;">
-                            <i class="bx bx-trending-down me-2 text-warning"></i>
-                            Azalan Ürünler
+                            <i class="bx bx-package me-2 text-primary"></i>
+                            Stok Uyarıları
                         </h6>
                     </div>
                     <div class="card-body">
@@ -231,10 +233,10 @@
                             <table class="table table-hover">
                                 <thead>
                                 <tr>
-                                    <th><i class="bx bx-package me-1"></i>Ürün Adı</th>
-                                    <th><i class="bx bx-hash me-1"></i>Kalan Stok</th>
-                                    <th><i class="bx bx-dollar me-1"></i>Son Maliyet</th>
-                                    <th><i class="bx bx-tag me-1"></i>Son Satış Fiyatı</th>
+                                    <th><i class="bx bx-package me-1"></i>Ürün</th>
+                                    <th><i class="bx bx-hash me-1"></i>Stok</th>
+                                    <th><i class="bx bx-dollar me-1"></i>Maliyet</th>
+                                    <th><i class="bx bx-tag me-1"></i>Satış Fiyatı</th>
                                     <th><i class="bx bx-cog me-1"></i>İşlem</th>
                                 </tr>
                                 </thead>
@@ -276,10 +278,10 @@
                         @csrf
                         <div class="card-header">
                             <h6 class="card-title mb-0" style="font-size: 1rem; font-weight: 600;">
-                                <i class="bx bx-undo me-2 text-danger"></i>
+                                <i class="bx bx-undo me-2 text-primary"></i>
                                 İade İşlemi
                             </h6>
-                            <small class="text-muted">*(Seri numarası girilirse ise stock seçimine gerek yok)</small>
+                            <small class="text-muted">Seri numarası girilirse stok seçimine gerek yoktur</small>
                         </div>
                         <div class="card-body">
                             <div class="row">
@@ -365,8 +367,8 @@
                         @csrf
                         <div class="card-header">
                             <h6 class="card-title mb-0" style="font-size: 1rem; font-weight: 600;">
-                                <i class="bx bx-trash me-2 text-danger"></i>
-                                Silinecek Seri Numaraları
+                                <i class="bx bx-trash me-2 text-primary"></i>
+                                Seri Numarası Silme
                             </h6>
                         </div>
                         <div class="card-body">
@@ -378,7 +380,7 @@
                                            name="serial_number" 
                                            class="form-control" 
                                            id="serial_number_delete"
-                                           placeholder="Silinecek seri numarası">
+                                           placeholder="Seri numarası girin">
                                 </div>
                                 <div class="col mb-0">
                                     <label for="deleteButton" class="form-label"></label>
@@ -464,547 +466,6 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <script>
-        const { createApp } = Vue;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .page-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-            pointer-events: none;
-        }
-        
-        .page-header h1 {
-            color: white !important;
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin: 0;
-            text-shadow: 0 3px 6px rgba(0,0,0,0.5);
-            letter-spacing: 1px;
-        }
-        
-        .page-header p {
-            color: white !important;
-            font-size: 1.2rem;
-            margin: 0.5rem 0 0 0;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.4);
-            font-weight: 500;
-        }
-        
-        /* Professional Card Styling */
-        .professional-card {
-            border: none;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            overflow: hidden;
-        }
-        
-        .professional-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
-        }
-        
-        .professional-card .card-header {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            padding: 1.5rem;
-            border-radius: 20px 20px 0 0;
-        }
-        
-        .professional-card .card-header .card-title {
-            color: #495057 !important;
-            font-weight: 700;
-            font-size: 1.1rem;
-            text-shadow: none;
-            margin-bottom: 0;
-        }
-        
-        .professional-card .card-header .text-muted {
-            color: #6c757d !important;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-        
-        .professional-card .card-body {
-            padding: 2rem;
-        }
-        
-        /* Sales Card Specific */
-        .sales-card {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-            border-left: 5px solid #667eea;
-        }
-        
-        .sales-card .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .sales-card .card-header .card-title {
-            color: white !important;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        .sales-card .card-header .text-muted {
-            color: rgba(255,255,255,0.9) !important;
-        }
-        
-        /* Transfer Card Specific */
-        .transfer-card {
-            background: linear-gradient(135deg, rgba(40, 167, 69, 0.05) 0%, rgba(32, 201, 151, 0.05) 100%);
-            border-left: 5px solid #28a745;
-        }
-        
-        .transfer-card .card-header {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-        }
-        
-        .transfer-card .card-header .card-title {
-            color: white !important;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        .transfer-card .card-header .text-muted {
-            color: rgba(255,255,255,0.9) !important;
-        }
-        
-        /* Chart Card Specific */
-        .chart-card {
-            background: linear-gradient(135deg, rgba(255, 193, 7, 0.05) 0%, rgba(253, 126, 20, 0.05) 100%);
-            border-left: 5px solid #ffc107;
-        }
-        
-        .chart-card .card-header {
-            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
-            color: white;
-        }
-        
-        .chart-card .card-header .card-title {
-            color: white !important;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        .chart-card .card-header .text-muted {
-            color: rgba(255,255,255,0.9) !important;
-        }
-        
-        /* Refund Card Specific */
-        .refund-card {
-            background: linear-gradient(135deg, rgba(220, 53, 69, 0.05) 0%, rgba(253, 126, 20, 0.05) 100%);
-            border-left: 5px solid #dc3545;
-        }
-        
-        .refund-card .card-header {
-            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
-            color: white;
-        }
-        
-        .refund-card .card-header .card-title {
-            color: white !important;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        .refund-card .card-header .text-muted {
-            color: rgba(255,255,255,0.9) !important;
-        }
-        
-        /* Delete Card Specific */
-        .delete-card {
-            background: linear-gradient(135deg, rgba(108, 117, 125, 0.05) 0%, rgba(73, 80, 87, 0.05) 100%);
-            border-left: 5px solid #6c757d;
-        }
-        
-        .delete-card .card-header {
-            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-            color: white;
-        }
-        
-        .delete-card .card-header .card-title {
-            color: white !important;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        .delete-card .card-header .text-muted {
-            color: rgba(255,255,255,0.9) !important;
-        }
-        
-        /* Professional Table Styling */
-        .table {
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            border: none;
-            background: white;
-        }
-        
-        .table thead th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white !important;
-            border: none;
-            font-weight: 700;
-            padding: 0.75rem 0.5rem;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            position: relative;
-        }
-        
-        .table thead th::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%);
-        }
-        
-        .table tbody tr {
-            transition: all 0.3s ease;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-        
-        .table tbody tr:hover {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-            transform: scale(1.01);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .table tbody td {
-            padding: 0.5rem;
-            border: none;
-            vertical-align: middle;
-            font-size: 0.75rem;
-            color: #495057;
-        }
-        
-        .table tbody tr:nth-child(even) {
-            background: rgba(248, 249, 250, 0.5);
-        }
-        
-        /* Professional Buttons */
-        .btn {
-            border-radius: 12px;
-            padding: 0.5rem 1rem;
-            font-weight: 600;
-            font-size: 0.85rem;
-            transition: all 0.3s ease;
-            border: none;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.6);
-        }
-        
-        .btn-secondary {
-            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-        }
-        
-        .btn-secondary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(108, 117, 125, 0.4);
-        }
-        
-        .btn-danger {
-            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
-            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
-        }
-        
-        .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(220, 53, 69, 0.6);
-        }
-        
-        /* Form Controls */
-        .form-control, .form-select {
-            border: 2px solid #e9ecef;
-            border-radius: 12px;
-            padding: 0.75rem 1rem;
-            transition: all 0.3s ease;
-        }
-        
-        .form-control:focus, .form-select:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        
-        .form-label {
-            font-weight: 600;
-            color: #495057;
-            margin-bottom: 0.75rem;
-        }
-        
-        /* Modal Styling */
-        .modal-content {
-            border-radius: 20px;
-            border: none;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-        }
-        
-        .modal-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 20px 20px 0 0;
-            border: none;
-        }
-        
-        .modal-title {
-            font-weight: 700;
-            color: white;
-        }
-        
-        .btn-close {
-            filter: invert(1);
-        }
-        
-        /* Card Footer */
-        .card-footer {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-top: 1px solid rgba(0,0,0,0.05);
-            padding: 1rem 1.5rem;
-            border-radius: 0 0 20px 20px;
-        }
-        
-        /* Icon Styling */
-        .display-4 {
-            font-size: 3rem;
-            opacity: 0.8;
-        }
-        
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .page-header {
-                padding: 1.5rem;
-            }
-            
-            .page-header h1 {
-                font-size: 2rem;
-            }
-            
-            .professional-card .card-body {
-                padding: 1.5rem;
-            }
-        }
-        
-        /* Animation for cards */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .professional-card {
-            animation: fadeInUp 0.6s ease-out;
-        }
-        
-        .professional-card:nth-child(1) { animation-delay: 0.1s; }
-        .professional-card:nth-child(2) { animation-delay: 0.2s; }
-        .professional-card:nth-child(3) { animation-delay: 0.3s; }
-        .professional-card:nth-child(4) { animation-delay: 0.4s; }
-        
-        /* Enhanced Loading States */
-        .loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            border-radius: 20px;
-        }
-        
-        .loading-spinner {
-            width: 3rem;
-            height: 3rem;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        .loading-text {
-            margin-top: 1rem;
-            font-weight: 600;
-            color: #667eea;
-            font-size: 1.1rem;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .btn-loading {
-            position: relative;
-            pointer-events: none;
-        }
-        
-        .btn-loading::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 20px;
-            height: 20px;
-            margin: -10px 0 0 -10px;
-            border: 2px solid transparent;
-            border-top: 2px solid #ffffff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        .form-loading {
-            position: relative;
-        }
-        
-        .form-loading::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 12px;
-            z-index: 1;
-        }
-        
-        .form-loading input,
-        .form-loading select,
-        .form-loading button {
-            position: relative;
-            z-index: 2;
-        }
-        
-        .pulse-animation {
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-        
-        /* Sayfa yüklenirken loading overlay */
-        .page-loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            backdrop-filter: blur(5px);
-        }
-        
-        .loading-content {
-            text-align: center;
-            background: white;
-            padding: 3rem;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-            width: 90%;
-        }
-        
-        .loading-spinner-large {
-            width: 4rem;
-            height: 4rem;
-            border: 6px solid #f3f3f3;
-            border-top: 6px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1.5rem;
-        }
-        
-        .loading-text {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #667eea;
-            margin-bottom: 2rem;
-        }
-        
-        .loading-progress {
-            margin-top: 1rem;
-        }
-        
-        .progress-step {
-            display: flex;
-            align-items: center;
-            padding: 1rem;
-            margin: 0.5rem 0;
-            background: #f8f9fa;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            opacity: 0.6;
-        }
-        
-        .progress-step.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            opacity: 1;
-            transform: scale(1.02);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-        
-        .progress-step.completed {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            opacity: 1;
-        }
-        
-        .progress-step i {
-            font-size: 1.2rem;
-            margin-right: 0.75rem;
-            width: 20px;
-        }
-        
-        .progress-step span {
-            font-weight: 500;
-        }
-        
-        .progress-step.active i {
-            animation: pulse 1.5s infinite;
-        }
-    </style>
-@endsection
-
-@section('custom-js')
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script>
         const { createApp } = Vue;
         
@@ -1164,7 +625,7 @@
                         fill: {
                             opacity: 1
                         },
-                        colors: ['#667eea', '#764ba2', '#28a745', '#ffc107'],
+                        colors: ['#667eea', '#28a745', '#17a2b8', '#6c757d'],
                         legend: {
                             position: 'top',
                             horizontalAlign: 'left'
@@ -1197,7 +658,7 @@
                         xaxis: {
                             categories: data.categories || []
                         },
-                        colors: ['#667eea', '#764ba2', '#28a745', '#ffc107'],
+                        colors: ['#667eea', '#28a745', '#17a2b8', '#6c757d'],
                         legend: {
                             position: 'top'
                         }
@@ -1242,7 +703,7 @@
                         fill: {
                             opacity: 1
                         },
-                        colors: ['#667eea', '#28a745']
+                        colors: ['#667eea', '#6c757d']
                     };
                     
                     const chart = new ApexCharts(document.querySelector("#totalAylik"), options);

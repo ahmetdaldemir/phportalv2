@@ -16,6 +16,7 @@
         "irfa/php-sn-generator": "^1.1",
         "laravel/framework": "^11.0",
         "laravel/horizon": "^5.34",
+
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
         "laravel/ui": "^4.5",
