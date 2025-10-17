@@ -1,59 +1,27 @@
 @extends('layouts.admin')
 
 @section('custom-css')
-    <link rel="stylesheet" href="{{asset('assets/css/list-page-base.css')}}">
-    <style>
-        /* Base CSS'den gelen tüm stiller kullanılıyor */
-        /* Accordion Styles - Specific to stockcard index */
-        .accordion-toggle {
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .accordion-toggle:hover {
-            background: #f8f9fa !important;
-        }
-        
-        .accordion-toggle i {
-            transition: transform 0.3s ease;
-        }
-        
-        .accordion-toggle[aria-expanded="true"] i {
-            transform: rotate(180deg);
-        }
-        
-        .hiddenRow {
-            padding: 0 !important;
-        }
-        
-        .accordian-body {
-            background: #f8f9fa;
-            border-radius: 8px;
-            margin: 0.5rem;
-            padding: 1rem;
-        }
-    </style>
+    <link rel="stylesheet" href="{{asset('assets/css/table-page-framework.css')}}">
 @endsection
 
 @section('content')
-    
-    <div class="container-xxl flex-grow-1 container-p-y">
-        <!-- Professional Page Header -->
-        <div class="page-header mb-4">
-            <div class="d-flex align-items-center justify-content-between flex-wrap">
-                <div class="d-flex align-items-center mb-3 mb-md-0">
-                    <div class="me-3">
-                        <i class="bx bx-package display-4 text-white"></i>
+    <div id="stockcard-list-app" class="container-xxl flex-grow-1 container-p-y">
+        <!-- Table Page Header -->
+        <div class="table-page-header table-page-fade-in">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="header-icon">
+                        <i class="bx bx-package"></i>
                     </div>
-                    <div>
-                        <h2 class="mb-0" style="font-size: 1.5rem; font-weight: 600; color: white;">
+                    <div class="header-text">
+                        <h2>
                             <i class="bx bx-package me-2"></i>
                             STOK KART LİSTESİ
                         </h2>
-                        <p class="mb-0" style="font-size: 0.9rem; color: rgba(255,255,255,0.9);">Stok kartları ve ürün yönetimi</p>
+                        <p>Stok kartları ve ürün yönetimi</p>
                     </div>
                 </div>
-                <div>
+                <div class="header-actions">
                     <a href="{{route('stockcard.create')}}" class="btn btn-primary btn-sm">
                         <i class="bx bx-plus me-1"></i>
                         Yeni Stok Ekle
@@ -62,149 +30,148 @@
             </div>
         </div>
 
-        <div class="card professional-card">
-            <div class="card-header professional-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-title mb-0" style="font-size: 1rem; font-weight: 600;">
-                            <i class="bx bx-filter me-2"></i>
-                            Filtreler
-                        </h6>
-                        <small class="text-muted">Stok kartı arama ve filtreleme</small>
-                    </div>
-                </div>
+        <!-- Table Page Filters -->
+        <div class="table-page-filters table-page-fade-in-delay-1">
+            <div class="filter-header">
+                <h6>
+                    <i class="bx bx-filter me-2"></i>
+                    Filtreler
+                </h6>
+                <small>Stok kartı arama ve filtreleme</small>
             </div>
-            
-            <!-- Vue.js Stock Cards List -->
-            <div id="stockcard-list-app" class="card-body p-4">
-                <form @submit.prevent="searchStockCards" class="compact-filter-form">
-                    <!-- Row 1: Main Filters -->
-                    <div class="row g-2 mb-2">
-                        <div class="col-lg-3 col-md-4">
-                            <div class="compact-filter-group">
-                                <label class="compact-label">
-                                    <i class="bx bx-search"></i> Stok Adı
-                                </label>
-                                <input 
-                                    type="text" 
-                                    v-model="filters.stockName"
-                                    @input="debouncedSearch"
-                                    class="form-control form-control-sm compact-input" 
-                                    placeholder="Stok adı..."
-                                >
-                            </div>
+            <div class="filter-body">
+                <form @submit.prevent="searchStockCards">
+                    <!-- Filter Row -->
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="bx bx-search"></i> Stok Adı
+                            </label>
+                            <input type="text" v-model="filters.stockName" @input="debouncedSearch" class="filter-input" placeholder="Stok adı...">
                         </div>
                         
-                        <div class="col-lg-2 col-md-4">
-                            <div class="compact-filter-group">
-                                <label class="compact-label">
-                                    <i class="bx bx-package"></i> Marka
-                                </label>
-                                <select v-model="filters.brand" @change="loadVersions" class="form-select form-select-sm compact-select">
-                                    <option value="">Tüm Markalar</option>
-                                    <option v-for="brand in brands" :key="brand.id" :value="brand.id">@{{ brand.name }}</option>
-                                </select>
-                            </div>
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="bx bx-package"></i> Marka
+                            </label>
+                            <select v-model="filters.brand" @change="loadVersions" class="filter-select">
+                                <option value="">Tüm Markalar</option>
+                                <option v-for="brand in brands" :key="brand.id" :value="brand.id" v-text="brand.name"></option>
+                            </select>
                         </div>
                         
-                        <div class="col-lg-2 col-md-4">
-                            <div class="compact-filter-group">
-                                <label class="compact-label">
-                                    <i class="bx bx-mobile-alt"></i> Model
-                                </label>
-                                <select v-model="filters.version" class="form-select form-select-sm compact-select" :disabled="!filters.brand">
-                                    <option value="">Tüm Modeller</option>
-                                    <option v-for="version in versions" :key="version.id" :value="version.id">@{{ version.name }}</option>
-                                </select>
-                            </div>
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="bx bx-mobile-alt"></i> Model
+                            </label>
+                            <select v-model="filters.version" class="filter-select" :disabled="!filters.brand">
+                                <option value="">Tüm Modeller</option>
+                                <option v-for="version in versions" :key="version.id" :value="version.id" v-text="version.name"></option>
+                            </select>
                         </div>
                         
-                        <div class="col-lg-2 col-md-6">
-                            <div class="compact-filter-group">
-                                <label class="compact-label">
-                                    <i class="bx bx-category"></i> Kategori
-                                </label>
-                                <select v-model="filters.category" class="form-select form-select-sm compact-select">
-                                    <option value="">Tüm Kategoriler</option>
-                                    <option v-for="category in categories" :key="category.id" :value="category.id">@{{ category.path || category.name }}</option>
-                                </select>
-                            </div>
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="bx bx-category"></i> Kategori
+                            </label>
+                            <select v-model="filters.category" class="filter-select">
+                                <option value="">Tüm Kategoriler</option>
+                                <option v-for="category in categories" :key="category.id" :value="category.id" v-text="category.path || category.name"></option>
+                            </select>
                         </div>
                         
-                        <div class="col-lg-3 col-md-6">
-                            <div class="compact-filter-group">
-                                <label class="compact-label d-none d-md-block invisible">Aksiyon</label>
-                                <div class="d-flex gap-2">
-                                    <button type="submit" class="btn btn-primary btn-sm flex-fill" :disabled="loading.search">
-                                        <span v-if="loading.search" class="spinner-border spinner-border-sm me-1"></span>
-                                        <i v-else class="bx bx-search me-1"></i>
-                                        @{{ loading.search ? 'Aranıyor...' : 'Ara' }}
-                                    </button>
-                                    <button type="button" @click="clearFilters" class="btn btn-outline-secondary btn-sm" title="Filtreleri Temizle">
-                                        <i class="bx bx-refresh"></i>
-                                    </button>
-                                </div>
-                            </div>
+                        <div class="filter-group auto">
+                            <label class="filter-label">
+                                <i class="bx bx-search"></i> Ara
+                            </label>
+                            <button type="submit" class="filter-button primary" :disabled="loading.search">
+                                <span v-if="loading.search" class="spinner-border spinner-border-sm me-1"></span>
+                                <i v-else class="bx bx-search me-1"></i>
+                                <span v-text="loading.search ? 'Aranıyor...' : 'Ara'"></span>
+                            </button>
+                        </div>
+                        
+                        <div class="filter-group auto">
+                            <label class="filter-label">
+                                <i class="bx bx-refresh"></i> Temizle
+                            </label>
+                            <button type="button" @click="clearFilters" class="filter-button secondary" title="Filtreleri Temizle">
+                                <i class="bx bx-refresh me-1"></i>
+                                Temizle
+                            </button>
                         </div>
                     </div>
                 </form>
             </div>
-            
+        </div>
+        
+        <!-- Data Table -->
+        <div class="table-page-table table-page-fade-in-delay-2">
             <!-- Loading State -->
-            <div v-if="loading.stockcards" class="table-loading-overlay">
-                <div class="loading-content">
-                    <div class="loading-spinner-large"></div>
-                    <div class="loading-text">Stok kartları yükleniyor...</div>
-                </div>
+            <div v-if="loading.stockcards" class="table-page-loading">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="text-primary mt-2">Stok kartları yükleniyor...</p>
             </div>
             
             <!-- Empty State -->
-            <div v-else-if="stockcards.length === 0" class="empty-state">
-                <div class="empty-content">
-                    <i class="bx bx-package display-1 text-muted"></i>
-                    <h5 class="mt-3">Stok kartı bulunamadı</h5>
-                    <p class="text-muted">Arama kriterlerinize uygun stok kartı bulunamadı.</p>
-                </div>
+            <div v-else-if="stockcards.length === 0" class="table-page-empty">
+                <i class="bx bx-package"></i>
+                <h4 class="mt-3">Stok kartı bulunamadı</h4>
+                <p class="text-muted">Arama kriterlerinize uygun stok kartı bulunamadı.</p>
             </div>
             
             <!-- Table -->
-            <div v-else class="table-responsive text-nowrap">
-                    <table class="table professional-table">
+            <div v-else class="table-responsive">
+                <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th><i class="bx bx-package me-1"></i>#</th>
-                                <th><i class="bx bx-package me-1"></i>Stok Adı</th>
-                                <th><i class="bx bx-barcode me-1"></i>Barkod</th>
-                                <th><i class="bx bx-box me-1"></i>Adet</th>
-                                <th><i class="bx bx-category me-1"></i>Kategori</th>
+                                <th style="width: 5%;"><i class="bx bx-hash me-1"></i>#</th>
+                                <th style="width: 30%;"><i class="bx bx-package me-1"></i>Stok Adı</th>
+                                <th style="width: 15%;"><i class="bx bx-tag me-1"></i>Marka</th>
+                                <th style="width: 15%;"><i class="bx bx-mobile me-1"></i>Model</th>
+                                <th style="width: 25%;"><i class="bx bx-category me-1"></i>Kategori</th>
+                                <th style="width: 10%;"><i class="bx bx-tachometer me-1"></i>Devir Hızı</th>
+                                <th style="width: 10%;" class="text-center"><i class="bx bx-box me-1"></i>Adet</th>
                             </tr>
                         </thead>
-                        <tbody class="table-border-bottom-0 professional-tbody">
-                            <template v-for="stockcard in stockcards" :key="stockcard.id">
-                                <tr 
-                                    class="accordion-toggle" 
-                                    style="cursor: pointer;"
-                                    @click="showStockMovements(stockcard.id)"
-                                >
+                        <tbody>
+                            <tr v-for="stockcard in stockcards" :key="stockcard.id" style="cursor: pointer;" @click="showStockMovements(stockcard.id)">
                                 <td>
-                                        <i class="bx bx-down-arrow me-2"></i>
-                                        <strong>@{{ stockcard.id }}</strong>
-                                    </td>
-                                    <td>
-                                        <i class="bx bx-down-arrow me-2"></i>
-                                        <strong>@{{ stockcard.name }}</strong>
-                                    </td>
-                                    <td>
-                                        <i class="bx bx-barcode me-2"></i>
-                                        <strong>@{{ stockcard.barcode }}</strong>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-warning">@{{ stockcard.quantity }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-info">@{{ stockcard.category_sperator_name }}@{{ stockcard.category }}</span>
-                                    </td>
-                                </tr>
+                                    <span class="badge bg-primary" v-text="stockcard.id"></span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bx bx-package me-2 text-primary"></i>
+                                        <strong v-text="stockcard.name || stockcard.stock_name"></strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary" v-text="stockcard.brand || stockcard.brand_name"></span>
+                                </td>
+                                <td>
+                                    <div v-if="Array.isArray(stockcard.version) && stockcard.version.length > 0">
+                                        <span v-for="(ver, idx) in stockcard.version.slice(0, 3)" :key="idx" class="badge bg-info me-1 mb-1" v-text="ver"></span>
+                                        <span v-if="stockcard.version.length > 3" class="badge bg-dark" v-text="'+' + (stockcard.version.length - 3)"></span>
+                                    </div>
+                                    <span v-else class="text-muted">-</span>
+                                </td>
+                                <td>
+                                    <span v-text="stockcard.category_separator_name || stockcard.category_sperator_name || ''"></span>
+                                    <span v-text="stockcard.category_name || stockcard.category || ''"></span>
+                                </td>
+                                <td class="text-center">
+                                    <span v-if="stockcard.turnover_rate && stockcard.turnover_rate > 0" 
+                                          class="badge" 
+                                          :class="stockcard.turnover_status?.class || 'bg-secondary'"
+                                          :title="stockcard.turnover_status?.description || ''"
+                                          v-text="stockcard.turnover_rate + ' gün'">
+                                    </span>
+                                    <span v-else class="badge bg-secondary" title="Son 90 günde satış yok">-</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge" :class="stockcard.quantity > 0 ? 'bg-success' : 'bg-warning'" v-text="stockcard.quantity"></span>
+                                </td>
+                            </tr>
                                 <!-- tr>
                                     <td colspan="2" class="hiddenRow">
                                         <div class="accordian-body collapse" :id="'l' + stockcard.id">
@@ -308,44 +275,39 @@
                         </tbody>
                     </table>
                 </div>
-                
-                <!-- Pagination -->
-                <div v-if="pagination && pagination.total > 0" class="mt-4">
-                    <nav aria-label="Stok kartları sayfalama">
-                        <ul class="pagination justify-content-center">
-                            <li class="page-item" :class="{ disabled: pagination.current_page === 1 }">
-                                <a class="page-link" href="#" @click.prevent="changePage(pagination.current_page - 1)">
-                                    <i class="bx bx-chevron-left"></i>
-                                </a>
-                            </li>
-                            
-                            <li v-for="page in getPageNumbers()" :key="page" 
-                                class="page-item" 
-                                :class="{ active: page === pagination.current_page }">
-                                <a class="page-link" href="#" @click.prevent="changePage(page)">
-                                    @{{ page }}
-                                </a>
-                            </li>
-                            
-                            <li class="page-item" :class="{ disabled: pagination.current_page === pagination.last_page }">
-                                <a class="page-link" href="#" @click.prevent="changePage(pagination.current_page + 1)">
-                                    <i class="bx bx-chevron-right"></i>
-                                </a>
-                            </li>
-                        </ul>
-                        
-                        <div class="pagination-info text-center mt-2">
-                            <small class="text-muted">
-                                @{{ pagination.from }} - @{{ pagination.to }} / @{{ pagination.total }} kayıt
-                                (Sayfa @{{ pagination.current_page }} / @{{ pagination.last_page }})
-                            </small>
-                        </div>
-                    </nav>
-                </div>
             </div>
-        </div>
+            
+            <!-- Pagination -->
+            <div v-if="pagination && pagination.total > 0" class="table-page-pagination table-page-fade-in-delay-3">
+                <nav aria-label="Stok kartları sayfalama">
+                    <ul class="pagination">
+                        <li class="page-item" :class="{ disabled: pagination.current_page === 1 }">
+                            <a class="page-link" href="#" @click.prevent="changePage(pagination.current_page - 1)">
+                                <i class="bx bx-chevron-left"></i>
+                            </a>
+                        </li>
+                        
+                        <li v-for="page in getPageNumbers()" :key="page" class="page-item" :class="{ active: page === pagination.current_page }">
+                            <a class="page-link" href="#" @click.prevent="changePage(page)" v-text="page"></a>
+                        </li>
+                        
+                        <li class="page-item" :class="{ disabled: pagination.current_page === pagination.last_page }">
+                            <a class="page-link" href="#" @click.prevent="changePage(pagination.current_page + 1)">
+                                <i class="bx bx-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                    
+                    <div class="pagination-info">
+                        <small class="text-muted">
+                            <span v-text="pagination.from"></span> - <span v-text="pagination.to"></span> / <span v-text="pagination.total"></span> kayıt
+                            (Sayfa <span v-text="pagination.current_page"></span> / <span v-text="pagination.last_page"></span>)
+                        </small>
+                    </div>
+                </nav>
+            </div>
         <hr class="my-5">
-    </div>
+
     <div class="modal fade" id="deleteModal" data-bs-backdrop="static" tabindex="-1">
         <div class="modal-dialog">
             <form class="modal-content" action="{{route('stockcard.delete')}}" id="deleteModalForm">
@@ -464,31 +426,39 @@
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="bx bx-list-ul me-2"></i>
-                        Stok Hareketleri - @{{ selectedStockCard.name }}
+                        Stok Hareketleri - <span v-text="selectedStockCard.name"></span>
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div v-if="loading.movements" class="text-center py-4">
+                    <div v-show="loading.movements" class="text-center py-4">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Yükleniyor...</span>
                         </div>
                         <p class="mt-2">Hareketler yükleniyor...</p>
                     </div>
                     
-                    <div v-else-if="stockMovements.length === 0" class="text-center py-4">
+                    <div v-show="!loading.movements && stockMovements.length === 0" class="text-center py-4">
                         <i class="bx bx-package text-muted" style="font-size: 3rem;"></i>
                         <p class="text-muted mt-2">Bu stok kartına ait hareket bulunamadı.</p>
                     </div>
                     
-                    <div v-else>
+                    <div v-show="!loading.movements && stockMovements.length > 0">
+                        <!-- Toplam Bilgi -->
+                        <div class="alert alert-info mb-3">
+                            <i class="bx bx-info-circle me-2"></i>
+                            Toplam <strong v-text="stockMovements.length"></strong> hareket bulundu. 
+                            Sayfa <strong v-text="movementsPagination.currentPage"></strong> / <strong v-text="totalMovementsPages"></strong>
+                            (Her sayfada 10 kayıt gösteriliyor)
+                        </div>
+                        
                         <!-- Hareket Grupları -->
-                        <div v-for="(group, groupName) in groupedMovements" :key="groupName" class="mb-4">
-                            <div class="card">
+                        <div v-for="(group, groupName) in paginatedGroupedMovements" :key="groupName" class="mb-4">
+                            <div class="card" v-if="group.length > 0">
                                 <div class="card-header bg-primary text-white">
                                     <h6 class="mb-0">
                                         <i class="bx bx-group me-2"></i>
-                                        @{{ groupName }} (@{{ group.length }} hareket)
+                                        <span v-text="groupName"></span> (<span v-text="group.length"></span> hareket gösteriliyor)
                                     </h6>
                                 </div>
                                 <div class="card-body p-0">
@@ -506,28 +476,51 @@
                                             </thead>
                                             <tbody>
                                                 <tr v-for="(movement, index) in group" :key="movement.id">
-                                                    <td>@{{ index + 1 }}</td>
+                                                    <td v-text="index + 1"></td>
                                                     <td>
-                                                        <span class="badge bg-info">
-                                                            @{{ formatDate(movement.created_at) }}
-                                                        </span>
+                                                        <span class="badge bg-info" v-text="formatDate(movement.created_at)"></span>
                                                     </td>
                                                     <td>
-                                                        <code>@{{ movement.serial_number }}</code>
+                                                        <code v-text="movement.serial_number"></code>
                                                     </td>
                                                     <td>
                                                         <span class="badge" :class="getQuantityBadgeClass(movement.type)">
-                                                            @{{ movement.quantity > 0 ? '+' : '' }}@{{ movement.quantity }}
+                                                            <span v-text="(movement.quantity > 0 ? '+' : '') + movement.quantity"></span>
                                                         </span>
                                                     </td>
-                                                    <td>@{{ movement.user_name || 'Sistem' }}</td>
-                                                    <td>@{{ movement.description || '-' }}</td>
+                                                    <td v-text="movement.user_name || 'Sistem'"></td>
+                                                    <td v-text="movement.description || '-'"></td>
                                                 </tr>
                                             </tbody>
                                         </table>
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                        
+                        <!-- Movements Pagination -->
+                        <div class="mt-4" v-if="totalMovementsPages > 1">
+                            <nav aria-label="Hareketler sayfalama">
+                                <ul class="pagination justify-content-center">
+                                    <li class="page-item" :class="{ disabled: movementsPagination.currentPage === 1 }">
+                                        <a class="page-link" href="#" @click.prevent="changeMovementsPage(movementsPagination.currentPage - 1)">
+                                            <i class="bx bx-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                    
+                                    <li v-for="page in getMovementsPageNumbers()" :key="page" 
+                                        class="page-item" 
+                                        :class="{ active: page === movementsPagination.currentPage }">
+                                        <a class="page-link" href="#" @click.prevent="changeMovementsPage(page)" v-text="page"></a>
+                                    </li>
+                                    
+                                    <li class="page-item" :class="{ disabled: movementsPagination.currentPage === totalMovementsPages }">
+                                        <a class="page-link" href="#" @click.prevent="changeMovementsPage(movementsPagination.currentPage + 1)">
+                                            <i class="bx bx-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
                         </div>
                     </div>
                 </div>
@@ -539,6 +532,7 @@
             </div>
         </div>
     </div>
+</div>
  @endsection
 
 @section('custom-js')
@@ -571,6 +565,10 @@
                     expandedCards: [],
                     selectedStockCard: {},
                     stockMovements: [],
+                    movementsPagination: {
+                        currentPage: 1,
+                        perPage: 10
+                    },
                     filters: {
                         stockName: '',
                         brand: '',
@@ -599,6 +597,24 @@
                     });
                     
                     return groups;
+                },
+                
+                paginatedGroupedMovements() {
+                    const groups = this.groupedMovements;
+                    const paginatedGroups = {};
+                    
+                    Object.keys(groups).forEach(groupKey => {
+                        const start = (this.movementsPagination.currentPage - 1) * this.movementsPagination.perPage;
+                        const end = start + this.movementsPagination.perPage;
+                        paginatedGroups[groupKey] = groups[groupKey].slice(start, end);
+                    });
+                    
+                    return paginatedGroups;
+                },
+                
+                totalMovementsPages() {
+                    if (!this.stockMovements.length) return 1;
+                    return Math.ceil(this.stockMovements.length / this.movementsPagination.perPage);
                 }
             },
             async mounted() {
@@ -606,8 +622,9 @@
                 
                 // Global API'lerden verileri yükle
                 await this.loadGlobalData();
-                // İlk yüklemede veri çekmiyoruz - kullanıcı arama yaptığında yüklenecek
-                this.loading.stockcards = false;
+                
+                // İlk yüklemede stok kartlarını yükle
+                await this.loadStockCards(1);
             },
             methods: {
                 // Global verileri yükle
@@ -744,26 +761,26 @@
                     try {
                         this.loading.stockcards = true;
                         
-                        const params = new URLSearchParams();
-                        params.append('page', page);
-                        if (this.filters.stockName) params.append('stockName', this.filters.stockName);
-                        if (this.filters.brand) params.append('brand', this.filters.brand);
-                        if (this.filters.version) params.append('version', this.filters.version);
-                        if (this.filters.category) params.append('category', this.filters.category);
+                        const params = {
+                            page: page,
+                            per_page: 15
+                        };
                         
-                        const response = await axios.get(`{{route('stockcard.index')}}?${params.toString()}`, {
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
-                            }
+                        if (this.filters.stockName) params.stockName = this.filters.stockName;
+                        if (this.filters.brand) params.brand = this.filters.brand;
+                        if (this.filters.version) params.version = this.filters.version;
+                        if (this.filters.category) params.category = this.filters.category;
+                        
+                        console.log('Loading stockcards with params:', params);
+                        
+                        const response = await axios.get('{{ route("stockcard.getStockCardsData") }}', {
+                            params: params
                         });
                         
-                        // Debug: Response'u logla
-                        console.log('Response:', response.data);
+                        console.log('API Response:', response.data);
                         
-                        // Response'dan veri al
-                        if (response.data && response.data.success && response.data.data) {
-                            this.stockcards = response.data.data;
+                        if (response.data && response.data.success) {
+                            this.stockcards = response.data.data || [];
                             this.pagination = response.data.pagination || {
                                 from: 0,
                                 to: 0,
@@ -775,11 +792,14 @@
                         } else {
                             console.error('API response error:', response.data);
                             this.showNotification('Stok kartları yüklenemedi', 'error');
+                            this.stockcards = [];
                         }
                         
                     } catch (error) {
                         console.error('Stok kartları yüklenirken hata:', error);
+                        console.error('Error details:', error.response?.data);
                         this.showNotification('Stok kartları yüklenemedi', 'error');
+                        this.stockcards = [];
                     } finally {
                         this.loading.stockcards = false;
                     }
@@ -846,6 +866,9 @@
                         // Seçilen stok kartını bul
                         this.selectedStockCard = this.stockcards.find(card => card.id === stockCardId);
                         
+                        // Pagination'ı sıfırla
+                        this.movementsPagination.currentPage = 1;
+                        
                         // Modal'ı aç
                         const modal = new bootstrap.Modal(document.getElementById('stockMovementsModal'));
                         modal.show();
@@ -864,16 +887,35 @@
                     try {
                         this.loading.movements = true;
                         
-                        const response = await axios.get(`{{route('stockcard.movements.ajax')}}?stock_card_id=${stockCardId}`);
+                        const url = '{{ route("stockcard.movements.ajax") }}';
+                        console.log('Loading movements for stock card:', stockCardId);
+                        console.log('Request URL:', url);
+                        
+                        const response = await axios.get(url, {
+                            params: {
+                                stock_card_id: stockCardId
+                            }
+                        });
+                        
+                        console.log('Movements API Response:', response.data);
                         
                         if (response.data && response.data.movements) {
                             this.stockMovements = response.data.movements;
+                            console.log('Movements loaded:', this.stockMovements.length);
+                            console.log('Sample movement:', this.stockMovements[0]);
+                            console.log('Grouped movements:', this.groupedMovements);
+                        } else if (response.data && response.data.error) {
+                            console.error('API Error:', response.data.error);
+                            this.showNotification(response.data.error, 'error');
+                            this.stockMovements = [];
                         } else {
+                            console.warn('Unexpected response format:', response.data);
                             this.stockMovements = [];
                         }
                         
                     } catch (error) {
                         console.error('Stok hareketleri yüklenirken hata:', error);
+                        console.error('Error details:', error.response?.data);
                         this.showNotification('Hareketler yüklenemedi', 'error');
                         this.stockMovements = [];
                     } finally {
@@ -902,6 +944,36 @@
                         case 3: return 'bg-warning'; // Transfer
                         default: return 'bg-secondary';
                     }
+                },
+                
+                // Movements pagination metodları
+                changeMovementsPage(page) {
+                    if (page < 1 || page > this.totalMovementsPages) {
+                        return;
+                    }
+                    this.movementsPagination.currentPage = page;
+                    console.log('Movements page changed to:', page);
+                },
+                
+                getMovementsPageNumbers() {
+                    const total = this.totalMovementsPages;
+                    const current = this.movementsPagination.currentPage;
+                    const pages = [];
+                    
+                    // Basit sayfalama: max 7 sayfa göster
+                    const maxPages = 7;
+                    let start = Math.max(1, current - Math.floor(maxPages / 2));
+                    let end = Math.min(total, start + maxPages - 1);
+                    
+                    if (end - start < maxPages - 1) {
+                        start = Math.max(1, end - maxPages + 1);
+                    }
+                    
+                    for (let i = start; i <= end; i++) {
+                        pages.push(i);
+                    }
+                    
+                    return pages;
                 }
             }
         }).mount('#stockcard-list-app');

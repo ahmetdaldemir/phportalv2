@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cache Temizleme</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 10px; }
+        .btn:hover { background: #0056b3; }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Laravel Cache Temizleme</h1>
+        <p>Bu sayfa sunucudaki cache sorunlarını çözmek için hazırlanmıştır.</p>
+        
+        <h2>🔍 Sorun Analizi</h2>
+        <p><strong>Hata:</strong> <code>Call to undefined method ReflectionFunction::isAnonymous()</code></p>
+        <p><strong>Sebep:</strong> PHP versiyonu uyumsuzluğu (PHP 8.0+ gerekli)</p>
+        
+        <h2>💡 Çözüm Yöntemleri</h2>
+        
+        <h3>1. Hosting Panelinden PHP Güncelleme</h3>
+        <ul>
+            <li>cPanel → PHP Selector → PHP 8.0+ seçin</li>
+            <li>Hosting sağlayıcınızdan PHP güncellemesi isteyin</li>
+        </ul>
+        
+        <h3>2. Manuel Cache Temizleme</h3>
+        <p>Aşağıdaki dosyaları silin:</p>
+        <pre>
+bootstrap/cache/*
+storage/framework/cache/*
+storage/framework/views/*
+storage/framework/sessions/*
+        </pre>
+        
+        <h3>3. Terminal Komutları</h3>
+        <p>Sunucuda terminal açıp şu komutları çalıştırın:</p>
+        <pre>
+# Bash/Linux
+chmod +x server-fix.sh
+./server-fix.sh
+
+# PowerShell/Windows  
+powershell -ExecutionPolicy Bypass -File server-fix.ps1
+
+# PHP Script
+php clear-cache-manual.php
+        </pre>
+        
+        <h3>4. File Manager ile</h3>
+        <p>cPanel File Manager'dan şu dizinleri temizleyin:</p>
+        <ul>
+            <li><code>/public_html/bootstrap/cache/</code></li>
+            <li><code>/public_html/storage/framework/cache/</code></li>
+            <li><code>/public_html/storage/framework/views/</code></li>
+            <li><code>/public_html/storage/framework/sessions/</code></li>
+        </ul>
+        
+        <h2>🚀 Hızlı Çözüm</h2>
+        <p>En hızlı çözüm için aşağıdaki butona tıklayın:</p>
+        
+        <button class="btn" onclick="window.location.href='clear-cache-manual.php'">
+            🔧 Manuel Cache Temizleme
+        </button>
+        
+        <button class="btn" onclick="window.location.href='fix-php-compatibility.php'">
+            🔍 PHP Versiyon Kontrolü
+        </button>
+        
+        <h2>📞 Destek</h2>
+        <p>Sorun devam ederse:</p>
+        <ul>
+            <li>Hosting sağlayıcınızla iletişime geçin</li>
+            <li>PHP versiyonunu 8.0+ yapmalarını isteyin</li>
+            <li>Laravel versiyonunu düşürmeyi düşünün</li>
+        </ul>
+        
+        <div style="margin-top: 30px; padding: 20px; background: #e9ecef; border-radius: 5px;">
+            <h3>✅ Başarılı Olursa</h3>
+            <p>Cache temizlendikten sonra:</p>
+            <ol>
+                <li>Sayfayı yenileyin (F5)</li>
+                <li>Browser cache'ini temizleyin (Ctrl+F5)</li>
+                <li>Telefon listesi sayfasını kontrol edin</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>

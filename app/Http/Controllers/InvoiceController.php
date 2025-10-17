@@ -92,10 +92,76 @@ class InvoiceController extends Controller
 
     protected function index(Request $request)
     {
-        $data['invoices'] = Invoice::where('type', $request->type)->orderBy('id', 'desc')->paginate(15);
-        $data['sellers'] = $this->sellerService->get();
         $data['type'] = $request->type;
         return view('module.invoice.index', $data);
+    }
+    
+    public function getInvoicesData(Request $request)
+    {
+        try {
+            $query = Invoice::with(['account'])
+                ->where('type', $request->type ?? 1)
+                ->where('company_id', Auth::user()->company_id);
+            
+            // Filtreleme
+            if ($request->filled('invoice_id')) {
+                $query->where('id', $request->invoice_id);
+            }
+            
+            if ($request->filled('customer_id')) {
+                $query->where('customer_id', $request->customer_id);
+            }
+            
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('number', 'LIKE', "%{$search}%")
+                      ->orWhereHas('account', function($accountQuery) use ($search) {
+                          $accountQuery->where('fullname', 'LIKE', "%{$search}%");
+                      });
+                });
+            }
+            
+            // Pagination
+            $perPage = $request->get('per_page', 15);
+            $invoices = $query->orderBy('id', 'desc')->paginate($perPage);
+            
+            // Formatla
+            $formattedData = $invoices->map(function($invoice) {
+                return [
+                    'id' => $invoice->id,
+                    'number' => $invoice->number ?? 'Numara Girilmedi',
+                    'customer_id' => $invoice->customer_id,
+                    'customer_name' => $invoice->customer_id == 0 ? 'Genel Cari' : ($invoice->account->fullname ?? 'Genel Cari'),
+                    'type' => $invoice->type,
+                    'type_name' => $invoice->invoice_type($invoice->type),
+                    'type_color' => $invoice->invoice_type_color($invoice->type),
+                    'is_status' => $invoice->is_status,
+                    'total_price' => $invoice->total_price,
+                    'created_at' => $invoice->created_at->format('d-m-Y H:i'),
+                    'create_date' => $invoice->create_date ? \Carbon\Carbon::parse($invoice->create_date)->format('d-m-Y') : null
+                ];
+            });
+            
+            return response()->json([
+                'success' => true,
+                'data' => $formattedData,
+                'pagination' => [
+                    'current_page' => $invoices->currentPage(),
+                    'last_page' => $invoices->lastPage(),
+                    'per_page' => $invoices->perPage(),
+                    'total' => $invoices->total(),
+                    'from' => $invoices->firstItem(),
+                    'to' => $invoices->lastItem()
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Faturalar yüklenirken hata: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function create(Request $request)
@@ -688,13 +754,13 @@ class InvoiceController extends Controller
             $stockcardlist[$a]['imei'] = $request->imei[$a] ?? null;
             $stockcardlist[$a]['assigned_accessory'] = isset($request->assigned_accessory[$a]) and $item->assigned_accessory[$a] == 'on' ? 1 : 0;
             $stockcardlist[$a]['assigned_device'] = isset($request->assigned_device[$a]) and $item->assigned_device[$a] == 'on' ? 1 : 0;
-            $stockcardlist[$a]['tax'] = $request->tax[$a] ?? null;
-            $stockcardlist[$a]['cost_price'] = str_replace(",", ".", $request->cost_price[$a]);
-            $stockcardlist[$a]['prefix'] = $request->prefix[$a];
-            $stockcardlist[$a]['base_cost_price'] = str_replace(",", ".", $request->base_cost_price[$a]);
-            $stockcardlist[$a]['sale_price'] = str_replace(",", ".", $request->sale_price[$a]);
+            $stockcardlist[$a]['tax'] = $request->tax[$a] ?? 18; // Database default
+            $stockcardlist[$a]['cost_price'] = str_replace(",", ".", $request->cost_price[$a]) ?: 0;
+            $stockcardlist[$a]['prefix'] = $request->prefix[$a] ?? null;
+            $stockcardlist[$a]['base_cost_price'] = str_replace(",", ".", $request->base_cost_price[$a]) ?: 0;
+            $stockcardlist[$a]['sale_price'] = str_replace(",", ".", $request->sale_price[$a]) ?: 0;
             $stockcardlist[$a]['description'] = $request->description[$a] ?? null;
-            $stockcardlist[$a]['discount'] = $request->discount[$a] ?? null;
+            $stockcardlist[$a]['discount'] = $request->discount[$a] ?? 0; // NOT NULL in DB
             $stockcardlist[$a]['tracking_quantity'] = $request->tracking_quantity[$a] ?? 0;
             $stockcardlist[$a]['barcode'] = BarcodeHelper::formatBarcode($request->barcode[$a] ?? null);
 
@@ -711,6 +777,7 @@ class InvoiceController extends Controller
 
 
                 $stockcardmovement = new StockCardMovement();
+                // ID manuel olarak set edilmemeli - Laravel otomatik oluşturacak
                 $stockcardmovement->stock_card_id = $item;
                 $stockcardmovement->user_id = Auth::user()->id;
                 $stockcardmovement->company_id = Auth::user()->company_id;
@@ -725,25 +792,35 @@ class InvoiceController extends Controller
                 $stockcardmovement->assigned_accessory = isset($request->assigned_accessory[$a]) and $item->assigned_accessory[$a] == 'on' ? 1 : 0;
                 $stockcardmovement->assigned_device = isset($request->assigned_device[$a]) and $item->assigned_device[$a] == 'on' ? 1 : 0;
                 $serialNumber = $request->serial[$a] ?? $newSerial;
-                $stockcardmovement->serial_number = BarcodeHelper::formatSerialNumber($serialNumber);
-                $stockcardmovement->tax = $request->tax[$a] ?? null;
-                $stockcardmovement->prefix = $request->prefix[$a] ?? null;
-                $stockcardmovement->cost_price = str_replace(",", ".", $request->cost_price[$a]);
-                $stockcardmovement->base_cost_price = str_replace(",", ".", $request->base_cost_price[$a]);
-                $stockcardmovement->sale_price = str_replace(",", ".", $request->sale_price[$a]);
+                $stockcardmovement->serial_number = (string)BarcodeHelper::formatSerialNumber($serialNumber);
+                $stockcardmovement->tax = $request->tax[$a] ?? 18; // Database default: 18
+                $stockcardmovement->prefix = $request->prefix[$a] ?? 'PH';
+                $stockcardmovement->cost_price = str_replace(",", ".", $request->cost_price[$a]) ?: 0; // NOT NULL in DB
+                $stockcardmovement->base_cost_price = str_replace(",", ".", $request->base_cost_price[$a]) ?: 0; // NOT NULL in DB
+                $stockcardmovement->sale_price = str_replace(",", ".", $request->sale_price[$a]) ?: 0; // NOT NULL in DB
                 $stockcardmovement->description = $request->description[$a] ?? null;
-                $stockcardmovement->discount = $request->discount[$a] ?? null;
+                $stockcardmovement->discount = $request->discount[$a] ?? 0; // NOT NULL in DB - default to 0
                 $stockcardmovement->tracking_quantity = $request->tracking_quantity[$a] ?? 0;
-                $stockcardmovement->barcode = $stockcardlist[$a]['barcode'];
+                $stockcardmovement->barcode = (string)$stockcardlist[$a]['barcode'];
+                
+                // Debug: Log if we're about to save with problematic data
+                if (empty($stockcardmovement->company_id) || empty($stockcardmovement->stock_card_id)) {
+                    \Log::error('StockCardMovement validation error', [
+                        'company_id' => $stockcardmovement->company_id,
+                        'stock_card_id' => $stockcardmovement->stock_card_id,
+                        'user_id' => Auth::id(),
+                    ]);
+                }
+                
                 $stockcardmovement->save();
 
                 $stockcardprice = new StockCardPrice();
                 $stockcardprice->company_id = Auth::user()->company_id;
                 $stockcardprice->user_id = Auth::user()->id;
                 $stockcardprice->stock_card_id = $request->stock_card_id[$a];
-                $stockcardprice->cost_price = str_replace(",", ".", $request->cost_price[$a]);
-                $stockcardprice->base_cost_price = str_replace(",", ".", $request->base_cost_price[$a]);
-                $stockcardprice->sale_price = str_replace(",", ".", $request->sale_price[$a]);
+                $stockcardprice->cost_price = str_replace(",", ".", $request->cost_price[$a]) ?: 0; // NOT NULL in DB
+                $stockcardprice->base_cost_price = str_replace(",", ".", $request->base_cost_price[$a]) ?: 0; // NOT NULL in DB
+                $stockcardprice->sale_price = str_replace(",", ".", $request->sale_price[$a]) ?: 0; // NOT NULL in DB
                 $stockcardprice->save();
             }
 
@@ -811,24 +888,25 @@ class InvoiceController extends Controller
             $stockcardmovement = new StockCardMovement();
             $stockcardmovement->stock_card_id = $stockcardmovements->stock_card_id;
             $stockcardmovement->user_id = Auth::user()->id;
+            $stockcardmovement->company_id = Auth::user()->company_id; // IMPORTANT: Must set company_id
             $stockcardmovement->invoice_id = $stockcardmovements->invoice_id;
             $stockcardmovement->color_id = $stockcardmovements->color_id;
-            $stockcardmovement->warehouse_id = $stockcardmovements->warehouse_id;
+            $stockcardmovement->warehouse_id = $stockcardmovements->warehouse_id ?? 1;
             $stockcardmovement->seller_id = $stockcardmovements->seller_id;
             $stockcardmovement->reason_id = $stockcardmovements->reason_id;
             $stockcardmovement->type = 1;
             $stockcardmovement->quantity = 1;
             $stockcardmovement->imei = $stockcardmovements->imei ?? null;
-            $stockcardmovement->assigned_accessory = $stockcardmovements->assigned_accessory;
-            $stockcardmovement->assigned_device = $stockcardmovements->assigned_device;
+            $stockcardmovement->assigned_accessory = $stockcardmovements->assigned_accessory ?? 0;
+            $stockcardmovement->assigned_device = $stockcardmovements->assigned_device ?? 0;
             $stockcardmovement->serial_number = BarcodeHelper::formatSerialNumber($stockcardmovements->serial);
-            $stockcardmovement->tax = $stockcardmovements->tax;
-            $stockcardmovement->cost_price = $stockcardmovements->cost_price;
-            $stockcardmovement->base_cost_price = $stockcardmovements->base_cost_price;
-            $stockcardmovement->sale_price = $stockcardmovements->sale_price;
-            $stockcardmovement->description = $stockcardmovements->description;
-            $stockcardmovement->discount = $stockcardmovements->discount;
-            $stockcardmovement->prefix = $stockcardmovements->prefix;
+            $stockcardmovement->tax = $stockcardmovements->tax ?? 18; // Database default
+            $stockcardmovement->cost_price = $stockcardmovements->cost_price ?? 0; // NOT NULL in DB
+            $stockcardmovement->base_cost_price = $stockcardmovements->base_cost_price ?? 0; // NOT NULL in DB
+            $stockcardmovement->sale_price = $stockcardmovements->sale_price ?? 0; // NOT NULL in DB
+            $stockcardmovement->description = $stockcardmovements->description ?? null;
+            $stockcardmovement->discount = $stockcardmovements->discount ?? 0; // NOT NULL in DB
+            $stockcardmovement->prefix = $stockcardmovements->prefix ?? null;
             $stockcardmovement->tracking_quantity = $stockcardmovements->tracking_quantity ?? 0;
             $stockcardmovement->save();
 
@@ -836,9 +914,9 @@ class InvoiceController extends Controller
             $stockcardprice->company_id = Auth::user()->company_id;
             $stockcardprice->user_id = Auth::user()->id;
             $stockcardprice->stock_card_id = $stockcardmovement->stock_card_id;
-            $stockcardprice->cost_price = $stockcardmovement->cost_price;
-            $stockcardprice->base_cost_price = $stockcardmovement->base_cost_price;
-            $stockcardprice->sale_price = $stockcardmovement->sale_price;
+            $stockcardprice->cost_price = $stockcardmovement->cost_price ?: 0; // NOT NULL in DB
+            $stockcardprice->base_cost_price = $stockcardmovement->base_cost_price ?: 0; // NOT NULL in DB
+            $stockcardprice->sale_price = $stockcardmovement->sale_price ?: 0; // NOT NULL in DB
             $stockcardprice->save();
 
             $refund->status = 2;

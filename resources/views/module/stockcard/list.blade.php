@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('custom-css')
-    <link rel="stylesheet" href="{{ asset('assets/css/list-page-base.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/table-page-framework.css') }}">
     <style>
         /* Text truncation with tooltip styles */
         .text-truncate {
@@ -166,7 +166,8 @@
         }
 
         .modal .pagination-sm .page-link {
-            padding: 0.2rem 0.4rem;
+            width: 100%;
+            height: 100%;
             font-size: 0.75rem;
         }
 
@@ -218,31 +219,27 @@
 @section('content')
     <div id="app">
         <div class="container-xxl flex-grow-1 container-p-y">
-            <!-- Professional Page Header -->
-            <div class="page-header mb-4">
-                <div class="d-flex align-items-center justify-content-between flex-wrap">
-                    <div class="d-flex align-items-center mb-3 mb-md-0">
-                        <div class="me-3">
-                            <i class="bx bx-package display-4 text-white"></i>
+            <!-- Table Page Header -->
+            <div class="table-page-header table-page-fade-in">
+                <div class="header-content">
+                    <div class="header-left">
+                        <div class="header-icon">
+                            <i class="bx bx-package"></i>
                         </div>
-                        <div>
-                            <h2 class="mb-0" style="font-size: 1.5rem; font-weight: 600; color: white;">
+                        <div class="header-text">
+                            <h2>
                                 <i class="bx bx-package me-2"></i>
                                 STOK KART LİSTESİ
                             </h2>
-                            <p class="mb-0" style="font-size: 0.9rem; color: rgba(255,255,255,0.9);">Stok kartları ve seri
-                                numaraları yönetimi</p>
+                            <p>Stok kartları ve seri numaraları yönetimi</p>
                         </div>
                     </div>
-                    <div class="d-flex gap-2 flex-wrap">
-                        <a href="{{ route('stockcard.deleted') }}" type="button" formtarget="_blank"
-                            class="btn btn-success btn-sm">
+                    <div class="header-actions">
+                        <a href="{{ route('stockcard.deleted') }}" type="button" formtarget="_blank" class="btn btn-success btn-sm">
                             <i class="bx bx-trash me-1"></i>
                             Silinen Seriler
                         </a>
-                        <button id="barcode" type="button" formtarget="_blank"
-                            onclick="document.getElementById('itemFrom').submit();" disabled="disabled"
-                            class="btn btn-danger btn-sm">
+                        <button id="barcode" type="button" formtarget="_blank" onclick="document.getElementById('itemFrom').submit();" disabled="disabled" class="btn btn-danger btn-sm">
                             <i class="bx bx-barcode me-1"></i>
                             Barkod Yazdır
                         </button>
@@ -259,35 +256,28 @@
                     </div>
                 </div>
             </div>
-            <div class="card professional-card">
-                <div class="card-header professional-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="card-title mb-0" style="font-size: 1rem; font-weight: 600;">
-                                <i class="bx bx-filter me-2"></i>
-                                Filtreler
-                            </h6>
-                            <small class="text-muted">Stok kartı arama ve filtreleme</small>
-                        </div>
-                    </div>
+            <!-- Table Page Filters -->
+            <div class="table-page-filters table-page-fade-in-delay-1">
+                <div class="filter-header">
+                    <h6>
+                        <i class="bx bx-filter me-2"></i>
+                        Filtreler
+                    </h6>
+                    <small>Stok kartı arama ve filtreleme</small>
                 </div>
-                <div class="card-body p-4">
-                    <form @submit.prevent="searchStockCards" class="compact-filter-form">
+                <div class="filter-body">
+                    <form @submit.prevent="searchStockCards">
                         @csrf
                         <input type="hidden" name="category_id" value="{{ $category }}" />
 
                         <!-- Row 1: Main Filters -->
-                        <div class="row g-2 mb-2">
-                            <div class="col-lg-3 col-md-4">
-                                <div class="compact-filter-group">
-                                    <label class="compact-label">
-                                        <i class="bx bx-package"></i> Stok Adı
-                                    </label>
-                                    <div class="position-relative">
-                                        <input type="text" v-model="searchForm.stockName" @input="searchStock"
-                                            @focus="onStockInputFocus" @blur="hideStockDropdown"
-                                            class="form-control form-control-sm compact-input" placeholder="Stok adı ara..."
-                                            autocomplete="off">
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="bx bx-package"></i> Stok Adı
+                                </label>
+                                <div class="position-relative">
+                                    <input type="text" v-model="searchForm.stockName" @input="searchStock" @focus="onStockInputFocus" @blur="hideStockDropdown" class="filter-input" placeholder="Stok adı ara..." autocomplete="off">
                                         <div v-if="showStockDropdown" class="autocomplete-dropdown">
                                             <!-- Loading State -->
                                             <div v-if="searchingStock" class="autocomplete-loading">
@@ -326,145 +316,128 @@
                                                 <i class="bx bx-search-alt"></i>
                                                 <span class="ms-2">Sonuç bulunamadı</span>
                                             </div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="col-lg-2 col-md-4">
-                                <div class="compact-filter-group">
-                                    <label class="compact-label">
-                                        <i class="bx bx-package"></i> Marka
-                                    </label>
-                                    <select v-model="searchForm.brand" @change="loadVersions"
-                                        class="form-select form-select-sm compact-select">
-                                        <option value="">Tüm Markalar</option>
-                                        <option v-for="brand in brands" :key="brand.id" :value="brand.id">
-                                            @{{ brand.name }}</option>
-                                    </select>
-                                </div>
+                            
+                            <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="bx bx-package"></i> Marka
+                                </label>
+                                <select v-model="searchForm.brand" @change="loadVersions" class="filter-select">
+                                    <option value="">Tüm Markalar</option>
+                                    <option v-for="brand in brands" :key="brand.id" :value="brand.id" v-text="brand.name"></option>
+                                </select>
                             </div>
-
-                            <div class="col-lg-2 col-md-4">
-                                <div class="compact-filter-group">
-                                    <label class="compact-label">
-                                        <i class="bx bx-mobile-alt"></i> Model
-                                    </label>
-                                    <select v-model="searchForm.version" class="form-select form-select-sm compact-select"
-                                        :disabled="!searchForm.brand">
-                                        <option value="">Tüm Modeller</option>
-                                        <option v-for="version in versions" :key="version.id" :value="version.id">
-                                            @{{ version.name }}</option>
-                                    </select>
-                                </div>
+                            
+                            <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="bx bx-mobile-alt"></i> Model
+                                </label>
+                                <select v-model="searchForm.version" class="filter-select" :disabled="!searchForm.brand">
+                                    <option value="">Tüm Modeller</option>
+                                    <option v-for="version in versions" :key="version.id" :value="version.id" v-text="version.name"></option>
+                                </select>
                             </div>
-
-                            <div class="col-lg-3 col-md-6">
-                                <div class="compact-filter-group">
-                                    <label class="compact-label">
-                                        <i class="bx bx-category"></i> Kategori
-                                    </label>
-                                    <select v-model="searchForm.category"
-                                        class="form-select form-select-sm compact-select">
-                                        <option value="">Tüm Kategoriler</option>
-                                        <option v-for="category in categories" :key="category.id"
-                                            :value="category.id">@{{ category.path }}</option>
-                                    </select>
-                                </div>
+                            
+                            <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="bx bx-category"></i> Kategori
+                                </label>
+                                <select v-model="searchForm.category" class="filter-select">
+                                    <option value="">Tüm Kategoriler</option>
+                                    <option v-for="category in categories" :key="category.id" :value="category.id" v-text="category.path"></option>
+                                </select>
                             </div>
-
-                            <div class="col-lg-2 col-md-6">
-                                <div class="compact-filter-group">
-                                    <label class="compact-label">
-                                        <i class="bx bx-palette"></i> Renk
-                                    </label>
-                                    <select v-model="searchForm.color" class="form-select form-select-sm compact-select">
-                                        <option value="">Tümü</option>
-                                        <option v-for="color in colors" :key="color.id" :value="color.id">
-                                            @{{ color.name }}</option>
-                                    </select>
-                                </div>
+                            
+                            <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="bx bx-palette"></i> Renk
+                                </label>
+                                <select v-model="searchForm.color" class="filter-select">
+                                    <option value="">Tümü</option>
+                                    <option v-for="color in colors" :key="color.id" :value="color.id" v-text="color.name"></option>
+                                </select>
                             </div>
                         </div>
 
                         <!-- Row 2: Secondary Filters + Buttons -->
-                        <div class="row g-2 mb-3">
-                            <div class="col-lg-2 col-md-4">
-                                <div class="compact-filter-group">
-                                    <label class="compact-label">
-                                        <i class="bx bx-store"></i> Şube
-                                    </label>
-                                    <select v-model="searchForm.seller" class="form-select form-select-sm compact-select">
-                                        <option value="all">Tüm Şubeler</option>
-                                        <option v-for="seller in sellers" :key="seller.id" :value="seller.id">
-                                            @{{ seller.name }}</option>
-                                    </select>
-                                </div>
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="bx bx-store"></i> Şube
+                                </label>
+                                <select v-model="searchForm.seller" class="filter-select">
+                                    <option value="all">Tüm Şubeler</option>
+                                    <option v-for="seller in sellers" :key="seller.id" :value="seller.id" v-text="seller.name"></option>
+                                </select>
                             </div>
-
-                            <div class="col-lg-3 col-md-4">
-                                <div class="compact-filter-group">
-                                    <label class="compact-label">
-                                        <i class="bx bx-barcode"></i> Seri Numarası
-                                    </label>
-                                    <input type="text" v-model="searchForm.serialNumber"
-                                        class="form-control form-control-sm compact-input" placeholder="Seri numarası...">
-                                </div>
+                            
+                            <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="bx bx-barcode"></i> Seri Numarası
+                                </label>
+                                <input type="text" v-model="searchForm.serialNumber" class="filter-input" placeholder="Seri numarası...">
                             </div>
-
-                            <div class="col-lg-7 col-md-12">
-                                <div class="compact-filter-group">
-                                    <label class="compact-label d-none d-md-block invisible">Aksiyon</label>
-                                    <div class="d-flex gap-2">
-                                        <button type="button" @click="searchStockCards"
-                                            class="btn btn-primary btn-sm flex-fill" :disabled="loading.search">
-                                            <span v-if="loading.search"
-                                                class="spinner-border spinner-border-sm me-1"></span>
-                                            <i v-else class="bx bx-search me-1"></i>
-                                            @{{ loading.search ? 'Aranıyor...' : 'Ara' }}
-                                        </button>
-                                        <button type="button" @click="clearFilters"
-                                            class="btn btn-outline-secondary btn-sm" title="Filtreleri Temizle">
-                                            <i class="bx bx-refresh"></i>
-                                        </button>
-                                    </div>
-                                </div>
+                            
+                            <div class="filter-group auto">
+                                <label class="filter-label">
+                                    <i class="bx bx-search"></i> Ara
+                                </label>
+                                <button type="button" @click="searchStockCards" class="filter-button primary" :disabled="loading.search">
+                                    <span v-if="loading.search" class="spinner-border spinner-border-sm me-1"></span>
+                                    <i v-else class="bx bx-search me-1"></i>
+                                    <span v-text="loading.search ? 'Aranıyor...' : 'Ara'"></span>
+                                </button>
+                            </div>
+                            
+                            <div class="filter-group auto">
+                                <label class="filter-label">
+                                    <i class="bx bx-refresh"></i> Temizle
+                                </label>
+                                <button type="button" @click="clearFilters" class="filter-button secondary" title="Filtreleri Temizle">
+                                    <i class="bx bx-refresh me-1"></i>
+                                    Temizle
+                                </button>
                             </div>
                         </div>
                     </form>
                 </div>
+            </div>
+            
+            <!-- Data Table -->
+            <div class="table-page-table table-page-fade-in-delay-2">
                 <form id="itemFrom" role="form" method="POST" action="{{ route('stockcard.barcodes') }}">
                     @csrf
-                    <div class="table-responsive text-nowrap">
-                        <table class="table professional-table">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
                             <thead>
                                 <tr>
                                     <th style="width: 20px;">
                                         <input type="checkbox" class="form-check-input" @change="toggleAllStockCards"
                                             :checked="allStockCardsSelected">
                                     </th>
-                                    <th style="width: 40%;"><i class="bx bx-package me-1"></i>Stok Adı</th>
-                                    <th style="width: 30%;"><i class="bx bx-category me-1"></i>Kategori</th>
+                                    <th style="width: 30%;"><i class="bx bx-package me-1"></i>Stok Adı</th>
+                                    <th style="width: 25%;"><i class="bx bx-category me-1"></i>Kategori</th>
                                     <th style="width: 10%;"><i class="bx bx-package me-1"></i>Marka</th>
+                                    <th style="width: 10%;"><i class="bx bx-tachometer me-1"></i>Devir Hızı</th>
                                     <th style="width: 50px;"><i class="bx bx-box me-1"></i>Adet</th>
                                     <th style="width: 120px;"><i class="bx bx-cog me-1"></i>İşlemler</th>
                                 </tr>
                             </thead>
-                            <tbody class="table-border-bottom-0 professional-tbody">
+                            <tbody>
                                 <!-- Empty State - İlk açılışta gösterilecek -->
-                                <tr v-if="stockcards.length === 0 && !loading.stockcards" class="text-center">
-                                    <td colspan="6" class="py-4">
-                                        <div class="empty-state">
-                                            <i class="bx bx-search display-1 text-muted"></i>
-                                            <h4 class="mt-3">Stok kartı aramak için filtreleri kullanın</h4>
-                                            <p>Yukarıdaki filtreleri doldurarak arama yapabilirsiniz.</p>
-                                        </div>
+                                <tr v-if="stockcards.length === 0 && !loading.stockcards">
+                                    <td colspan="6" class="table-page-empty">
+                                        <i class="bx bx-search"></i>
+                                        <h4 class="mt-3">Stok kartı aramak için filtreleri kullanın</h4>
+                                        <p>Yukarıdaki filtreleri doldurarak arama yapabilirsiniz.</p>
                                     </td>
                                 </tr>
 
                                 <!-- Loading State -->
-                                <tr v-if="loading.stockcards" class="text-center">
-                                    <td colspan="6" class="py-4">
+                                <tr v-if="loading.stockcards">
+                                    <td colspan="6" class="table-page-loading">
                                         <div class="spinner-border text-primary" role="status"></div>
                                         <p class="text-primary mt-2">Stok kartları yükleniyor...</p>
                                     </td>
@@ -478,7 +451,7 @@
                                             :value="stockcard.ids" v-model="selectedStockCards"
                                             @change="updateBarcodeButton">
                                     </td>
-                                    <td style="width:40%;">
+                                    <td style="width:30%;">
                                         <span class="text-truncate d-inline-block" :title="stockcard.stock_name"
                                             style="max-width: calc(100% - 35px);">
                                             @{{ stockcard.stock_name }}
@@ -486,11 +459,20 @@
                                     </td>
 
                                     <td class="text-truncate" :title="stockcard.category_separator_name"
-                                        style="width: 30%;">
+                                        style="width: 25%;">
                                         @{{ stockcard.category_separator_name }}
                                     </td>
                                     <td class="text-truncate" :title="stockcard.brand_name" style="width: 10%;">
                                         @{{ stockcard.brand_name }}
+                                    </td>
+                                    <td class="text-center" style="width: 10%;">
+                                        <span v-if="stockcard.turnover_rate && stockcard.turnover_rate > 0" 
+                                              class="badge" 
+                                              :class="stockcard.turnover_status?.class || 'bg-secondary'"
+                                              :title="stockcard.turnover_status?.description || ''"
+                                              v-text="stockcard.turnover_rate + ' gün'">
+                                        </span>
+                                        <span v-else class="badge bg-secondary" title="Son 90 günde satış yok">-</span>
                                     </td>
                                     <td v-text="stockcard.quantity" style="width: 50px; text-align: center;"></td>
                                     <td style="white-space: nowrap;">
@@ -514,48 +496,38 @@
                     </div>
                 </form>
             </div>
-            <!-- Vue.js Pagination -->
-            <div class="card mt-4" v-if="pagination && pagination.last_page > 1">
-                <div class="card-body mt-4 p-4 box has-text-centered"
-                    style="padding-top: 0 !important; padding-bottom: 0 !important;">
-                    <nav aria-label="Page navigation">
-                        <ul class="pagination justify-content-center">
-                            <!-- Previous Page -->
-                            <li class="page-item" :class="{ disabled: pagination.current_page <= 1 }">
-                                <a class="page-link" href="#"
-                                    @click.prevent="changePage(pagination.current_page - 1)"
-                                    :disabled="pagination.current_page <= 1">
-                                    <span aria-hidden="true">&laquo;</span>
-                                </a>
-                            </li>
+            </div>
+            <!-- Pagination -->
+            <div v-if="pagination && pagination.last_page > 1" class="table-page-pagination table-page-fade-in-delay-3">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        <!-- Previous Page -->
+                        <li class="page-item" :class="{ disabled: pagination.current_page <= 1 }">
+                            <a class="page-link" href="#" @click.prevent="changePage(pagination.current_page - 1)" :disabled="pagination.current_page <= 1">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
 
-                            <!-- Page Numbers -->
-                            <li v-for="page in getPageNumbers()" :key="page" class="page-item"
-                                :class="{ active: page === pagination.current_page }">
-                                <a v-if="page !== '...'" class="page-link" href="#"
-                                    @click.prevent="changePage(page)">
-                                    @{{ page }}
-                                </a>
-                                <span v-else class="page-link">...</span>
-                            </li>
+                        <!-- Page Numbers -->
+                        <li v-for="page in getPageNumbers()" :key="page" class="page-item" :class="{ active: page === pagination.current_page }">
+                            <a v-if="page !== '...'" class="page-link" href="#" @click.prevent="changePage(page)" v-text="page"></a>
+                            <span v-else class="page-link">...</span>
+                        </li>
 
-                            <!-- Next Page -->
-                            <li class="page-item" :class="{ disabled: pagination.current_page >= pagination.last_page }">
-                                <a class="page-link" href="#"
-                                    @click.prevent="changePage(pagination.current_page + 1)"
-                                    :disabled="pagination.current_page >= pagination.last_page">
-                                    <span aria-hidden="true">&raquo;</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </nav>
+                        <!-- Next Page -->
+                        <li class="page-item" :class="{ disabled: pagination.current_page >= pagination.last_page }">
+                            <a class="page-link" href="#" @click.prevent="changePage(pagination.current_page + 1)" :disabled="pagination.current_page >= pagination.last_page">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
 
-                    <!-- Pagination Info -->
-                    <div class="pagination-info mt-2">
-                        <small class="text-muted">
-                            @{{ pagination.from }}-@{{ pagination.to }} / @{{ pagination.total }} kayıt
-                        </small>
-                    </div>
+                <!-- Pagination Info -->
+                <div class="pagination-info">
+                    <small class="text-muted">
+                        <span v-text="pagination.from"></span>-<span v-text="pagination.to"></span> / <span v-text="pagination.total"></span> kayıt
+                    </small>
                 </div>
             </div>
 
@@ -753,7 +725,7 @@
                                 </div>
 
                                 <!-- Modal Pagination -->
-                                <nav v-if="stockDetailsPagination && stockDetailsPagination.last_page > 1" class="mt-3">
+                                <nav v-if="stockDetailsPagination && stockDetailsPagination.last_page > 1" class="mt-5">
                                     <ul class="pagination pagination-sm justify-content-center">
                                         <li class="page-item"
                                             :class="{ disabled: stockDetailsPagination.current_page <= 1 }">

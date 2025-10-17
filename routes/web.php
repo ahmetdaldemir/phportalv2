@@ -283,6 +283,8 @@ Route::middleware(['companies'])->group(function () {
         Route::post('newSaleStore', [App\Http\Controllers\StockCardController::class, 'newSaleStore'])->name('newSaleStore');
         Route::post('category_id', [App\Http\Controllers\StockCardController::class, 'category_id'])->name('category_id');
         Route::get('deleted', [App\Http\Controllers\StockCardController::class, 'deleted'])->name('deleted');
+        Route::get('deleted-data', [App\Http\Controllers\StockCardController::class, 'getDeletedData'])->name('deleted.data');
+        Route::post('restore', [App\Http\Controllers\StockCardController::class, 'restore'])->name('restore');
         Route::get('serialList', [App\Http\Controllers\StockCardController::class, 'serialList'])->name('serialList');
         Route::get('stockforserial', [App\Http\Controllers\StockCardController::class, 'stockforserial'])->name('stockforserial');
         Route::get('getStockCardsData', [App\Http\Controllers\StockCardController::class, 'getStockCardsData'])->name('getStockCardsData');
@@ -290,6 +292,9 @@ Route::middleware(['companies'])->group(function () {
         Route::get('/stockcard/sellers-ajax', [App\Http\Controllers\StockCardController::class, 'getSellersAjax'])->name('stockcard.sellers.ajax');
         Route::get('/stockcard/colors-ajax', [App\Http\Controllers\StockCardController::class, 'getColorsAjax'])->name('stockcard.colors.ajax');
         Route::get('/stockcard/brands-ajax', [App\Http\Controllers\StockCardController::class, 'getBrandsAjax'])->name('stockcard.brands.ajax');
+        Route::get('/stockcard/categories-ajax', [App\Http\Controllers\StockCardController::class, 'getCategoriesAjax'])->name('stockcard.categories.ajax');
+        Route::get('/stockcard/versions-ajax', [App\Http\Controllers\StockCardController::class, 'getVersionsAjax'])->name('stockcard.versions.ajax');
+        Route::get('/stockcard/stock-names-ajax', [App\Http\Controllers\StockCardController::class, 'getStockNamesAjax'])->name('stockcard.stock.names.ajax');
     });
 
     Route::prefix('transfer')->name('transfer.')->middleware([])->group(function () {
@@ -319,6 +324,7 @@ Route::middleware(['companies'])->group(function () {
 
     Route::prefix('invoice')->name('invoice.')->middleware([])->group(function () {
         Route::get('/', [App\Http\Controllers\InvoiceController::class, 'index'])->name('index');
+        Route::get('invoices-data', [App\Http\Controllers\InvoiceController::class, 'getInvoicesData'])->name('invoices.data');
         Route::get('create', [App\Http\Controllers\InvoiceController::class, 'create'])->name('create');
         Route::get('edit', [App\Http\Controllers\InvoiceController::class, 'edit'])->name('edit');
         Route::get('show', [App\Http\Controllers\InvoiceController::class, 'show'])->name('show');
@@ -570,6 +576,54 @@ Route::get('/clear-cache', function () {
 Route::get('/stockcard/movements', [App\Http\Controllers\StockCardController::class, 'getMovements'])
     ->middleware(['auth', 'companies'])
     ->name('stockcard.movements');
+
+// API routes that need session-based authentication (moved from routes/api.php)
+Route::middleware(['auth', 'companies'])->prefix('api')->group(function () {
+    
+    // Stock Check API - Quick sale
+    Route::get('/stock/check', [App\Http\Controllers\HomeController::class, 'checkStock'])->name('api.stock.check');
+    
+    // Stock Price API
+    Route::get('/stock-price/{id}', [App\Http\Controllers\StockCardController::class, 'getStockPriceApi'])->name('api.stock.price');
+    
+    // Customers API
+    Route::get('/customers', [App\Http\Controllers\CustomerController::class, 'getCustomersApi'])->name('api.customers');
+    
+    // Dashboard API routes
+    Route::prefix('dashboard')->group(function () {
+        Route::get('sales-by-staff', [App\Http\Controllers\HomeController::class, 'getSalesByStaff'])->name('api.dashboard.sales-by-staff');
+        Route::get('stock-turnover', [App\Http\Controllers\HomeController::class, 'getStockTurnover'])->name('api.dashboard.stock-turnover');
+        Route::get('stock-turnover-ai', [App\Http\Controllers\HomeController::class, 'getStockTurnoverAI'])->name('api.dashboard.stock-turnover-ai');
+        
+        // AI Report Export routes
+        Route::get('ai-analysis-export-pdf', [App\Http\Controllers\HomeController::class, 'exportAIAnalysisPDF'])->name('api.dashboard.ai-export-pdf');
+        Route::get('ai-analysis-export-excel', [App\Http\Controllers\HomeController::class, 'exportAIAnalysisExcel'])->name('api.dashboard.ai-export-excel');
+        Route::get('ai-analysis-export-json', [App\Http\Controllers\HomeController::class, 'exportAIAnalysisJSON'])->name('api.dashboard.ai-export-json');
+    });
+    
+    // Common Data API - Cached and optimized
+    Route::prefix('common')->group(function () {
+        Route::get('/sellers', [App\Http\Controllers\Api\CommonDataController::class, 'getSellers'])->name('api.common.sellers');
+        Route::get('/categories', [App\Http\Controllers\Api\CommonDataController::class, 'getCategories'])->name('api.common.categories');
+        Route::get('/warehouses', [App\Http\Controllers\Api\CommonDataController::class, 'getWarehouses'])->name('api.common.warehouses');
+        Route::get('/colors', [App\Http\Controllers\Api\CommonDataController::class, 'getColors'])->name('api.common.colors');
+        Route::get('/brands', [App\Http\Controllers\Api\CommonDataController::class, 'getBrands'])->name('api.common.brands');
+        Route::get('/versions', [App\Http\Controllers\Api\CommonDataController::class, 'getVersions'])->name('api.common.versions');
+        Route::get('/reasons', [App\Http\Controllers\Api\CommonDataController::class, 'getReasons'])->name('api.common.reasons');
+        Route::get('/customers', [App\Http\Controllers\Api\CommonDataController::class, 'getCustomers'])->name('api.common.customers');
+        Route::get('/cities', [App\Http\Controllers\Api\CommonDataController::class, 'getCities'])->name('api.common.cities');
+        Route::get('/towns', [App\Http\Controllers\Api\CommonDataController::class, 'getTowns'])->name('api.common.towns');
+        Route::get('/currencies', [App\Http\Controllers\Api\CommonDataController::class, 'getCurrencies'])->name('api.common.currencies');
+        Route::get('/safes', [App\Http\Controllers\Api\CommonDataController::class, 'getSafes'])->name('api.common.safes');
+        Route::get('/users', [App\Http\Controllers\Api\CommonDataController::class, 'getUsers'])->name('api.common.users');
+        
+        // Bulk data endpoint
+        Route::get('/all', [App\Http\Controllers\Api\CommonDataController::class, 'getAllCommonData'])->name('api.common.all');
+        
+        // Cache management
+        Route::post('/clear-cache', [App\Http\Controllers\Api\CommonDataController::class, 'clearCache'])->name('api.common.clear-cache');
+    });
+});
 
 // Demo routes
 Route::get('/demo/daterangepicker', function () {

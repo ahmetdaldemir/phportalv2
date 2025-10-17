@@ -35,4 +35,10 @@ return [
          'password' => env('ELOGO_PASSWORD'),
     ],
 
+    'llm' => [
+        'api_url' => env('LLM_API_URL', 'http://localhost:8000'),
+        'default_model' => env('LLM_DEFAULT_MODEL', 'phportal-assistant'),
+        'timeout' => env('LLM_TIMEOUT', 300),
+    ],
+
 ];

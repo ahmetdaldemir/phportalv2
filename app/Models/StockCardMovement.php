@@ -16,6 +16,9 @@ class StockCardMovement extends BaseModel
     protected $table = "stock_card_movements";
     use HasFactory, SoftDeletes, NotifiesOnDelete;
 
+    public $incrementing = true; // bu olmalı
+    protected $keyType = 'int';
+    protected $primaryKey = 'id';
 
     protected static function boot()
     {

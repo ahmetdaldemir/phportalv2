@@ -1,883 +1,615 @@
 @extends('layouts.admin')
 
+@section('custom-css')
+    <link rel="stylesheet" href="{{asset('assets/css/table-page-framework.css')}}">
+    <link rel="stylesheet" href="{{asset('assets/css/dashboard.css')}}">
+@endsection
+
 @section('content')
-    <div id="app" class="container-xxl flex-grow-1 container-p-y">
-        <!-- Page Header -->
-        <div class="dashboard-header">
-            <div class="d-flex align-items-center">
-                <div class="me-3">
-                    <i class="bx bx-home" style="font-size: 2.5rem; color: white;"></i>
+    <div id="dashboard-app" class="container-xxl flex-grow-1 container-p-y">
+        <!-- Table Page Header -->
+        <div class="table-page-header table-page-fade-in">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="header-icon">
+                        <i class="bx bx-home"></i>
+                    </div>
+                    <div class="header-text">
+                        <h2>
+                            <i class="bx bx-home me-2"></i>
+                            ANA SAYFA
+                        </h2>
+                        <p>Sistem genel bakış ve hızlı işlemler</p>
+                    </div>
                 </div>
-                <div>
-                    <h2><i class="bx bx-home me-2"></i>ANA SAYFA</h2>
-                    <p>Sistem genel bakış ve hızlı işlemler</p>
+                <div class="header-actions">
+                    <button @click="refreshDashboard" class="btn btn-primary btn-sm" :disabled="loading.refresh">
+                        <span v-if="loading.refresh" class="spinner-border spinner-border-sm me-1"></span>
+                        <i v-else class="bx bx-refresh me-1"></i>
+                        Yenile
+                    </button>
                 </div>
             </div>
         </div>
-        <div class="row">
-            @role(['Satış Sorumlusu','super-admin','Bayi Yetkilisi'])
-            <div class="col-lg-6 mb-4 order-0">
-                <div class="card modern-card quick-action-card" :class="{ 'form-loading': loading.stockSearch }">
-                    <div v-if="loading.stockSearch" class="loading-overlay">
-                        <div class="text-center">
-                            <div class="loading-spinner"></div>
-                            <div class="loading-text">Stok aranıyor...</div>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-end row">
-                        <div class="col-sm-12">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center mb-3">
-                                    <div class="me-3">
-                                        <i class="bx bx-cart-add display-4 text-primary" :class="{ 'pulse-animation': loading.stockSearch }"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="card-title text-primary mb-0" style="font-size: 1rem; font-weight: 600;">SATIŞ İŞLEMİ</h6>
-                                        <small class="text-muted" style="font-size: 0.75rem;">Hızlı satış yapın</small>
-                                    </div>
-                                </div>
-                                <form @submit.prevent="searchStock" id="stockSearch" method="post">
-                                    @csrf
-                                    <div class="row">
-                                        <div class="col-md-8">
-                                            <div class="form-password-toggle">
-                                                <label class="form-label" for="serialNumberSale">Seri
-                                                    Numarası</label>
-                                                <div class="input-group input-group-merge">
-                                                    <input type="text" 
-                                                           v-model="stockSearchForm.serialNumber" 
-                                                           id="serialNumberSale"
-                                                           class="form-control"
-                                                           @keypress.enter="searchStock"
-                                                           placeholder="Seri numarası girin">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label style="width: 0; margin: 7px; height: 0; font-size: 0;" for="serialbuttun" class="label">.</label>
-                                            <button style="width: 100%" 
-                                                    type="button"
-                                                    @click="searchStock"
-                                                    :disabled="loading.stockSearch"
-                                                    :class="['btn', 'btn-md', 'btn-outline-primary', { 'btn-loading': loading.stockSearch }]">
-                                                <span v-if="loading.stockSearch" class="spinner-border spinner-border-sm me-2"></span>
-                                                @{{ loading.stockSearch ? 'Aranıyor...' : 'Ara' }}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                            <div id="nameText"></div>
-                        </div>
-                        <!-- div class="card-footer">
-                            <table class="table table-responsive">
-                                <tr>
-                                    <th>Ürün Adı</th>
-                                    <th>Kategori</th>
-                                    <th>Marka</th>
-                                    <th>Model</th>
-                                    <th>Adet</th>
-                                    <th>İşlemler</th>
-                                </tr>
-                                <tr ng-repeat="item in stockSearchLists">
-                                    <td>@{{item.name}}</td>
-                                    <td>@{{item.category}}</td>
-                                    <td>@{{item.brand}}</td>
-                                    <td>@{{item.version}}</td>
-                                    <td>
-                                        <button type="button" class="btn btn-primary text-nowrap"
-                                                ng-click="getStockSeller(item.id)">
-                                            @{{item.quantity}}
-                                        </button>
-                                    </td>
-                                    <td><a ng-if="item.quantity > 0" data-id="@{{item.id}}"
-                                           href="{{route('invoice.sales')}}?id=@{{item.id}}">Satış</a>
-                                    </td>
-                                </tr>
-                            </table>
-                        </div -->
-                    </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions-grid table-page-fade-in-delay-1">
+            <a href="javascript:void(0)" @click="openSaleModal" class="quick-action-btn">
+                <div class="quick-action-icon text-success">
+                    <i class="bx bx-cart-add"></i>
                 </div>
-            </div>
-            @endrole
-            <div class="col-lg-6 mb-4 order-0">
-                <div class="card modern-card quick-action-card transfer" :class="{ 'form-loading': loading.transferSearch }">
-                    <div v-if="loading.transferSearch" class="loading-overlay">
-                        <div class="text-center">
-                            <div class="loading-spinner"></div>
-                            <div class="loading-text">Sevk kontrol ediliyor...</div>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-end row">
-                        <div class="col-sm-12">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center mb-3">
-                                    <div class="me-3">
-                                        <i class="bx bx-transfer display-4 text-success" :class="{ 'pulse-animation': loading.transferSearch }"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="card-title text-success mb-0" style="font-size: 1rem; font-weight: 600;">SEVK İŞLEMİ</h6>
-                                        <small class="text-muted">Hızlı sevk yapın</small>
-                                    </div>
-                                </div>
-                                <form @submit.prevent="searchTransfer" id="transferForm" method="post">
-                                    @csrf
-                                    <input type="hidden" id="sellerID" class="form-control" name="sellerID"
-                                           value="{{auth()->user()->seller_id}}">
+                <div class="quick-action-text">Satış Yap</div>
+            </a>
+            
+            <a href="{{ route('stockcard.create') }}" class="quick-action-btn">
+                <div class="quick-action-icon text-primary">
+                    <i class="bx bx-package"></i>
+                </div>
+                <div class="quick-action-text">Stok Ekle</div>
+            </a>
+            
+            <a href="{{ route('stockcard.refundlist') }}" class="quick-action-btn">
+                <div class="quick-action-icon text-warning">
+                    <i class="bx bx-undo"></i>
+                </div>
+                <div class="quick-action-text">İade İşlemi</div>
+            </a>
+            
+            <a href="{{ route('transfer.create') }}" class="quick-action-btn">
+                <div class="quick-action-icon text-info">
+                    <i class="bx bx-transfer"></i>
+                </div>
+                <div class="quick-action-text">Sevk İşlemi</div>
+            </a>
+        </div>
 
-                                    <div class="row">
-                                        <div class="col-md-8">
-                                            <div class="form-password-toggle">
-                                                <label class="form-label" for="serialBackdrop">Seri
-                                                    Numarası</label>
-                                                <div class="input-group input-group-merge">
-                                                    <input type="text" 
-                                                           v-model="transferForm.serialNumber" 
-                                                           id="serialBackdrop" 
-                                                           class="form-control"
-                                                           @keypress.enter="searchTransfer"
-                                                           @paste="handlePaste"
-                                                           placeholder="Seri Numarası">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label style="width: 0; margin: 7px; height: 0; font-size: 0;" for="serialbuttun" class="label">.</label>
-                                            <button style="width: 100%" 
-                                                    type="button" 
-                                                    @click="searchTransfer"
-                                                    :disabled="loading.transferSearch"
-                                                    :class="['btn', 'btn-md', 'btn-secondary', { 'btn-loading': loading.transferSearch }]">
-                                                <span v-if="loading.transferSearch" class="spinner-border spinner-border-sm me-2"></span>
-                                                @{{ loading.transferSearch ? 'Aranıyor...' : 'Ara' }}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
+        <!-- Satış Modal -->
+        <div class="modal fade" id="saleModal" tabindex="-1" aria-labelledby="saleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-gradient-primary text-white">
+                        <h5 class="modal-title" id="saleModalLabel">
+                            <i class="bx bx-cart-add me-2"></i>
+                            Hızlı Satış
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="saleSearchInput" class="form-label fw-semibold">
+                                <i class="bx bx-search me-1"></i>
+                                Seri Numarası veya Barkod
+                            </label>
+                            <input 
+                                type="text" 
+                                class="form-control form-control-lg" 
+                                id="saleSearchInput"
+                                v-model="saleSearch.input"
+                                @keyup.enter="checkStockAndRedirect"
+                                placeholder="Seri numarası veya barkod giriniz..."
+                                autofocus>
+                            <div class="form-text">
+                                <i class="bx bx-info-circle me-1"></i>
+                                Enter tuşuna basarak arama yapabilirsiniz
                             </div>
                         </div>
 
+                        <!-- Loading -->
+                        <div v-if="saleSearch.loading" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="text-primary mt-2">Stok kontrol ediliyor...</p>
+                        </div>
+
+                        <!-- Error Message -->
+                        <div v-if="saleSearch.error" class="alert alert-danger" role="alert">
+                            <i class="bx bx-error-circle me-2"></i>
+                            <span v-text="saleSearch.error"></span>
+                        </div>
+
+                        <!-- Success Message -->
+                        <div v-if="saleSearch.success" class="alert alert-success" role="alert">
+                            <i class="bx bx-check-circle me-2"></i>
+                            <span v-text="saleSearch.success"></span>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bx bx-x me-1"></i>
+                            İptal
+                        </button>
+                        <button 
+                            type="button" 
+                            class="btn btn-primary" 
+                            @click="checkStockAndRedirect"
+                            :disabled="!saleSearch.input || saleSearch.loading">
+                            <span v-if="saleSearch.loading" class="spinner-border spinner-border-sm me-1"></span>
+                            <i v-else class="bx bx-search me-1"></i>
+                            Kontrol Et ve Satış Yap
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="mt-3"></div>
 
-        <!-- Analytics Section -->
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card modern-card">
+        <!-- Sales Chart Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card dashboard-card table-page-fade-in-delay-2">
                     <div class="card-header">
-                        <h6 class="card-title">
-                            <i class="bx bx-bar-chart me-2"></i>
-                            Satış Analizi
-                        </h6>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title mb-0">
+                                    <i class="bx bx-bar-chart me-2"></i>
+                                    Personele Göre Satış Grafikleri
+                                </h5>
+                                <small class="text-muted">Personellerin satış performansı</small>
+                            </div>
+                            <div class="btn-group" role="group">
+                                <button type="button" 
+                                        class="btn btn-sm" 
+                                        :class="chartPeriod === 'daily' ? 'btn-primary' : 'btn-outline-primary'"
+                                        @click="changeChartPeriod('daily')">
+                                    Günlük
+                                </button>
+                                <button type="button" 
+                                        class="btn btn-sm" 
+                                        :class="chartPeriod === 'monthly' ? 'btn-primary' : 'btn-outline-primary'"
+                                        @click="changeChartPeriod('monthly')">
+                                    Aylık
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-body">
-                        <div class="chart-container">
-                        <div id="newChart"></div>
+                        <!-- Date Filter -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    <i class="bx bx-calendar me-1"></i>
+                                    <span v-if="chartPeriod === 'daily'">Tarih Seçin</span>
+                                    <span v-else>Ay Seçin</span>
+                                </label>
+                                <input v-if="chartPeriod === 'daily'" 
+                                       type="date" 
+                                       v-model="chartFilters.date" 
+                                       @change="loadSalesChart"
+                                       class="form-control">
+                                <input v-else 
+                                       type="month" 
+                                       v-model="chartFilters.month" 
+                                       @change="loadSalesChart"
+                                       class="form-control">
+                            </div>
+                        </div>
+                        
+                        <!-- Chart -->
+                        <div v-show="loading.chart" class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="text-primary mt-2">Grafik yükleniyor...</p>
+                        </div>
+                        <div v-show="!loading.chart" class="chart-container" style="position: relative; height: 400px;">
+                            <canvas :key="chartKey" id="salesChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- AI Insights -->
+        <div class="row mb-4" v-if="aiAnalysis && aiAnalysis.insights && aiAnalysis.insights.length > 0">
+            <div class="col-12">
+                <div class="card dashboard-card border-0 shadow-sm">
+                    <div class="card-header bg-gradient-primary text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title mb-0 text-white">
+                                    <i class="bx bx-brain me-2"></i>
+                                    AI Analiz & Öneriler
+                                </h5>
+                                <small class="text-white-50">Yapay zeka destekli içgörüler</small>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <!-- ML Training Status -->
+                                <div class="d-flex align-items-center" style="margin-right: 1rem;">
+                                    <span v-if="mlStatus.isTraining" class="badge bg-warning text-dark">
+                                        <span class="spinner-border spinner-border-sm me-1"></span>
+                                        🤖 ML Eğitiliyor... @{{ mlStatus.trainingProgress }}%
+                                    </span>
+                                    <span v-else-if="mlStatus.isTrained" class="badge bg-success">
+                                        <i class="bx bx-check-circle me-1"></i>
+                                        🤖 ML Aktif
+                                    </span>
+                                    <span v-else class="badge bg-secondary">
+                                        <i class="bx bx-info-circle me-1"></i>
+                                        🤖 ML Beklemede
+                                    </span>
+                                </div>
+                                
+                                <div class="text-end" v-if="aiAnalysis.score !== undefined">
+                                    <div class="badge" :class="{
+                                        'bg-success': aiAnalysis.score >= 80,
+                                        'bg-info': aiAnalysis.score >= 60 && aiAnalysis.score < 80,
+                                        'bg-warning': aiAnalysis.score >= 40 && aiAnalysis.score < 60,
+                                        'bg-danger': aiAnalysis.score < 40
+                                    }" style="font-size: 1.2rem; padding: 0.5rem 1rem;">
+                                        Sağlık Skoru: <strong v-text="aiAnalysis.score"></strong>/100
+                                    </div>
+                                </div>
+                                
+                                <!-- Export Buttons -->
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-success" @click="exportAIReport('pdf')" title="PDF İndir">
+                                        <i class="bx bxs-file-pdf"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-primary" @click="exportAIReport('excel')" title="Excel İndir">
+                                        <i class="bx bxs-file"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-info" @click="exportAIReport('json')" title="JSON İndir">
+                                        <i class="bx bx-data"></i>
+                                    </button>
+                                </div>
+                                
+                                <button @click="loadAIAnalysis" class="btn btn-sm btn-light" :disabled="loading.ai">
+                                    <span v-if="loading.ai" class="spinner-border spinner-border-sm me-1"></span>
+                                    <i v-else class="bx bx-refresh me-1"></i>
+                                    Yenile
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4" v-for="(insight, index) in aiAnalysis.insights" :key="index">
+                                <div class="alert" :class="{
+                                    'alert-success': insight.type === 'success',
+                                    'alert-warning': insight.type === 'warning',
+                                    'alert-danger': insight.type === 'danger',
+                                    'alert-info': insight.type === 'info'
+                                }" role="alert">
+                                    <h6 class="alert-heading">
+                                        <i class="bx" :class="insight.icon"></i>
+                                        <span v-text="insight.title"></span>
+                                    </h6>
+                                    <p class="mb-2" v-text="insight.message"></p>
+                                    <hr>
+                                    <p class="mb-0">
+                                        <strong>💡 Öneri:</strong> <span v-text="insight.action"></span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card modern-card">
-                    <div class="card-header">
-                        <h6 class="card-title">
+
+        <!-- Hızlı ve Yavaş Hareket Eden Ürünler -->
+        <div class="row mb-4" v-if="aiAnalysis && (aiAnalysis.fast_movers?.length > 0 || aiAnalysis.slow_movers?.length > 0)">
+            <!-- Hızlı Hareket Eden Ürünler -->
+            <div class="col-md-6" v-if="aiAnalysis.fast_movers && aiAnalysis.fast_movers.length > 0">
+                <div class="card dashboard-card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title mb-0">
                             <i class="bx bx-trending-up me-2"></i>
-                            Aylık Performans
-                        </h6>
+                            🚀 En Hızlı Satan 10 Ürün
+                        </h5>
+                        <small class="text-white-50">En iyi performans gösteren ürünler</small>
                     </div>
-                    <div class="card-body">
-                        <div class="chart-container">
-                        <div id="newMonthChart"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card modern-card">
-                    <div class="card-header">
-                        <h6 class="card-title">
-                            <i class="bx bx-pie-chart me-2"></i>
-                            Genel Analiz
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container">
-                        <div id="totalAylik"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="mt-3"></div>
-
-        <div class="row">
-            <div class="col-md-6 col-lg-6 order-2 mb-4">
-                <div class="card h-100 modern-card">
-                    <div class="card-header">
-                        <h6 class="card-title mb-0" style="font-size: 1rem; font-weight: 600;">
-                            <i class="bx bx-package me-2 text-primary"></i>
-                            Stok Uyarıları
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive text-nowrap">
-                            <table class="table table-hover">
-                                <thead>
-                                <tr>
-                                    <th><i class="bx bx-package me-1"></i>Ürün</th>
-                                    <th><i class="bx bx-hash me-1"></i>Stok</th>
-                                    <th><i class="bx bx-dollar me-1"></i>Maliyet</th>
-                                    <th><i class="bx bx-tag me-1"></i>Satış Fiyatı</th>
-                                    <th><i class="bx bx-cog me-1"></i>İşlem</th>
-                                </tr>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 5%;">#</th>
+                                        <th style="width: 25%;">Ürün Adı</th>
+                                        <th style="width: 15%;">Kategori</th>
+                                        <th style="width: 15%;">Devir Süresi</th>
+                                        <th style="width: 10%;">Satış</th>
+                                        <th style="width: 15%;">Gelir</th>
+                                    </tr>
                                 </thead>
-                                <tbody class="table-border-bottom-0">
-                                @if(\Illuminate\Support\Facades\Auth::user()->hasRole('super-admin') || \Illuminate\Support\Facades\Auth::user()->hasRole('Depo Sorumlusu'))
-                                    @foreach($stockTracks as $stockTrack)
-                                        @if($stockTrack['quantity'] < $stockTrack['tracking_quantity'])
-                                            <tr>
-                                                <td>{{$stockTrack['name']}}</td>
-                                                <td>{{$stockTrack['quantity']}}</td>
-                                                <td>{{$stockTrack['name']}}</td>
-                                                <td>{{$stockTrack['name']}}</td>
-                                                <td>
-                                                    <button
-                                                        onclick="demandModal({{$stockTrack['id']}},'{{$stockTrack['name']}}')"
-                                                        type="button" class="btn btn-danger">
-                                                        <i class="bx bx-radar"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        @endif
-                                    @endforeach
-                                @endif
+                                <tbody>
+                                    <tr v-for="(product, index) in aiAnalysis.fast_movers" :key="'fast-' + index">
+                                        <td><span class="badge bg-success">@{{ index + 1 }}</span></td>
+                                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@{{ product.stock_name }}">
+                                            <strong>@{{ product.stock_name }}</strong>
+                                        </td>
+                                        <td><span class="badge bg-info">@{{ product.category }}</span></td>
+                                        <td>
+                                            <span class="badge bg-success">
+                                                @{{ product.avg_days_to_sell }} gün
+                                            </span>
+                                        </td>
+                                        <td>@{{ product.total_sold }} adet</td>
+                                        <td><strong>@{{ Number(product.total_revenue).toLocaleString('tr-TR') }} ₺</strong></td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-md-6 col-lg-6 order-3 order-md-2 mb-4">
-                <div class="card modern-card quick-action-card refund" :class="{ 'form-loading': loading.refund }">
-                    <div v-if="loading.refund" class="loading-overlay">
-                        <div class="text-center">
-                            <div class="loading-spinner"></div>
-                            <div class="loading-text">İade işlemi yapılıyor...</div>
+
+            <!-- Yavaş Hareket Eden Ürünler -->
+            <div class="col-md-6" v-if="aiAnalysis.slow_movers && aiAnalysis.slow_movers.length > 0">
+                <div class="card dashboard-card">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="card-title mb-0">
+                            <i class="bx bx-trending-down me-2"></i>
+                            🐌 En Yavaş Satan 10 Ürün
+                        </h5>
+                        <small>Aksiyon gerektirebilir</small>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 5%;">#</th>
+                                        <th style="width: 30%;">Ürün Adı</th>
+                                        <th style="width: 15%;">Devir Süresi</th>
+                                        <th style="width: 10%;">Stok</th>
+                                        <th style="width: 40%;">Öneri</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(product, index) in aiAnalysis.slow_movers" :key="'slow-' + index">
+                                        <td><span class="badge bg-warning">@{{ index + 1 }}</span></td>
+                                        <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@{{ product.stock_name }}">
+                                            <strong>@{{ product.stock_name }}</strong>
+                                            <br>
+                                            <small class="text-muted">@{{ product.category }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-danger">
+                                                @{{ product.avg_days_to_sell }} gün
+                                            </span>
+                                        </td>
+                                        <td>@{{ product.current_stock }} adet</td>
+                                        <td style="max-width: 300px;">
+                                            <small class="text-warning" style="word-wrap: break-word; white-space: normal;">
+                                                <i class="bx bx-bulb"></i> @{{ product.recommendation }}
+                                            </small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    <form @submit.prevent="submitRefund" class="modal-content" id="refundForm">
-                        @csrf
-                        <div class="card-header">
-                            <h6 class="card-title mb-0" style="font-size: 1rem; font-weight: 600;">
-                                <i class="bx bx-undo me-2 text-primary"></i>
-                                İade İşlemi
-                            </h6>
-                            <small class="text-muted">Seri numarası girilirse stok seçimine gerek yoktur</small>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col mb-3">
-                                    <label for="stockBackdrop" class="form-label">Stok</label>
-                                    <select class="form-control select2" 
-                                            v-model="refundForm.stock_id" 
-                                            name="stock_id" 
-                                            id="stockBackdrop">
-                                        <option value="">Stok seçiniz...</option>
-                                        <option v-for="stock in stocks" :key="stock.id" :value="stock.id">
-                                            @{{ stock.name }} / @{{ stock.brand?.name || 'Bulunamadı' }} / @{{ stock.version || 'Bulunamadı' }} / @{{ stock.category?.name || 'Kategori Yok' }}
-                                        </option>
-                                    </select>
-                                </div>
-                                <div class="col mb-0">
-                                    <label for="reasonBackdrop" class="form-label">Neden</label>
-                                    <select class="form-control" 
-                                            v-model="refundForm.reason_id" 
-                                            name="reason_id" 
-                                            id="reasonBackdrop">
-                                        <option value="">Neden seçiniz...</option>
-                                        <option v-for="reason in reasons" :key="reason.id" :value="reason.id">
-                                            @{{ reason.name }}
-                                        </option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="row g-2">
-                                <div class="col mb-0">
-                                    <label for="colorBackdrop" class="form-label">Renk</label>
-                                    <select class="form-control" 
-                                            v-model="refundForm.color_id" 
-                                            name="color_id" 
-                                            id="colorBackdrop">
-                                        <option value="">Renk seçiniz...</option>
-                                        <option v-for="color in colors" :key="color.id" :value="color.id">
-                                            @{{ color.name }}
-                                        </option>
-                                    </select>
-                                </div>
-                                <div class="col mb-0">
-                                    <label for="serialNumberRefund" class="form-label">Seri No</label>
-                                    <input v-model="refundForm.serial_number" 
-                                           name="serial_number" 
-                                           type="text" 
-                                           class="form-control"
-                                           id="serialNumberRefund">
-                                </div>
-                            </div>
+                </div>
+            </div>
+        </div>
 
-                            <div class="row g-2">
-                                <div class="col mb-0">
-                                    <label for="descriptionRefund" class="form-label">Açıklama</label>
-                                    <input type="text" 
-                                           v-model="refundForm.description" 
-                                           name="description" 
-                                           class="form-control" 
-                                           id="descriptionRefund">
+        <!-- Mağaza Bazlı Performans Analizi -->
+        <div class="row mb-4" v-if="aiAnalysis && aiAnalysis.warehouse_performance?.has_data">
+            <div class="col-12">
+                <div class="card dashboard-card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="bx bx-store me-2"></i>
+                            🏪 Mağaza Bazlı Performans Analizi
+                        </h5>
+                        <small class="text-white-50">Her mağazada hangi ürünler hızlı/yavaş satıyor</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="accordion" id="warehouseAccordion">
+                            <div class="accordion-item" v-for="(warehouse, index) in aiAnalysis.warehouse_performance.warehouses" :key="'warehouse-' + index">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button" :class="{ 'collapsed': index !== 0 }" type="button" 
+                                            :data-bs-toggle="'collapse'" 
+                                            :data-bs-target="'#collapse-warehouse-' + index"
+                                            :aria-expanded="index === 0 ? 'true' : 'false'">
+                                        <strong>@{{ warehouse.warehouse_name }}</strong>
+                                        <span class="ms-3 badge bg-info">@{{ warehouse.total_products }} ürün</span>
+                                        <span class="ms-2 badge bg-secondary">Ort: @{{ warehouse.avg_turnover }} gün</span>
+                                        <span class="ms-2 badge bg-success">@{{ warehouse.total_sales }} satış</span>
+                                    </button>
+                                </h2>
+                                <div :id="'collapse-warehouse-' + index" 
+                                     class="accordion-collapse collapse" 
+                                     :class="{ 'show': index === 0 }"
+                                     data-bs-parent="#warehouseAccordion">
+                                    <div class="accordion-body">
+                                        <div class="row">
+                                            <!-- Hızlı Satan Ürünler -->
+                                            <div class="col-md-6">
+                                                <h6 class="text-success">
+                                                    <i class="bx bx-trending-up"></i> En Hızlı Satan 5 Ürün
+                                                </h6>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-hover">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>Ürün</th>
+                                                                <th>Kategori</th>
+                                                                <th>Süre</th>
+                                                                <th>Satış</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr v-for="(product, pIndex) in warehouse.fastest_products" :key="'fast-w-' + pIndex">
+                                                                <td><strong>@{{ product.stock_name }}</strong></td>
+                                                                <td><span class="badge bg-info">@{{ product.category }}</span></td>
+                                                                <td><span class="badge bg-success">@{{ product.avg_days }} gün</span></td>
+                                                                <td>@{{ product.total_sold }}</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            <!-- Yavaş Satan Ürünler -->
+                                            <div class="col-md-6">
+                                                <h6 class="text-warning">
+                                                    <i class="bx bx-trending-down"></i> En Yavaş Satan 5 Ürün
+                                                </h6>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-hover">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>Ürün</th>
+                                                                <th>Kategori</th>
+                                                                <th>Süre</th>
+                                                                <th>Stok</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr v-for="(product, pIndex) in warehouse.slowest_products" :key="'slow-w-' + pIndex">
+                                                                <td><strong>@{{ product.stock_name }}</strong></td>
+                                                                <td><span class="badge bg-secondary">@{{ product.category }}</span></td>
+                                                                <td><span class="badge bg-danger">@{{ product.avg_days }} gün</span></td>
+                                                                <td>@{{ product.current_stock }}</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-footer" style="padding: 10px;">
-                            <button type="submit" 
-                                    :disabled="loading.refund"
-                                    :class="['btn', 'btn-primary', { 'btn-loading': loading.refund }]">
-                                <span v-if="loading.refund" class="spinner-border spinner-border-sm me-2"></span>
-                                @{{ loading.refund ? 'İşleniyor...' : 'İADE İŞLEMİ BAŞLAT' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Turnover Table -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card dashboard-card table-page-fade-in-delay-3">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title mb-0">
+                                    <i class="bx bx-tachometer me-2"></i>
+                                    Stok Devir Hızı
+                                </h5>
+                                <small class="text-muted">Ürünlerin satış hızı analizi (Son 90 gün)</small>
+                            </div>
+                            <button @click="loadStockTurnover" class="btn btn-sm btn-outline-primary" :disabled="loading.turnover">
+                                <span v-if="loading.turnover" class="spinner-border spinner-border-sm me-1"></span>
+                                <i v-else class="bx bx-refresh me-1"></i>
+                                Yenile
                             </button>
                         </div>
-                    </form>
-                </div>
-            </div>
-            <div class="col-12 col-md-12 col-lg-12 order-3 order-md-2 mb-4">
-                <div class="card modern-card quick-action-card delete" :class="{ 'form-loading': loading.delete }">
-                    <div v-if="loading.delete" class="loading-overlay">
-                        <div class="text-center">
-                            <div class="loading-spinner"></div>
-                            <div class="loading-text">Seri numarası siliniyor...</div>
-                        </div>
                     </div>
-                    <form @submit.prevent="submitDeleteSerial" id="deleted_at_serial_number_storeForm" method="post">
-                        @csrf
-                        <div class="card-header">
-                            <h6 class="card-title mb-0" style="font-size: 1rem; font-weight: 600;">
-                                <i class="bx bx-trash me-2 text-primary"></i>
-                                Seri Numarası Silme
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row g-2">
-                                <div class="col mb-0">
-                                    <label for="serial_number_delete" class="form-label">Seri Numarası</label>
-                                    <input type="text" 
-                                           v-model="deleteForm.serial_number" 
-                                           name="serial_number" 
-                                           class="form-control" 
-                                           id="serial_number_delete"
-                                           placeholder="Seri numarası girin">
-                                </div>
-                                <div class="col mb-0">
-                                    <label for="deleteButton" class="form-label"></label>
-                                    <button type="submit" 
-                                            :disabled="loading.delete"
-                                            :class="['btn', 'btn-primary', { 'btn-loading': loading.delete }]" 
-                                            style="display: flex;">
-                                        <span v-if="loading.delete" class="spinner-border spinner-border-sm me-2"></span>
-                                        @{{ loading.delete ? 'Siliniyor...' : 'Kaydet' }}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    </div>
-    <div class="modal fade" id="getCCModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered1 modal-simple modal-add-new-cc">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    <div class="text-center">
-                        <table class="table table-bordered">
-                            <tr>
-                                <td>Bayi</td>
-                                <td>Adet</td>
-                            </tr>
-                            <tr ng-repeat="item in data">
-                                <td>@{{item.sellerName}}</td>
-                                <td>@{{item.quantity}}</td>
-                            </tr>
-                        </table>
-
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="demandModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered1 modal-simple modal-add-new-cc">
-            <div class="modal-content" style="padding: 1px">
-                <div class="modal-header">Ürün Adı : <span></span></div>
-                <form action="{{route('demand.store')}}" method="post">
-                    <input type="hidden" name="id" id="id" value="">
-                    @csrf
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-12 mb-3">
-                                <label for="nameSmall" class="form-label">Renk</label>
-                                <select class="form-select" name="color_id">
-                                    @foreach($colors as $color)
-                                        <option value="{{$color->id}}">{{$color->name}}</option>
-                                    @endforeach
+                    <div class="card-body">
+                        <!-- Bayi Filtresi -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    <i class="bx bx-user me-1"></i>Bayi
+                                </label>
+                                <select v-model="turnoverFilters.seller_id" @change="loadStockTurnover" class="form-select">
+                                    <option value="">Tüm Bayiler</option>
+                                    <option v-for="seller in sellers" :key="seller.id" :value="seller.id" v-text="seller.name"></option>
                                 </select>
                             </div>
-                            <div class="col-12 mb-3">
-                                <label for="nameSmall" class="form-label">Açıklama</label>
-                                <input type="text" id="nameSmall" name="description" class="form-control"
-                                       placeholder="Açıklama">
+                        </div>
+                        
+                        <div v-if="loading.turnover" class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="text-primary mt-2">Stok devir hızı hesaplanıyor...</p>
+                        </div>
+                        
+                        <div v-else-if="stockTurnover.length === 0" class="text-center py-5">
+                            <i class="bx bx-package text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">Stok devir hızı verisi bulunamadı</p>
+                        </div>
+                        
+                        <div v-else class="stock-turnover-table">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 5%;"><i class="bx bx-hash me-1"></i>#</th>
+                                        <th style="width: 35%;"><i class="bx bx-package me-1"></i>Stok Adı</th>
+                                        <th style="width: 15%;" class="text-center"><i class="bx bx-user me-1"></i>Bayi</th>
+                                        <th style="width: 15%;" class="text-center"><i class="bx bx-tachometer me-1"></i>Devir Hızı</th>
+                                        <th style="width: 10%;" class="text-center"><i class="bx bx-box me-1"></i>Mevcut Stok</th>
+                                        <th style="width: 20%;" class="text-center"><i class="bx bx-trending-up me-1"></i>Performans</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(item, index) in paginatedTurnover" :key="item.id">
+                                        <td v-text="(turnoverPagination.currentPage - 1) * turnoverPagination.perPage + index + 1"></td>
+                                        <td>
+                                            <div class="d-flex flex-column">
+                                                <strong v-text="item.stock_name"></strong>
+                                                <small class="text-muted" v-text="item.category"></small>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-secondary" v-text="item.seller_name || 'Belirsiz'"></span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge" :class="getTurnoverBadgeClass(item.turnover_rate)">
+                                                <span v-text="item.turnover_rate.toFixed(1)"></span> gün
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge" :class="item.current_stock > 0 ? 'bg-success' : 'bg-danger'" v-text="item.current_stock"></span>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="progress" style="height: 25px;">
+                                                <div class="progress-bar" 
+                                                     :class="getPerformanceClass(item.turnover_rate || 0)"
+                                                     :style="{width: getPerformanceWidth(item.turnover_rate || 0) + '%'}"
+                                                     role="progressbar">
+                                                    <span v-text="getPerformanceLabel(item.turnover_rate || 0)"></span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            
+                            <!-- Pagination -->
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <div class="text-muted">
+                                    Toplam <strong v-text="stockTurnover.length"></strong> kayıt - 
+                                    Sayfa <strong v-text="turnoverPagination.currentPage"></strong> / <strong v-text="turnoverPagination.totalPages"></strong>
+                                </div>
+                                <nav>
+                                    <ul class="pagination pagination-sm mb-0">
+                                        <li class="page-item" :class="{disabled: turnoverPagination.currentPage === 1}">
+                                            <a class="page-link" href="javascript:void(0)" @click="changeTurnoverPage(turnoverPagination.currentPage - 1)">
+                                                <i class="bx bx-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                        <li v-for="page in turnoverPagination.pages" :key="page" 
+                                            class="page-item" 
+                                            :class="{active: page === turnoverPagination.currentPage}">
+                                            <a class="page-link" href="javascript:void(0)" @click="changeTurnoverPage(page)" v-text="page"></a>
+                                        </li>
+                                        <li class="page-item" :class="{disabled: turnoverPagination.currentPage === turnoverPagination.totalPages}">
+                                            <a class="page-link" href="javascript:void(0)" @click="changeTurnoverPage(turnoverPagination.currentPage + 1)">
+                                                <i class="bx bx-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </nav>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Kapat</button>
-                        <button type="submit" class="btn btn-primary">Kaydet</button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
-@endsection
-
-@section('custom-css')
-    <link rel="stylesheet" href="{{ asset('assets/css/home-page.css') }}">
 @endsection
 
 @section('custom-js')
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0/dist/tf.min.js"></script>
+    <script src="{{ asset('assets/js/ml-predictor.js') }}?v={{ time() }}"></script>
+    
     <script>
-        const { createApp } = Vue;
-        
-        createApp({
-            data() {
-                return {
-                    // Form data
-                    stockSearchForm: {
-                        serialNumber: ''
-                    },
-                    transferForm: {
-                        serialNumber: ''
-                    },
-                    refundForm: {
-                        stock_id: '',
-                        reason_id: '',
-                        color_id: '',
-                        serial_number: '',
-                        description: ''
-                    },
-                    deleteForm: {
-                        serial_number: ''
-                    },
-                    
-                    // Data arrays
-                    stocks: [],
-                    colors: [],
-                    reasons: [],
-                    stockSearchResults: [],
-                    
-                    // Loading states
-                    loading: {
-                        stockSearch: false,
-                        transferSearch: false,
-                        refund: false,
-                        delete: false,
-                        initialData: true,
-                        stocks: false,
-                        colors: false,
-                        reasons: false,
-                        charts: false,
-                        salesChart: false,
-                        transferChart: false,
-                        refundChart: false
-                    },
-                    
-                    // Notifications
-                    notifications: []
-                }
-            },
-            
-            mounted() {
-                this.loadInitialData();
-                this.setupAxios();
-            },
-            
-            methods: {
-                setupAxios() {
-                    // CSRF token setup
-                    const token = document.querySelector('meta[name="csrf-token"]');
-                    if (token) {
-                        axios.defaults.headers.common['X-CSRF-TOKEN'] = token.getAttribute('content');
-                    }
-                },
-                
-                async loadInitialData() {
-                    console.log('Loading initial data...');
-                    this.loading.initialData = true;
-                    
-                    try {
-                        // Load stocks
-                        console.log('Loading stocks...');
-                        this.loading.stocks = true;
-                        const stocksResponse = await axios.get('/api/stocks');
-                        this.stocks = stocksResponse.data;
-                        this.loading.stocks = false;
-                        console.log('Stocks loaded:', this.stocks.length);
-                        
-                        // Load colors
-                        console.log('Loading colors...');
-                        this.loading.colors = true;
-                        const colorsResponse = await axios.get('/api/colors');
-                        this.colors = colorsResponse.data;
-                        this.loading.colors = false;
-                        console.log('Colors loaded:', this.colors.length);
-                        
-                        // Load reasons
-                        console.log('Loading reasons...');
-                        this.loading.reasons = true;
-                        const reasonsResponse = await axios.get('/api/reasons');
-                        this.reasons = reasonsResponse.data.filter(reason => reason.type == 2);
-                        this.loading.reasons = false;
-                        console.log('Reasons loaded:', this.reasons.length);
-                        
-                        // Load chart data
-                        console.log('Loading chart data...');
-                        this.loading.charts = true;
-                        await this.loadChartData();
-                        this.loading.charts = false;
-                        console.log('Chart data loaded');
-                        
-                        this.loading.initialData = false;
-                        console.log('All initial data loaded successfully');
-                    } catch (error) {
-                        console.error('Veri yüklenirken hata:', error);
-                        this.loading.initialData = false;
-                        this.loading.stocks = false;
-                        this.loading.colors = false;
-                        this.loading.reasons = false;
-                        this.loading.charts = false;
-                        this.showNotification('Hata', 'Veriler yüklenirken bir hata oluştu', 'error');
-                    }
-                },
-                
-                async loadChartData() {
-                    try {
-                        // Load dashboard report data
-                        const response = await axios.get('/dashboardNewReport');
-                        const monthResponse = await axios.get('/dashboardMounthNewReport');
-                        
-                        // Sales Chart
-                        this.renderSalesChart(response.data);
-                        
-                        // Month Chart
-                        this.renderMonthChart(monthResponse.data);
-                        
-                        // Total Aylik Chart (simple example)
-                        this.renderTotalAylikChart();
-                        
-                    } catch (error) {
-                        console.error('Chart data loading error:', error);
-                    }
-                },
-                
-                renderSalesChart(data) {
-                    if (!data || !data.series || !data.categories) {
-                        console.warn('Invalid sales chart data');
-                        return;
-                    }
-                    
-                    const options = {
-                        series: data.series || [],
-                        chart: {
-                            type: 'bar',
-                            height: 350,
-                            stacked: true,
-                            toolbar: { show: true }
-                        },
-                        plotOptions: {
-                            bar: {
-                                horizontal: true
-                            }
-                        },
-                        xaxis: {
-                            categories: data.categories || []
-                        },
-                        fill: {
-                            opacity: 1
-                        },
-                        colors: ['#667eea', '#28a745', '#17a2b8', '#6c757d'],
-                        legend: {
-                            position: 'top',
-                            horizontalAlign: 'left'
-                        }
-                    };
-                    
-                    const chart = new ApexCharts(document.querySelector("#newChart"), options);
-                    chart.render();
-                },
-                
-                renderMonthChart(data) {
-                    if (!data || !data.series || !data.categories) {
-                        console.warn('Invalid month chart data');
-                        return;
-                    }
-                    
-                    const options = {
-                        series: data.series || [],
-                        chart: {
-                            type: 'bar',
-                            height: 350,
-                            stacked: true,
-                            toolbar: { show: true }
-                        },
-                        plotOptions: {
-                            bar: {
-                                horizontal: true
-                            }
-                        },
-                        xaxis: {
-                            categories: data.categories || []
-                        },
-                        colors: ['#667eea', '#28a745', '#17a2b8', '#6c757d'],
-                        legend: {
-                            position: 'top'
-                        }
-                    };
-                    
-                    const chart = new ApexCharts(document.querySelector("#newMonthChart"), options);
-                    chart.render();
-                },
-                
-                renderTotalAylikChart() {
-                    const options = {
-                        series: [{
-                            name: 'Satış',
-                            data: [44, 55, 57, 56, 61, 58]
-                        }, {
-                            name: 'Transfer',
-                            data: [76, 85, 101, 98, 87, 105]
-                        }],
-                        chart: {
-                            type: 'bar',
-                            height: 350,
-                            toolbar: { show: true }
-                        },
-                        plotOptions: {
-                            bar: {
-                                horizontal: false,
-                                columnWidth: '55%',
-                                endingShape: 'rounded'
-                            },
-                        },
-                        dataLabels: {
-                            enabled: false
-                        },
-                        stroke: {
-                            show: true,
-                            width: 2,
-                            colors: ['transparent']
-                        },
-                        xaxis: {
-                            categories: ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz'],
-                        },
-                        fill: {
-                            opacity: 1
-                        },
-                        colors: ['#667eea', '#6c757d']
-                    };
-                    
-                    const chart = new ApexCharts(document.querySelector("#totalAylik"), options);
-                    chart.render();
-                },
-                
-                async searchStock() {
-                    if (!this.stockSearchForm.serialNumber.trim()) {
-                        this.showNotification('Uyarı', 'Lütfen seri numarası girin', 'warning');
-                        return;
-                    }
-                    
-                    console.log('Starting stock search...');
-                    this.loading.stockSearch = true;
-                    console.log('Loading state set to true:', this.loading.stockSearch);
-                    
-            
-                    
-                      try {
-                          const response = await axios.post('/stockSearch', {
-                              serialNumber: this.stockSearchForm.serialNumber
-                          });
-                   
-                          if (response.data.autoredirect === false) {
-                              this.showNotification('Hata', 'Satışı Yapılamaz', 'error');
-                              this.stockSearchResults = [];
-                          } else if (response.data.autoredirect === true) {
-                              window.location.href = `/invoice/sales?id=${response.data.id}&serial=${response.data.serial}`;
-                          } else {
-                              this.stockSearchResults = response.data;
-                          }
-                      } catch (error) {
-                          console.error('Stok arama hatası:', error);
-                          this.showNotification('Hata', 'Stok aranırken bir hata oluştu', 'error');
-                      } finally {
-                          console.log('Setting loading to false...');
-                          this.loading.stockSearch = false;
-                          console.log('Loading state set to false:', this.loading.stockSearch);
-                      }
-                },
-                
-                async searchTransfer() {
-                    if (!this.transferForm.serialNumber.trim()) {
-                        this.showNotification('Uyarı', 'Lütfen seri numarası girin', 'warning');
-                        return;
-                    }
-                    
-                    this.loading.transferSearch = true;
-                    
-                    // Minimum loading süresi (1.5 saniye)
-                    const minLoadingTime = new Promise(resolve => setTimeout(resolve, 1500));
-                    
-                    try {
-                        const response = await axios.get(`/getTransferSerialCheck?serial_number=${this.transferForm.serialNumber}&seller_id={{auth()->user()->seller_id}}`);
-                        
-                        // Hem API response hem de minimum loading süresini bekle
-                        await Promise.all([minLoadingTime]);
-                        
-                        if (response.data !== 'Yes') {
-                            this.showNotification('Hata', 'Seri numarası transfer edilemez. Bulunamamakta veya başka bayiye ait.', 'error');
-                        } else {
-                            window.location.href = `transfer/create?serial_number=${this.transferForm.serialNumber}&type=other`;
-                        }
-                    } catch (error) {
-                        console.error('Transfer arama hatası:', error);
-                        this.showNotification('Hata', 'Transfer aranırken bir hata oluştu', 'error');
-                    } finally {
-                        this.loading.transferSearch = false;
-                    }
-                },
-                
-                handlePaste(event) {
-                    setTimeout(() => {
-                        if (this.transferForm.serialNumber.trim()) {
-                            this.searchTransfer();
-                        }
-                    }, 1000);
-                },
-                
-                async submitRefund() {
-                    if (!this.refundForm.stock_id && !this.refundForm.serial_number) {
-                        this.showNotification('Uyarı', 'Lütfen stok seçin veya seri numarası girin', 'warning');
-                        return;
-                    }
-                    
-                    this.loading.refund = true;
-                    
-                    // Minimum loading süresi (2.5 saniye)
-                    const minLoadingTime = new Promise(resolve => setTimeout(resolve, 2500));
-                    
-                    try {
-                        const response = await axios.post('{{route("stockcard.refund")}}', this.refundForm);
-                        
-                        // Hem API response hem de minimum loading süresini bekle
-                        await Promise.all([minLoadingTime]);
-                        
-                        this.showNotification('Başarılı', response.data, 'success');
-                        this.resetRefundForm();
-                    } catch (error) {
-                        console.error('İade işlemi hatası:', error);
-                        this.showNotification('Hata', 'İade işlemi sırasında bir hata oluştu', 'error');
-                    } finally {
-                        this.loading.refund = false;
-                    }
-                },
-                
-                async submitDeleteSerial() {
-                    if (!this.deleteForm.serial_number.trim()) {
-                        this.showNotification('Uyarı', 'Lütfen seri numarası girin', 'warning');
-                        return;
-                    }
-                    
-                    this.loading.delete = true;
-                    
-                    // Minimum loading süresi (1 saniye)
-                    const minLoadingTime = new Promise(resolve => setTimeout(resolve, 1000));
-                    
-                    try {
-                        const response = await axios.post('{{route("deleted_at_serial_number_store")}}', this.deleteForm);
-                        
-                        // Hem API response hem de minimum loading süresini bekle
-                        await Promise.all([minLoadingTime]);
-                        
-                        this.showNotification('Başarılı', 'Seri numarası silindi', 'success');
-                        this.deleteForm.serial_number = '';
-                    } catch (error) {
-                        console.error('Seri numarası silme hatası:', error);
-                        this.showNotification('Hata', 'Seri numarası silinirken bir hata oluştu', 'error');
-                    } finally {
-                        this.loading.delete = false;
-                    }
-                },
-                
-                resetRefundForm() {
-                    this.refundForm = {
-                        stock_id: '',
-                        reason_id: '',
-                        color_id: '',
-                        serial_number: '',
-                        description: ''
-                    };
-                },
-                
-                showNotification(title, message, type = 'info') {
-                    // SweetAlert2 kullanarak bildirim göster
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            title: title,
-                            text: message,
-                            icon: type,
-                            confirmButtonText: 'Tamam'
-                        });
-                    } else {
-                        alert(`${title}: ${message}`);
-                    }
-                },
-                
-                getStockSeller(id) {
-                    // Bu fonksiyon modal açmak için kullanılabilir
-                    console.log('Stock seller ID:', id);
-                }
-            }
-        }).mount('#app');
-        
-        // Debug için loading state'lerini kontrol et
-        console.log('Vue app mounted successfully');
+        // Backend data'yı JavaScript'e aktar
+        window.dashboardSellers = @json($sellers ?? []);
     </script>
-    <script>
-        function demandModal(id, name) {
-            $("#demandModal").modal('show');
-            $("#demandModal").find('.modal-header span').html(name);
-            $("#demandModal").find('input#id').val(id);
-        }
-    </script>
-
-
+    
+    <script src="{{ asset('assets/js/dashboard.js') }}?v={{ time() }}"></script>
 @endsection
+

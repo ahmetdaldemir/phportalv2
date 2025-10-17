@@ -1,33 +1,61 @@
 @extends('layouts.admin')
 
+@section('custom-css')
+    <link rel="stylesheet" href="{{ asset('assets/css/table-page-framework.css') }}">
+    <style>
+        /* Telefon Detay Modal Stilleri */
+        #phoneDetailsModal .modal-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        #phoneDetailsModal .form-label {
+            color: #495057;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        #phoneDetailsModal .form-label.fw-bold {
+            color: #212529;
+        }
+        
+        #phoneDetailsModal p {
+            color: #6c757d;
+            font-size: 0.95rem;
+        }
+        
+        #phoneDetailsModal .text-primary {
+            color: #667eea !important;
+        }
+        
+        #phoneDetailsModal .badge {
+            font-size: 0.75rem;
+        }
+        
+        #phoneDetailsModal .fs-5 {
+            font-weight: 600;
+        }
+    </style>
+@endsection
+
 @section('content')
     <div id="app" class="container-xxl flex-grow-1 container-p-y">
-        <!-- Professional Page Header -->
-        <div class="page-header mb-4">
-            <div class="d-flex align-items-center">
-                <div class="me-3">
-                    <i class="bx bx-mobile display-4 text-primary"></i>
-                </div>
-                <div>
-                    <h2 class="mb-0" style="font-size: 1.5rem; font-weight: 600;">
-                        <i class="bx bx-mobile me-2"></i>
-                        TELEFON LİSTESİ
-                    </h2>
-                    <p class="mb-0" style="font-size: 0.9rem;">Telefon envanteri ve yönetimi</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="card professional-card">
-            <div class="card-header professional-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-title mb-0" style="font-size: 1rem; font-weight: 600;">
-                            <i class="bx bx-filter me-2"></i>
-                            Filtreler
-                        </h6>
-                        <small class="text-muted">Telefon arama ve filtreleme</small>
+        <!-- Table Page Header -->
+        <div class="table-page-header table-page-fade-in">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="header-icon">
+                        <i class="bx bx-mobile"></i>
                     </div>
+                    <div class="header-text">
+                        <h2>
+                            <i class="bx bx-mobile me-2"></i>
+                            TELEFON LİSTESİ
+                        </h2>
+                        <p>Telefon envanteri ve yönetimi</p>
+                    </div>
+                </div>
+                <div class="header-actions">
                     @role(['Depo Sorumlusu','super-admin','Bayi Yetkilisi'])
                     <a href="{{route('phone.create')}}" class="btn btn-primary btn-sm">
                         <i class="bx bx-plus me-1"></i>
@@ -36,161 +64,151 @@
                     @endrole
                 </div>
             </div>
-            <div class="card-body p-4">
-                <form @submit.prevent="searchPhones" class="compact-filter-form">
+        </div>
+
+        <!-- Table Page Filters -->
+        <div class="table-page-filters table-page-fade-in-delay-1">
+            <div class="filter-header">
+                <h6>
+                    <i class="bx bx-filter me-2"></i>
+                    Filtreler
+                </h6>
+                <small>Telefon arama ve filtreleme</small>
+            </div>
+            <div class="filter-body">
+                <form @submit.prevent="searchPhones">
                     <!-- Row 1: Main Filters -->
-                    <div class="row g-2 mb-2">
-                        <div class="col-lg-3 col-md-4">
-                            <div class="compact-filter-group">
-                                <label class="compact-label">
-                                    <i class="bx bx-package"></i> Marka
-                                </label>
-                                <select v-model="searchForm.brand" @change="getVersions" class="form-select form-select-sm compact-select">
-                                    <option value="">Tüm Markalar</option>
-                                    <option v-for="brand in brands" :key="brand.id" :value="brand.id">@{{ brand.name }}</option>
-                                </select>
-                            </div>
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="bx bx-package"></i> Marka
+                            </label>
+                            <select v-model="searchForm.brand" @change="getVersions" class="filter-select">
+                                <option value="">Tüm Markalar</option>
+                                <option v-for="brand in brands" :key="brand.id" :value="brand.id" v-text="brand.name"></option>
+                            </select>
                         </div>
                         
-                        <div class="col-lg-3 col-md-4">
-                            <div class="compact-filter-group">
-                                <label class="compact-label">
-                                    <i class="bx bx-mobile-alt"></i> Model
-                                </label>
-                                <select v-model="searchForm.version" class="form-select form-select-sm compact-select">
-                                    <option value="">Tüm Modeller</option>
-                                    <option v-for="version in versions" :key="version.id" :value="version.id">@{{ version.name }}</option>
-                                </select>
-                            </div>
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="bx bx-mobile-alt"></i> Model
+                            </label>
+                            <select v-model="searchForm.version" class="filter-select">
+                                <option value="">Tüm Modeller</option>
+                                <option v-for="version in versions" :key="version.id" :value="version.id" v-text="version.name"></option>
+                            </select>
                         </div>
                         
-                        <div class="col-lg-2 col-md-4">
-                            <div class="compact-filter-group">
-                                <label class="compact-label">
-                                    <i class="bx bx-palette"></i> Renk
-                                </label>
-                                <select v-model="searchForm.color" class="form-select form-select-sm compact-select">
-                                    <option value="">Tümü</option>
-                                    <option v-for="color in colors" :key="color.id" :value="color.id">@{{ color.name }}</option>
-                                </select>
-                            </div>
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="bx bx-palette"></i> Renk
+                            </label>
+                            <select v-model="searchForm.color" class="filter-select">
+                                <option value="">Tümü</option>
+                                <option v-for="color in colors" :key="color.id" :value="color.id" v-text="color.name"></option>
+                            </select>
                         </div>
                         
-                        <div class="col-lg-2 col-md-6">
-                            <div class="compact-filter-group">
-                                <label class="compact-label">
-                                    <i class="bx bx-check-circle"></i> Durum
-                                </label>
-                                <select v-model="searchForm.status" class="form-select form-select-sm compact-select">
-                                    <option value="">Tümü</option>
-                                    <option value="1">Satıldı</option>
-                                    <option value="0">Beklemede</option>
-                                </select>
-                            </div>
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="bx bx-check-circle"></i> Durum
+                            </label>
+                            <select v-model="searchForm.status" class="filter-select">
+                                <option value="">Tümü</option>
+                                <option value="1">Satıldı</option>
+                                <option value="0">Beklemede</option>
+                            </select>
                         </div>
                         
-                        <div class="col-lg-2 col-md-6">
-                            <div class="compact-filter-group">
-                                <label class="compact-label">
-                                    <i class="bx bx-category"></i> Tip
-                                </label>
-                                <select v-model="searchForm.type" class="form-select form-select-sm compact-select">
-                                    <option value="">Tümü</option>
-                                    <option value="old">İkinci El</option>
-                                    <option value="new">Sıfır</option>
-                                    <option value="assigned_device">Teminatlı</option>
-                                </select>
-                            </div>
-                            </div>
-                        </div>
-                        
-                    <!-- Row 2: Secondary Filters -->
-                    <div class="row g-2 mb-3">
-                        <div class="col-lg-3 col-md-4">
-                            <div class="compact-filter-group">
-                                <label class="compact-label">
-                                    <i class="bx bx-store"></i> Şube
-                                </label>
-                                <select v-model="searchForm.seller" class="form-select form-select-sm compact-select">
-                                    <option value="all">Tüm Şubeler</option>
-                                    <option v-for="seller in sellers" :key="seller.id" :value="seller.id">@{{ seller.name }}</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="col-lg-3 col-md-4">
-                            <div class="compact-filter-group">
-                                <label class="compact-label">
-                                    <i class="bx bx-barcode"></i> Barkod
-                                </label>
-                                <input 
-                                    type="text" 
-                                    v-model="searchForm.barcode" 
-                                    class="form-control form-control-sm compact-input" 
-                                    placeholder="Barkod numarası..."
-                                >
-                            </div>
-                        </div>
-                        
-                        <div class="col-lg-3 col-md-4">
-                            <div class="compact-filter-group">
-                                <label class="compact-label">
-                                    <i class="bx bx-mobile"></i> IMEI
-                                </label>
-                                <input 
-                                    type="text" 
-                                    v-model="searchForm.imei" 
-                                    class="form-control form-control-sm compact-input" 
-                                    placeholder="IMEI numarası..."
-                                >
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="bx bx-category"></i> Tip
+                            </label>
+                            <select v-model="searchForm.type" class="filter-select">
+                                <option value="">Tümü</option>
+                                <option value="old">İkinci El</option>
+                                <option value="new">Sıfır</option>
+                                <option value="assigned_device">Teminatlı</option>
+                            </select>
                         </div>
                     </div>
                     
-                        <div class="col-lg-3 col-md-12">
-                            <div class="compact-filter-group">
-                                <label class="compact-label d-none d-md-block invisible">Aksiyon</label>
-                                <div class="d-flex gap-2">
-                                    <button type="submit" class="btn btn-primary btn-sm flex-fill" :disabled="loading.search">
-                                        <span v-if="loading.search" class="spinner-border spinner-border-sm me-1"></span>
-                                        <i v-else class="bx bx-search me-1"></i>
-                                    @{{ loading.search ? 'Aranıyor...' : 'Ara' }}
-                                </button>
-                                    <button type="button" @click="clearFilters" class="btn btn-outline-secondary btn-sm" title="Filtreleri Temizle">
-                                        <i class="bx bx-refresh"></i>
-                                </button>
-                                </div>
-                            </div>
+                    <!-- Row 2: Secondary Filters -->
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="bx bx-store"></i> Şube
+                            </label>
+                            <select v-model="searchForm.seller" class="filter-select">
+                                <option value="all">Tüm Şubeler</option>
+                                <option v-for="seller in sellers" :key="seller.id" :value="seller.id" v-text="seller.name"></option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="bx bx-barcode"></i> Barkod
+                            </label>
+                            <input type="text" v-model="searchForm.barcode" class="filter-input" placeholder="Barkod numarası...">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="bx bx-mobile"></i> IMEI
+                            </label>
+                            <input type="text" v-model="searchForm.imei" class="filter-input" placeholder="IMEI numarası...">
+                        </div>
+                        
+                        <div class="filter-group auto">
+                            <label class="filter-label">
+                                <i class="bx bx-search"></i> Ara
+                            </label>
+                            <button type="submit" class="filter-button primary" :disabled="loading.search">
+                                <span v-if="loading.search" class="spinner-border spinner-border-sm me-1"></span>
+                                <i v-else class="bx bx-search me-1"></i>
+                                <span v-text="loading.search ? 'Aranıyor...' : 'Ara'"></span>
+                            </button>
+                        </div>
+                        
+                        <div class="filter-group auto">
+                            <label class="filter-label">
+                                <i class="bx bx-refresh"></i> Temizle
+                            </label>
+                            <button type="button" @click="clearFilters" class="filter-button secondary" title="Filtreleri Temizle">
+                                <i class="bx bx-refresh me-1"></i>
+                                Temizle
+                            </button>
                         </div>
                     </div>
                 </form>
             </div>
-            <!-- Loading Overlay -->
-            <div v-if="loading.table" class="table-loading-overlay">
-                <div class="loading-content">
-                    <div class="loading-spinner-large"></div>
-                    <div class="loading-text">Telefonlar yükleniyor...</div>
-                </div>
+        </div>
+        
+        <!-- Data Table -->
+        <div class="table-page-table table-page-fade-in-delay-2">
+            <!-- Loading State -->
+            <div v-if="loading.table" class="table-page-loading">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="text-primary mt-2">Telefonlar yükleniyor...</p>
             </div>
             
             <!-- Empty State -->
-            <div v-if="!loading.table && phones.length === 0" class="empty-state">
-                <div class="empty-content">
-                    <i class="bx bx-mobile display-1 text-muted"></i>
-                    <h5 class="mt-3">Telefon bulunamadı</h5>
-                    <p class="text-muted">Arama kriterlerinize uygun telefon bulunamadı.</p>
-                </div>
+            <div v-else-if="phones.length === 0" class="table-page-empty">
+                <i class="bx bx-mobile"></i>
+                <h4 class="mt-3">Telefon bulunamadı</h4>
+                <p class="text-muted">Arama kriterlerinize uygun telefon bulunamadı.</p>
             </div>
             
             <!-- Table -->
-            <div v-if="!loading.table && phones.length > 0" class="table-responsive text-nowrap">
-                <table class="table professional-table">
+            <div v-else class="table-responsive">
+                <table class="table table-hover">
                     <thead>
                     <tr>
-                        <th><i class="bx bx-mobile me-1"></i>IMEI</th>
-                        <th><i class="bx bx-barcode me-1"></i>Barkod</th>
-                        <th><i class="bx bx-package me-1"></i>Ürün</th>
-                        <th><i class="bx bx-store me-1"></i>Bayi</th>
-                        <th><i class="bx bx-money me-1"></i>Satış Fiyatı</th>
+                        <th style="width: 170px;"><i class="bx bx-mobile me-1"></i>IMEI</th>
+                        <th style="width: 150px;"><i class="bx bx-barcode me-1"></i>Barkod</th>
+                        <th style="width: 20%;"><i class="bx bx-package me-1"></i>Ürün</th>
+                        <th style="width: 10%;"><i class="bx bx-store me-1"></i>Bayi</th>
+                        <th style="width: 10%;"><i class="bx bx-money me-1"></i>Satış Fiyatı</th>
                         <th><i class="bx bx-cog me-1"></i>İşlemler</th>
                     </tr>
                     </thead>
@@ -265,14 +283,15 @@
                 </table>
             </div>
         </div>
-        <div class="card mt-4">
-            <div class="card-body mt-4 p-4 box has-text-centered"
-                 style="padding-top: 0 !important; padding-bottom: 0 !important;">
-                {!! $phones->links() !!}
-            </div>
+        
+        <!-- Pagination -->
+        @if($phones->hasPages())
+        <div class="table-page-pagination table-page-fade-in-delay-3">
+            {!! $phones->links() !!}
         </div>
+        @endif
         <hr class="my-5">
-    </div>
+
     <div class="modal fade" id="deleteModal" data-bs-backdrop="static" tabindex="-1">
         <div class="modal-dialog">
             <form class="modal-content" action="{{route('phone.delete')}}" id="deleteModalForm">
@@ -320,32 +339,32 @@
                             
                             <div class="mb-3">
                                 <label class="form-label fw-bold">IMEI:</label>
-                                <p class="mb-0">@{{ selectedPhone.imei }}</p>
+                                <p class="mb-0" v-text="selectedPhone.imei || 'Belirtilmemiş'"></p>
                             </div>
                             
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Barkod:</label>
-                                <p class="mb-0">@{{ selectedPhone.barcode }}</p>
+                                <p class="mb-0" v-text="selectedPhone.barcode || 'Belirtilmemiş'"></p>
                             </div>
                             
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Marka:</label>
-                                <p class="mb-0">@{{ selectedPhone.brand.name }}</p>
+                                <p class="mb-0" v-text="selectedPhone.brand && selectedPhone.brand.name ? selectedPhone.brand.name : 'Belirtilmemiş'"></p>
                             </div>
                             
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Model:</label>
-                                <p class="mb-0">@{{ selectedPhone.version ? selectedPhone.version.name : 'Model Yok' }}</p>
+                                <p class="mb-0" v-text="selectedPhone.version && selectedPhone.version.name ? selectedPhone.version.name : 'Model Yok'"></p>
                             </div>
                             
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Tip:</label>
-                                <p class="mb-0">@{{ selectedPhone.type_text }}</p>
+                                <p class="mb-0" v-text="selectedPhone.type_text || 'Belirtilmemiş'"></p>
                             </div>
                             
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Bayi:</label>
-                                <p class="mb-0">@{{ selectedPhone.seller.name }}</p>
+                                <p class="mb-0" v-text="selectedPhone.seller && selectedPhone.seller.name ? selectedPhone.seller.name : 'Belirtilmemiş'"></p>
                             </div>
                         </div>
                         
@@ -358,25 +377,23 @@
                             
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Hafıza:</label>
-                                <p class="mb-0">@{{ selectedPhone.memory }} GB</p>
+                                <p class="mb-0"><span v-text="selectedPhone.memory || '0'"></span> GB</p>
                             </div>
                             
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Renk:</label>
-                                <p class="mb-0">@{{ selectedPhone.color.name }}</p>
+                                <p class="mb-0" v-text="selectedPhone.color && selectedPhone.color.name ? selectedPhone.color.name : 'Belirtilmemiş'"></p>
                             </div>
                             
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Pil:</label>
-                                <p class="mb-0">@{{ selectedPhone.battery_text }}</p>
+                                <p class="mb-0" v-text="selectedPhone.battery_text || 'Bilinmiyor'"></p>
                             </div>
                             
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Garanti:</label>
                                 <p class="mb-0">
-                                    <span :class="selectedPhone.warranty_text === 'Var' ? 'text-success' : 'text-danger'">
-                                        @{{ selectedPhone.warranty_text }}
-                                    </span>
+                                    <span :class="selectedPhone.warranty_text === 'Var' ? 'text-success' : 'text-danger'" v-text="selectedPhone.warranty_text || 'Bilinmiyor'"></span>
                                 </p>
                             </div>
                             
@@ -386,6 +403,7 @@
                                     <span v-if="selectedPhone.status == 0" class="badge bg-warning">Beklemede</span>
                                     <span v-else-if="selectedPhone.status == 1" class="badge bg-success">Satıldı</span>
                                     <span v-else-if="selectedPhone.status == 2" class="badge bg-primary">Transfer Sürecinde</span>
+                                    <span v-else class="badge bg-secondary">Bilinmiyor</span>
                                 </p>
                             </div>
                             
@@ -409,7 +427,7 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label fw-bold">Satış Fiyatı:</label>
-                                        <p class="mb-0 fs-5 text-success">@{{ selectedPhone.sale_price_formatted }} ₺</p>
+                                        <p class="mb-0 fs-5 text-success"><span v-text="selectedPhone.sale_price_formatted || '0.00'"></span> ₺</p>
                                     </div>
                                 </div>
                                 
@@ -417,7 +435,7 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label fw-bold">Alış Fiyatı:</label>
-                                        <p class="mb-0 fs-5 text-info">@{{ selectedPhone.cost_price_formatted }} ₺</p>
+                                        <p class="mb-0 fs-5 text-info"><span v-text="selectedPhone.cost_price_formatted || '0.00'"></span> ₺</p>
                                     </div>
                                 </div>
                                 @endrole
@@ -495,79 +513,7 @@
             </form>
         </div>
     </div>
-@endsection
-
-@section('custom-css')
-    <link rel="stylesheet" href="{{asset('assets/css/list-page-base.css')}}">
-    <style>
-        /* Telefon Detay Modal Stilleri */
-        #phoneDetailsModal .modal-body {
-            max-height: 70vh;
-            overflow-y: auto;
-        }
-        
-        #phoneDetailsModal .form-label {
-            color: #495057;
-            font-size: 0.9rem;
-            margin-bottom: 0.25rem;
-        }
-        
-        #phoneDetailsModal .form-label.fw-bold {
-            color: #212529;
-        }
-        
-        #phoneDetailsModal p {
-            color: #6c757d;
-            font-size: 0.95rem;
-        }
-        
-        #phoneDetailsModal .text-primary {
-            color: #667eea !important;
-        }
-        
-        #phoneDetailsModal .badge {
-            font-size: 0.75rem;
-        }
-        
-        #phoneDetailsModal .fs-5 {
-            font-weight: 600;
-        }
-        
-        /* Tablo kompakt görünüm */
-        .professional-table th,
-        .professional-table td {
-            padding: 0.5rem 0.75rem;
-            font-size: 0.85rem;
-        }
-        
-        .professional-table th {
-            font-weight: 600;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-        }
-        
-        .professional-table tbody tr:hover {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%);
-        }
-        
-        /* Kompakt butonlar */
-        .btn-sm {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.75rem;
-        }
-        
-        /* Detay butonu özel stil */
-        .btn-info {
-            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-            border: none;
-        }
-        
-        .btn-info:hover {
-            background: linear-gradient(135deg, #138496 0%, #0f6674 100%);
-            transform: translateY(-1px);
-        }
-    </style>
+</div>
 @endsection
 
 @section('custom-js')
@@ -750,6 +696,24 @@
                     } else {
                         console.log(`${title}: ${message}`);
                     }
+                },
+                
+                deleteMovement(id) {
+                    // Silme işlemi için modal açma
+                    Swal.fire({
+                        title: "Silmek istediğinizden emin misiniz?",
+                        text: "Silme işlemi yapılırken kesinlikle not girmelisiniz!",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#3085d6",
+                        cancelButtonColor: "#d33",
+                        confirmButtonText: "EVET!"
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $('#stockCardMovementIdDelete').val(id);
+                            $('#deleteModal').modal('show');
+                        }
+                    });
                 }
             }
         }).mount('#app');
@@ -810,49 +774,7 @@
 
 
     <script>
-        app.directive('loading', function () {
-            return {
-                restrict: 'E',
-                replace: true,
-                template: '<p><img src="img/loading.gif"/></p>', // Define a template where the image will be initially loaded while waiting for the ajax request to complete
-                link: function (scope, element, attr) {
-                    scope.$watch('loading', function (val) {
-                        val = val ? $(element).show() : $(element).hide();  // Show or Hide the loading image
-                    });
-                }
-            }
-        }).directive('ngConfirmClick', [
-            function () {
-                return {
-                    link: function (scope, element, attr) {
-                        var msg = attr.ngConfirmClick || "Are you sure?";
-                        var clickAction = attr.confirmedClick;
-                        element.bind('click', function (event) {
-                            if (window.confirm(msg)) {
-                                scope.$eval(clickAction)
-                            }
-                        });
-                    }
-                };
-            }]).controller("mainController", function ($scope, $http, $httpParamSerializerJQLike, $window) {
-
-
-            $scope.deleteMovement = function (id) {
-                Swal.fire({
-                    title: "Silmek istediginizden eminmisiniz?",
-                    text: "Silme islemi yapilirken kesinlikle not girmelisiniz!",
-                    icon: "warning",
-                    showCancelButton: true,
-                    confirmButtonColor: "#3085d6",
-                    cancelButtonColor: "#d33",
-                    confirmButtonText: "EVET!"
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#stockCardMovementIdDelete').val(id);
-                        $('#deleteModal').modal('show');
-                    }
-                });
-            }
-        });
+        // Angular.js kodları kaldırıldı - Vue.js 3 kullanılıyor
+        // Gerekli fonksiyonlar Vue.js app içinde tanımlandı
     </script>
 @endsection

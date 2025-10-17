@@ -144,17 +144,22 @@ class StockCardController extends Controller
 
             // Verileri formatla
             $formattedData = [];
-            foreach ($stockCards as $stockCard) {
+            foreach ($stockCards as $card) {
+                // Devir hızını hesapla
+                $turnoverRate = $this->calculateTurnoverRate($card->id, Auth::user()->company_id);
+                
                 $formattedData[] = [
-                    'id' => $stockCard->id,
-                    'name' => $stockCard->name,
-                    'category' => $stockCard->category->name ?? 'Belirtilmedi',
-                    'category_sperator_name' => $this->categorySeperator($stockCard->category->id ?? 0) ?? 'Belirtilmedi',
-                    'brand' => $stockCard->brand->name ?? 'Belirtilmedi',
-                    'version' => json_decode($stockCard->version(), true) ?? 'Belirtilmedi',
-                    'barcode' => $stockCard->barcode ?? 'Belirtilmedi',
-                    'is_status' => $stockCard->is_status ?? 0,
-                    'quantity' => $stockCard->quantity() ?? 0,
+                    'id' => $card->id,
+                    'name' => $card->name,
+                    'category' => $card->category->name ?? 'Belirtilmedi',
+                    'category_sperator_name' => $this->categorySeperator($card->category_id ?? 0) ?? '',
+                    'brand' => $card->brand->name ?? 'Belirtilmedi',
+                    'version' => json_decode($card->version(), true) ?? [],
+                    'barcode' => $card->barcode ?? '',
+                    'is_status' => $card->is_status ?? 0,
+                    'quantity' => $card->quantity() ?? 0,
+                    'turnover_rate' => $turnoverRate,
+                    'turnover_status' => $this->getTurnoverStatus($turnoverRate),
                 ];
             }
 
@@ -337,7 +342,7 @@ class StockCardController extends Controller
     {
         try {
             $brands = $this->brandService->get();
-            return response()->json(['brands' => $brands]);
+            return response()->json($brands);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Markalar yüklenemedi'], 500);
         }
@@ -351,11 +356,11 @@ class StockCardController extends Controller
         try {
             $brandId = $request->get('brand_id');
             if (!$brandId) {
-                return response()->json(['versions' => []]);
+                return response()->json([]);
             }
 
             $versions = $this->versionService->getByBrand($brandId);
-            return response()->json(['versions' => $versions]);
+            return response()->json($versions);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Modeller yüklenemedi'], 500);
         }
@@ -368,7 +373,7 @@ class StockCardController extends Controller
     {
         try {
             $categories = $this->getCategoryPathList();
-            return response()->json(['categories' => $categories]);
+            return response()->json($categories);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Kategoriler yüklenemedi'], 500);
         }
@@ -757,6 +762,9 @@ SELECT * FROM category_path ORDER BY path;");
                 $key = $stockcard->name . '_' . $stockcard->category_id . '_' . $stockcard->brand_id;
 
                 if (!isset($groupedData[$key])) {
+                    // Devir hızını hesapla
+                    $turnoverRate = $this->calculateTurnoverRate($stockcard->id, Auth::user()->company_id);
+                    
                     $groupedData[$key] = [
                         'id' => $stockcard->id,
                         'ids' => [$stockcard->id],
@@ -765,6 +773,8 @@ SELECT * FROM category_path ORDER BY path;");
                         'category_name' => $stockcard->category->name ?? 'Belirtilmedi',
                         'brand_name' => $stockcard->brand->name ?? 'Belirtilmedi',
                         'quantity' => $stockcard->quantity() ?? 0,
+                        'turnover_rate' => $turnoverRate,
+                        'turnover_status' => $this->getTurnoverStatus($turnoverRate),
                         'stockData' => []
                     ];
                 } else {
@@ -1517,10 +1527,66 @@ SELECT * FROM category_path ORDER BY path;");
         $refund->save();
     }
 
-    public function deleted()
+    public function deleted(Request $request)
     {
-        $data['stockCardMovement'] = StockCardMovement::onlyTrashed()->where('company_id', Auth::user()->company_id)->orderBy('deleted_at', 'desc')->paginate(250);
-        return view('module.stockcard.deleted', $data);
+        // AJAX isteği için
+        if ($request->ajax() || $request->wantsJson()) {
+            $query = StockCardMovement::onlyTrashed()
+                ->with(['stock', 'seller'])
+                ->where('company_id', Auth::user()->company_id);
+            
+            // Search filters
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('serial_number', 'LIKE', "%{$search}%")
+                      ->orWhere('barcode', 'LIKE', "%{$search}%")
+                      ->orWhereHas('stock', function($stockQuery) use ($search) {
+                          $stockQuery->where('name', 'LIKE', "%{$search}%");
+                      });
+                });
+            }
+            
+            $stockCardMovements = $query->orderBy('deleted_at', 'desc')
+                ->limit(50)
+                ->get();
+            
+            return response()->json([
+                'success' => true,
+                'data' => $stockCardMovements
+            ]);
+        }
+        
+        // Normal view request
+        return view('module.stockcard.deleted');
+    }
+    
+    public function restore(Request $request)
+    {
+        try {
+            $movement = StockCardMovement::onlyTrashed()->findOrFail($request->id);
+            
+            // Check if user has permission to restore
+            if ($movement->company_id !== Auth::user()->company_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bu hareketi geri alma yetkiniz yok'
+                ], 403);
+            }
+            
+            $movement->restore();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Hareket başarıyla geri alındı'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hareket geri alınırken bir hata oluştu: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function serialList(Request $request)
@@ -1772,6 +1838,7 @@ SELECT * FROM category_path ORDER BY path;");
      */
     public function getMovementsAjax(Request $request)
     {
+
         try {
             $stockCardId = $request->get('stock_card_id');
             if (!$stockCardId) {
@@ -1779,11 +1846,11 @@ SELECT * FROM category_path ORDER BY path;");
             }
 
             // Stok hareketlerini yükle
-            $movements = \App\Models\StockCardMovement::with(['user'])
-                ->where('stock_card_id', $stockCardId)
+            $movements =  StockCardMovement::where('stock_card_id', $stockCardId)
                 ->where('company_id', Auth::user()->company_id)
                 ->orderBy('created_at', 'desc')
                 ->get();
+
 
             // Hareketleri formatla
             $formattedMovements = $movements->map(function ($movement) {
@@ -1852,6 +1919,85 @@ SELECT * FROM category_path ORDER BY path;");
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Stock price not found'], 404);
+        }
+    }
+
+    /**
+     * Stok devir hızını hesapla
+     */
+    private function calculateTurnoverRate($stockCardId, $companyId)
+    {
+        try {
+            $query = "
+                SELECT 
+                    COUNT(s.id) as total_sold,
+                    AVG(DATEDIFF(s.created_at, scm.created_at)) as avg_days_to_sell
+                FROM stock_card_movements scm
+                LEFT JOIN sales s ON s.stock_card_movement_id = scm.id
+                WHERE scm.stock_card_id = ?
+                    AND scm.type = 1
+                    AND s.id IS NOT NULL
+            ";
+
+            $result = DB::select($query, [$stockCardId]);
+            
+            // Debug log ekle
+            Log::info("Turnover calculation for stock {$stockCardId}: " . json_encode($result));
+            
+            if (!empty($result) && $result[0]->total_sold > 0) {
+                $rate = round($result[0]->avg_days_to_sell, 1);
+                Log::info("Calculated turnover rate: {$rate} days for stock {$stockCardId}");
+                return $rate;
+            }
+            
+            Log::info("No sales found for stock {$stockCardId}");
+            return 0; // Satış yoksa 0 döndür
+        } catch (\Exception $e) {
+            Log::error('Turnover rate calculation error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Devir hızı durumunu belirle
+     */
+    private function getTurnoverStatus($turnoverRate)
+    {
+        if ($turnoverRate == 0) {
+            return [
+                'status' => 'no_sales',
+                'label' => 'Satış Yok',
+                'class' => 'bg-secondary',
+                'description' => 'Son 90 günde satış yok'
+            ];
+        } elseif ($turnoverRate <= 7) {
+            return [
+                'status' => 'excellent',
+                'label' => 'Çok Hızlı',
+                'class' => 'bg-success',
+                'description' => $turnoverRate . ' günde bir satılıyor'
+            ];
+        } elseif ($turnoverRate <= 15) {
+            return [
+                'status' => 'good',
+                'label' => 'Hızlı',
+                'class' => 'bg-info',
+                'description' => $turnoverRate . ' günde bir satılıyor'
+            ];
+        } elseif ($turnoverRate <= 30) {
+            return [
+                'status' => 'fair',
+                'label' => 'Orta',
+                'class' => 'bg-warning',
+                'description' => $turnoverRate . ' günde bir satılıyor'
+            ];
+        } else {
+            return [
+                'status' => 'poor',
+                'label' => 'Yavaş',
+                'class' => 'bg-danger',
+                'description' => $turnoverRate . ' günde bir satılıyor'
+            ];
         }
     }
 }

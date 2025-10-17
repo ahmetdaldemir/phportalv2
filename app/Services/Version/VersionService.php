@@ -10,4 +10,6 @@ interface VersionService extends BaseService{
     public function all(): ?Collection;
 
     public function get(): ?Collection;
+    
+    public function getByBrand(int $brandId): ?Collection;
 }

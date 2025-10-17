@@ -160,7 +160,6 @@
                                     <select name="brand_id" 
                                             id="brand_id" 
                                             v-model="formData.brand_id"
-                                            @change="getVersion"
                                             class="form-select form-select-lg" 
                                             required>
                                         <option value="">Marka seçiniz...</option>
@@ -170,6 +169,10 @@
                                             @{{ brand.name }}
                                         </option>
                                     </select>
+                                    <div v-if="loading.brands" class="form-text text-primary">
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                        Markalar yükleniyor...
+                                    </div>
                                 </div>
 
                                 <!-- Model -->
@@ -183,15 +186,31 @@
                                             v-model="formData.version_id"
                                             class="form-select form-select-lg" 
                                             required 
-                                            multiple>
-                                        <option value="">Model seçiniz...</option>
+                                            multiple
+                                            size="5"
+                                            :disabled="!formData.brand_id || loading.versions">
                                         <option v-for="version in versions" 
                                                 :key="version.id" 
                                                 :value="version.id">
                                             @{{ version.name }}
                                         </option>
                                     </select>
-                                    <div class="form-text">Birden fazla model seçebilirsiniz</div>
+                                    <div v-if="loading.versions" class="form-text text-primary">
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                        Modeller yükleniyor...
+                                    </div>
+                                    <div v-else-if="!formData.brand_id" class="form-text text-muted">
+                                        <i class="bx bx-info-circle me-1"></i>
+                                        Önce marka seçiniz
+                                    </div>
+                                    <div v-else-if="versions.length === 0" class="form-text text-warning">
+                                        <i class="bx bx-error-circle me-1"></i>
+                                        Bu marka için model bulunamadı
+                                    </div>
+                                    <div v-else class="form-text text-success">
+                                        <i class="bx bx-check-circle me-1"></i>
+                                        Birden fazla model seçebilirsiniz (Ctrl/Cmd tuşu ile) - @{{ versions.length }} model mevcut
+                                    </div>
                                 </div>
 
                                 <!-- Birim -->
@@ -313,6 +332,36 @@
             border-color: #667eea;
         }
 
+        /* Multiple Select Styling */
+        select[multiple] {
+            min-height: 150px !important;
+            padding: 8px !important;
+        }
+
+        select[multiple] option {
+            padding: 8px 12px;
+            margin: 2px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        select[multiple] option:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        select[multiple] option:checked {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        select[multiple]:disabled {
+            background-color: #f8f9fa;
+            cursor: not-allowed;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .card-body {
@@ -322,6 +371,10 @@
             .form-control-lg, .form-select-lg {
                 font-size: 14px;
                 padding: 10px 12px;
+            }
+            
+            select[multiple] {
+                min-height: 120px !important;
             }
         }
 
@@ -621,178 +674,8 @@
 </script>
 
 <script>
-    // AJAX ile verileri yükle - performans optimizasyonu
-    $(document).ready(function() {
-        // Markaları yükle
-        $.ajax({
-            url: '/stockcard/brands-ajax',
-            method: 'GET',
-            success: function(data) {
-                var select = $('#brand_id');
-                select.empty();
-                select.append('<option value="">Seçiniz</option>');
-                
-                $.each(data, function(index, brand) {
-                    select.append('<option value="' + brand.id + '">' + brand.name + '</option>');
-                });
-            },
-            error: function() {
-                console.log('Markalar yüklenemedi');
-            }
-        });
-
-        // Kategorileri yükle
-        $.ajax({
-            url: '/stockcard/categories-ajax',
-            method: 'GET',
-            success: function(data) {
-                var select = $('select[name="category_id"]');
-                select.empty();
-                select.append('<option value="">Seçiniz</option>');
-                
-                $.each(data, function(index, category) {
-                    select.append('<option value="' + category.id + '">' + category.path + '</option>');
-                });
-            },
-            error: function() {
-                console.log('Kategoriler yüklenemedi');
-            }
-        });
-
-        // Versiyonları yükle
-        $.ajax({
-            url: '/stockcard/versions-ajax',
-            method: 'GET',
-            success: function(data) {
-                var select = $('#version_id');
-                select.empty();
-                select.append('<option value="">Seçiniz</option>');
-                
-                $.each(data, function(index, version) {
-                    select.append('<option value="' + version.id + '">' + version.name + '</option>');
-                });
-            },
-            error: function() {
-                console.log('Versiyonlar yüklenemedi');
-            }
-        });
-
-        // Autocomplete fonksiyonu
-        let currentRequest = null;
-        let selectedIndex = -1;
-        let suggestions = [];
-
-        $('#name').on('input', function() {
-            const query = $(this).val();
-            const suggestionsDiv = $('#name-suggestions');
-            
-            if (query.length < 2) {
-                suggestionsDiv.hide();
-                return;
-            }
-
-            // Loading göster
-            showLoading();
-
-            // Önceki isteği iptal et
-            if (currentRequest) {
-                currentRequest.abort();
-            }
-
-            // Yeni istek gönder
-            currentRequest = $.ajax({
-                url: '/stockcard/stock-names-ajax',
-                method: 'GET',
-                data: { q: query },
-                success: function(data) {
-                    suggestions = data;
-                    selectedIndex = -1;
-                    displaySuggestions(data);
-                },
-                error: function() {
-                    console.log('Autocomplete verisi yüklenemedi');
-                    suggestionsDiv.hide();
-                }
-            });
-        });
-
-        function showLoading() {
-            const suggestionsDiv = $('#name-suggestions');
-            suggestionsDiv.html('<div class="autocomplete-loading">Aranıyor...</div>');
-            suggestionsDiv.show();
-        }
-
-        function displaySuggestions(data) {
-            const suggestionsDiv = $('#name-suggestions');
-            suggestionsDiv.empty();
-
-            if (data.length === 0) {
-                suggestionsDiv.hide();
-                return;
-            }
-
-            data.forEach(function(item, index) {
-                const suggestion = $('<div class="autocomplete-suggestion" data-index="' + index + '">' + item + '</div>');
-                suggestionsDiv.append(suggestion);
-            });
-
-            suggestionsDiv.show();
-        }
-
-        // Klavye navigasyonu
-        $('#name').on('keydown', function(e) {
-            const suggestionsDiv = $('#name-suggestions');
-            
-            if (!suggestionsDiv.is(':visible')) return;
-
-            switch(e.keyCode) {
-                case 38: // Yukarı ok
-                    e.preventDefault();
-                    if (selectedIndex > 0) {
-                        selectedIndex--;
-                        updateSelection();
-                    }
-                    break;
-                case 40: // Aşağı ok
-                    e.preventDefault();
-                    if (selectedIndex < suggestions.length - 1) {
-                        selectedIndex++;
-                        updateSelection();
-                    }
-                    break;
-                case 13: // Enter
-                    e.preventDefault();
-                    if (selectedIndex >= 0) {
-                        $('#name').val(suggestions[selectedIndex]);
-                        suggestionsDiv.hide();
-                    }
-                    break;
-                case 27: // Escape
-                    suggestionsDiv.hide();
-                    selectedIndex = -1;
-                    break;
-            }
-        });
-
-        function updateSelection() {
-            $('.autocomplete-suggestion').removeClass('active');
-            $('.autocomplete-suggestion[data-index="' + selectedIndex + '"]').addClass('active');
-        }
-
-        // Mouse ile seçim
-        $(document).on('click', '.autocomplete-suggestion', function() {
-            const index = $(this).data('index');
-            $('#name').val(suggestions[index]);
-            $('#name-suggestions').hide();
-        });
-
-        // Dışarı tıklama
-        $(document).on('click', function(e) {
-            if (!$(e.target).closest('#name, #name-suggestions').length) {
-                $('#name-suggestions').hide();
-            }
-        });
-    });
+    // jQuery kodları kaldırıldı - Vue.js kullanılıyor
+    // Vue.js tüm AJAX isteklerini ve form yönetimini hallediyor
 </script>
 
 <!-- Vue.js ile modern form yönetimi -->
@@ -831,6 +714,7 @@
                 selectedSuggestionIndex: -1,
                 isSearching: false,
                 showSuggestions: false,
+                searchTimeout: null,
                 
                 // Loading durumları
                 loading: {
@@ -851,10 +735,10 @@
             async loadInitialData() {
                 await Promise.all([
                     this.loadBrands(),
-                    this.loadVersions(),
                     this.loadCategories(),
                     this.loadUnits()
                 ]);
+                // Versions marka seçilince yüklenecek
             },
             
             // Markaları yükle
@@ -862,25 +746,24 @@
                 this.loading.brands = true;
                 try {
                     const response = await fetch('/stockcard/brands-ajax');
-                    this.brands = await response.json();
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    this.brands = Array.isArray(data) ? data : [];
+                    console.log('Brands loaded:', this.brands.length);
                 } catch (error) {
                     console.error('Markalar yüklenemedi:', error);
+                    this.brands = [];
                 } finally {
                     this.loading.brands = false;
                 }
             },
             
-            // Versiyonları yükle
+            // Versiyonları yükle - marka bazlı (deprecated - getVersion kullanılıyor)
             async loadVersions() {
-                this.loading.versions = true;
-                try {
-                    const response = await fetch('/stockcard/versions-ajax');
-                    this.versions = await response.json();
-                } catch (error) {
-                    console.error('Versiyonlar yüklenemedi:', error);
-                } finally {
-                    this.loading.versions = false;
-                }
+                // Bu metod kullanılmıyor, marka seçilince getVersion() çağrılıyor
+                console.log('loadVersions deprecated - use getVersion() instead');
             },
             
             // Kategorileri yükle
@@ -888,9 +771,15 @@
                 this.loading.categories = true;
                 try {
                     const response = await fetch('/stockcard/categories-ajax');
-                    this.categories = await response.json();
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    this.categories = Array.isArray(data) ? data : [];
+                    console.log('Categories loaded:', this.categories.length);
                 } catch (error) {
                     console.error('Kategoriler yüklenemedi:', error);
+                    this.categories = [];
                 } finally {
                     this.loading.categories = false;
                 }
@@ -988,27 +877,79 @@
             
             // Marka değiştiğinde versiyonları yükle
             async getVersion() {
+                console.log('🔍 getVersion called, brand_id:', this.formData.brand_id);
+                
+                // Marka yoksa versiyonları temizle
                 if (!this.formData.brand_id) {
+                    console.log('❌ No brand_id, clearing versions');
                     this.versions = [];
+                    this.formData.version_id = [];
+                    this.loading.versions = false;
                     return;
                 }
                 
+                // Loading state'i aç
                 this.loading.versions = true;
+                this.versions = []; // Önce temizle
+                this.formData.version_id = []; // Seçimi sıfırla
+                
+                const url = `/stockcard/versions-ajax?brand_id=${this.formData.brand_id}`;
+                console.log('📡 Fetching versions from:', url);
+                
                 try {
-                    const response = await fetch(`/stockcard/versions-ajax?brand_id=${this.formData.brand_id}`);
-                    this.versions = await response.json();
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Data kontrolü
+                    if (!Array.isArray(data)) {
+                        console.warn('⚠️ Response is not an array:', data);
+                        this.versions = [];
+                        return;
+                    }
+                    
+                    // Versiyonları set et
+                    this.versions = data;
+                    
+                    console.log('✅ Versions loaded:', this.versions.length, 'items');
+                    
+                    // İlk birkaç item'ı göster (debug için)
+                    if (this.versions.length > 0) {
+                        console.log('📋 First version:', this.versions[0]);
+                    }
+                    
                 } catch (error) {
-                    console.error('Versiyonlar yüklenemedi:', error);
+                    console.error('❌ Error loading versions:', error.message);
+                    this.versions = [];
                 } finally {
                     this.loading.versions = false;
+                    console.log('🏁 Version loading completed. Total:', this.versions.length);
                 }
             }
         },
         
         watch: {
-            'formData.name': {
-                handler: 'searchStockNames',
-                debounce: 300
+            'formData.name'() {
+                // Debounce için timeout kullan
+                clearTimeout(this.searchTimeout);
+                this.searchTimeout = setTimeout(() => {
+                    this.searchStockNames();
+                }, 300);
+            },
+            'formData.brand_id'(newVal, oldVal) {
+                console.log('Brand changed from:', oldVal, 'to:', newVal);
+                if (newVal) {
+                    console.log('Loading versions for brand:', newVal);
+                    this.getVersion();
+                } else {
+                    console.log('No brand selected, clearing versions');
+                    this.versions = [];
+                    this.formData.version_id = [];
+                }
             }
         }
     }).mount('#app');
