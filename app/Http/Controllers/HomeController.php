@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helper\SearchHelper;
 use App\Models\Category;
 use App\Models\Currency;
 use App\Models\DeletedAtSerialNumber;
@@ -146,6 +147,7 @@ class HomeController extends Controller
      * Stok kontrolü - Seri numarası veya barkod ile
      * Bayinin stoğunda var mı kontrol et
      */
+
     public function checkStock(Request $request)
     {
         try {
@@ -159,52 +161,61 @@ class HomeController extends Controller
             }
 
             $user = Auth::user();
+            $searchInfo = SearchHelper::determineSearchType($search);
             
-            // Önce seri numarasına göre ara (StockCardMovement)
-            $stockMovement = StockCardMovement::where('company_id', $user->company_id)
-                ->where('serial_number', $search)
-                ->whereIn('type', ['1', '3', '4', '5']) // Stokta olan tipleri
-                ->with(['stock'])
-                ->first();
-
-            if ($stockMovement) {
-                // Seri numarası bulundu
+            if (!$searchInfo) {
                 return response()->json([
-                    'success' => true,
-                    'exists' => true,
-                    'stock_id' => $stockMovement->stock_card_id,
-                    'serial_number' => $stockMovement->serial_number,
-                    'stock_name' => $stockMovement->stock->name ?? 'Bilinmeyen',
-                    'message' => 'Stok bulundu'
+                    'success' => false,
+                    'message' => 'Geçersiz arama formatı'
                 ]);
             }
 
-            // Barkoda göre ara (StockCard)
-            $stockCard = StockCard::where('company_id', $user->company_id)
-                ->where('barcode', $search)
-                ->first();
+            if ($searchInfo['type'] === 'barcode') {
+                // Barkod araması - StockCard tablosunda ara
+                $stockCard = StockCardMovement::where('company_id', $user->company_id)
+                    ->where('barcode', $searchInfo['value'])
+                    ->first();
 
-            if ($stockCard) {
-                // Barkod bulundu, stokta var mı kontrol et
-                $hasStock = StockCardMovement::where('company_id', $user->company_id)
-                    ->where('stock_card_id', $stockCard->id)
-                    ->whereIn('type', ['1', '3', '4', '5'])
-                    ->exists();
+                if ($stockCard) {
+                    // Barkod bulundu, stokta var mı kontrol et
+                    $hasStock =  $stockCard->where('type', 1)->exists();
 
-                if ($hasStock) {
+                    if ($hasStock) {
+                        return response()->json([
+                            'success' => true,
+                            'exists' => true,
+                            'stock_id' => $stockCard->id,
+                            'barcode' => $stockCard->barcode,
+                            'stock_name' => $stockCard->name,
+                            'search_type' => 'barcode',
+                            'message' => 'Barkod ile stok bulundu'
+                        ]);
+                    } else {
+                        return response()->json([
+                            'success' => true,
+                            'exists' => false,
+                            'message' => 'Ürün kayıtlı ancak stoklarınızda bulunmuyor'
+                        ]);
+                    }
+                }
+            } else {
+                // Seri numarası araması - StockCardMovement tablosunda ara
+                $stockMovement = StockCardMovement::where('company_id', $user->company_id)
+                    ->where('serial_number', $searchInfo['value'])
+                    ->whereIn('type', ['1', '3', '4', '5']) // Stokta olan tipleri
+                    ->with(['stock'])
+                    ->first();
+
+                if ($stockMovement) {
+                    // Seri numarası bulundu
                     return response()->json([
                         'success' => true,
                         'exists' => true,
-                        'stock_id' => $stockCard->id,
-                        'barcode' => $stockCard->barcode,
-                        'stock_name' => $stockCard->name,
-                        'message' => 'Stok bulundu'
-                    ]);
-                } else {
-                    return response()->json([
-                        'success' => true,
-                        'exists' => false,
-                        'message' => 'Ürün kayıtlı ancak stoklarınızda bulunmuyor'
+                        'stock_id' => $stockMovement->stock_card_id,
+                        'serial_number' => $stockMovement->serial_number,
+                        'stock_name' => $stockMovement->stock->name ?? 'Bilinmeyen',
+                        'search_type' => 'serial',
+                        'message' => 'Seri numarası ile stok bulundu'
                     ]);
                 }
             }
@@ -213,7 +224,8 @@ class HomeController extends Controller
             return response()->json([
                 'success' => true,
                 'exists' => false,
-                'message' => 'Bu seri numarası veya barkod sistemde bulunamadı'
+                'search_type' => $searchInfo['type'],
+                'message' => 'Bu ' . ($searchInfo['type'] === 'barcode' ? 'barkod' : 'seri numarası') . ' sistemde bulunamadı'
             ]);
 
         } catch (\Exception $e) {

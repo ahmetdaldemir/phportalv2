@@ -22,10 +22,16 @@
                     </div>
                 </div>
                 <div class="header-actions">
-                    <a href="{{route('stockcard.create')}}" class="btn btn-primary btn-sm">
-                        <i class="bx bx-plus me-1"></i>
-                        Yeni Stok Ekle
-                    </a>
+                    
+                        <a href="{{route('stockcard.create')}}" class="btn btn-primary btn-sm">
+                            <i class="bx bx-plus me-1"></i>
+                            Yeni Stok Ekle
+                        </a>
+                        <button class="btn btn-success btn-sm" @click="exportToExcel">
+                            <i class="bx bx-download me-1"></i>
+                            Excel
+                        </button>
+
                 </div>
             </div>
         </div>
@@ -974,6 +980,79 @@
                     }
                     
                     return pages;
+                },
+                
+                // Excel export method
+                async exportToExcel() {
+                    try {
+                        // Show loading
+                        Swal.fire({
+                            title: 'Excel İndiriliyor...',
+                            text: 'Lütfen bekleyin',
+                            allowOutsideClick: false,
+                            showConfirmButton: false,
+                            willOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        // Prepare search form data
+                        const searchForm = {
+                            page: 1,
+                            export: 'excel',
+                            per_page: 10000
+                        };
+
+                        // Add current filters to search form
+                        if (this.filters.stockName) searchForm.search = this.filters.stockName;
+                        if (this.filters.brand) searchForm.brand = this.filters.brand;
+                        if (this.filters.category) searchForm.category = this.filters.category;
+                        if (this.filters.version) searchForm.version = this.filters.version;
+
+                        // Create download URL
+                        const params = new URLSearchParams(searchForm);
+                        const downloadUrl = `/stockcard/export?${params.toString()}`;
+
+                        // Test URL accessibility
+                        try {
+                            await fetch(downloadUrl, { method: 'HEAD' });
+                        } catch (error) {
+                            Swal.close();
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Hata!',
+                                text: 'Export URL\'sine ulaşılamadı!'
+                            });
+                            return;
+                        }
+
+                        // Create temporary link and trigger download
+                        const link = document.createElement('a');
+                        link.href = downloadUrl;
+                        link.download = 'stok_kartlari_' + new Date().toISOString().slice(0, 10) + '.csv';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+
+                        // Close loading and show success
+                        Swal.close();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Başarılı!',
+                            text: 'Excel dosyası indirildi.',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+
+                    } catch (error) {
+                        console.error('Excel export error:', error);
+                        Swal.close();
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Hata!',
+                            text: 'Excel dosyası indirilirken bir hata oluştu.'
+                        });
+                    }
                 }
             }
         }).mount('#stockcard-list-app');

@@ -248,6 +248,7 @@ Route::middleware(['companies'])->group(function () {
 
     Route::prefix('stockcard')->name('stockcard.')->middleware([])->group(function () {
         Route::get('/', [App\Http\Controllers\StockCardController::class, 'index'])->name('index');
+        Route::get('export', [App\Http\Controllers\StockCardController::class, 'exportToExcel'])->name('export');
         Route::post('/search-ajax', [App\Http\Controllers\StockCardController::class, 'searchAjax'])->name('search.ajax');
         Route::get('/brands-ajax', [App\Http\Controllers\StockCardController::class, 'getBrandsAjax'])->name('brands.ajax');
         Route::get('/versions-ajax', [App\Http\Controllers\StockCardController::class, 'getVersionsAjax'])->name('versions.ajax');
@@ -421,6 +422,7 @@ Route::middleware(['companies'])->group(function () {
 
     Route::prefix('sale')->name('sale.')->middleware([])->group(function () {
         Route::get('/', [App\Http\Controllers\SaleController::class, 'index'])->name('index');
+        Route::get('export', [App\Http\Controllers\SaleController::class, 'exportToExcel'])->name('export');
         Route::get('edit', [App\Http\Controllers\SaleController::class, 'edit'])->name('edit');
         Route::get('delete', [App\Http\Controllers\SaleController::class, 'delete'])->name('delete');
         Route::get('create', [App\Http\Controllers\SaleController::class, 'create'])->name('create');

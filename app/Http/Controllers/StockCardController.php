@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\Unit;
 use App\Helper\BarcodeHelper;
+use App\Helper\SearchHelper;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Refund;
@@ -27,12 +28,12 @@ use App\Services\Transfer\TransferService;
 use App\Services\Version\VersionService;
 use App\Services\Warehouse\WarehouseService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class StockCardController extends Controller
 {
@@ -1589,6 +1590,7 @@ SELECT * FROM category_path ORDER BY path;");
         }
     }
 
+
     public function serialList(Request $request)
     {
         // AJAX isteği kontrolü
@@ -1600,28 +1602,45 @@ SELECT * FROM category_path ORDER BY path;");
         $data = [];
 
         if ($request->filled('serialNumber')) {
-            // Seri numarası araması - optimize edilmiş
-            $data['stockcards'] = StockCardMovement::with(['stock.brand', 'stock.category', 'color', 'seller'])
-                ->where('serial_number', $request->serialNumber)
-                ->where('company_id', Auth::user()->company_id)
-                ->limit(50)  // Maksimum 50 kayıt
-                ->get();
+            if($request->serialNumber == 'undefined') {
+                return redirect()->back();
+            }
+
+            $searchInfo = SearchHelper::determineSearchType($request->serialNumber);
+            
+            if ($searchInfo) {
+                $query = StockCardMovement::with(['stock.brand', 'stock.category', 'color', 'seller'])
+                    ->where('company_id', Auth::user()->company_id);
+
+                if ($searchInfo['type'] === 'barcode') {
+                    $query->where('barcode', $searchInfo['value']);
+                } else {
+                    $query->where('serial_number', $searchInfo['value']);
+                }
+
+                $data['stockcards'] = $query->limit(50)->get();
+                $data['search_type'] = $searchInfo['type'];
+                $data['search_value'] = $searchInfo['value'];
+            } else {
+                $data['stockcards'] = collect([]);
+            }
+            
             $data['links'] = 1;
         } else {
             // Genel liste - pagination ile optimize edilmiş
             $data['stockcards'] = StockCardMovement::with(['stock.brand', 'stock.category', 'color', 'seller'])
                 ->where('company_id', Auth::user()->company_id)
-                ->orderBy('created_at', 'desc')  // deleted_at yerine created_at
-                ->paginate(20);  // 100 yerine 20 kayıt
+                ->orderBy('created_at', 'desc')
+                ->paginate(20);
             $data['links'] = $data['stockcards']->appends(['category_id' => $request->category_id])->links();
         }
 
         $data['category'] = $request->category_id;
 
         // AJAX ile yüklenecek veriler - performans optimizasyonu
-        $data['sellers'] = collect([]);  // Boş collection - AJAX ile yüklenecek
-        $data['colors'] = collect([]);  // Boş collection - AJAX ile yüklenecek
-        $data['brands'] = collect([]);  // Boş collection - AJAX ile yüklenecek
+        $data['sellers'] = collect([]);
+        $data['colors'] = collect([]);
+        $data['brands'] = collect([]);
 
         return view('module.stockcard.serialList', $data);
     }
@@ -1635,9 +1654,19 @@ SELECT * FROM category_path ORDER BY path;");
             $query = StockCardMovement::with(['stock.brand', 'stock.category', 'color', 'seller', 'sale.user'])
                 ->where('company_id', Auth::user()->company_id);
 
-            // Seri numarası filtresi
+            // Seri numarası/barkod filtresi
             if ($request->filled('serialNumber')) {
-                $query->where('serial_number', 'like', '%' . $request->serialNumber . '%');
+                $searchInfo = SearchHelper::determineSearchType($request->serialNumber);
+                
+                if ($searchInfo) {
+                    if ($searchInfo['type'] === 'barcode') {
+                        $query->where('barcode', $searchInfo['value']);
+
+                    } else {
+                        // Seri numarası araması - LIKE ile arama
+                        $query->where('serial_number', 'like', '%' . $searchInfo['value'] . '%');
+                    }
+                }
             }
 
             // Pagination
@@ -1654,6 +1683,7 @@ SELECT * FROM category_path ORDER BY path;");
                     'id' => $item->id,
                     'serial_number' => $item->serial_number,
                     'invoice_id' => $item->invoice_id,
+                    'barcode' => $item->barcode,
                     'cost_price' => $item->cost_price,
                     'base_cost_price' => $item->base_cost_price,
                     'sale_price' => $item->sale_price,
@@ -1676,7 +1706,8 @@ SELECT * FROM category_path ORDER BY path;");
                     'total' => $stockCards->total(),
                     'from' => $stockCards->firstItem(),
                     'to' => $stockCards->lastItem()
-                ]
+                ],
+                'search_info' => $request->filled('serialNumber') ? SearchHelper::determineSearchType($request->serialNumber) : null
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Stok kartları yüklenemedi: ' . $e->getMessage()], 500);
@@ -1716,7 +1747,19 @@ SELECT * FROM category_path ORDER BY path;");
             ->with(['stock.category', 'stock.brand', 'color', 'seller']);
 
         if ($request->serialNumber != 'undefined') {
-            $query->where('serial_number', $request->serialNumber);
+            $searchInfo = SearchHelper::determineSearchType($request->serialNumber);
+            
+            if ($searchInfo) {
+                if ($searchInfo['type'] === 'barcode') {
+                    // Barkod araması - StockCard tablosunda ara
+                    $query->whereHas('stock', function($q) use ($searchInfo) {
+                        $q->where('barcode', $searchInfo['value']);
+                    });
+                } else {
+                    // Seri numarası araması
+                    $query->where('serial_number', $searchInfo['value']);
+                }
+            }
         }
 
         if ($user->hasRole('super-admin') || $user->hasRole('Depo Sorumlusu')) {
@@ -1998,6 +2041,149 @@ SELECT * FROM category_path ORDER BY path;");
                 'class' => 'bg-danger',
                 'description' => $turnoverRate . ' günde bir satılıyor'
             ];
+        }
+    }
+
+    /**
+     * Export stock cards to Excel
+     */
+    public function exportToExcel(Request $request)
+    {
+        try {
+            Log::info('StockCard Excel export started', ['request_params' => $request->all()]);
+            
+            // Check if user is authenticated
+            if (!Auth::check()) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+            
+            // Get filtered stock cards data
+            $query = StockCard::with(['brand', 'category', 'color', 'seller'])
+                ->where('company_id', Auth::user()->company_id);
+
+            // Apply filters
+            if ($request->filled('search')) {
+                $searchTerm = $request->search;
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('name', 'like', "%{$searchTerm}%")
+                        ->orWhere('barcode', 'like', "%{$searchTerm}%")
+                        ->orWhere('serial_number', 'like', "%{$searchTerm}%");
+                });
+            }
+            if ($request->filled('brand')) {
+                $query->where('brand_id', $request->brand);
+            }
+            if ($request->filled('category')) {
+                $query->where('category_id', $request->category);
+            }
+            if ($request->filled('version')) {
+                $query->where('version_id', $request->version);
+            }
+            if ($request->filled('color')) {
+                $query->where('color_id', $request->color);
+            }
+            if ($request->filled('seller')) {
+                $query->where('seller_id', $request->seller);
+            }
+            if ($request->filled('status')) {
+                $query->where('is_status', $request->status);
+            }
+
+            // Get all data (no pagination for export)
+            $stockCards = $query->orderBy('id', 'desc')->get();
+            
+            Log::info('StockCard Excel export - Found stock cards: ' . $stockCards->count());
+
+            // Prepare Excel data
+            $excelData = [];
+            $excelData[] = [
+                'ID',
+                'Ürün Adı',
+                'Barkod',
+                'Seri No',
+                'Marka',
+                'Kategori',
+                'Renk',
+                'Satışçı',
+                'Stok Miktarı',
+                'Satış Fiyatı',
+                'Maliyet Fiyatı',
+                'Durum',
+                'Oluşturma Tarihi'
+            ];
+
+            foreach ($stockCards as $stockCard) {
+                try {
+                    Log::info('Processing stock card: ' . $stockCard->id);
+                    
+                    // Safe conversion for all fields
+                    $id = (string)($stockCard->id ?? '');
+                    $name = (string)($stockCard->name ?? '');
+                    $barcode = (string)($stockCard->barcode ?? '');
+                    $serialNumber = (string)($stockCard->serial_number ?? '');
+                    $brandName = $stockCard->brand ? (string)$stockCard->brand->name : '';
+                    $categoryName = $stockCard->category ? (string)$stockCard->category->name : '';
+                    $colorName = $stockCard->color ? (string)$stockCard->color->name : '';
+                    $sellerName = $stockCard->seller ? (string)$stockCard->seller->name : '';
+                    $quantity = (string)($stockCard->tracking_quantity ?? 0);
+                    $salePrice = number_format($stockCard->sale_price ?? 0, 2, ',', '.');
+                    $costPrice = number_format($stockCard->cost_price ?? 0, 2, ',', '.');
+                    $status = $stockCard->is_status ? 'Aktif' : 'Pasif';
+                    $createdAt = $stockCard->created_at ? $stockCard->created_at->format('d.m.Y H:i') : '';
+                    
+                    $excelData[] = [
+                        $id,
+                        $name,
+                        $barcode,
+                        $serialNumber,
+                        $brandName,
+                        $categoryName,
+                        $colorName,
+                        $sellerName,
+                        $quantity,
+                        $salePrice,
+                        $costPrice,
+                        $status,
+                        $createdAt
+                    ];
+                    
+                    Log::info('Successfully processed stock card: ' . $stockCard->id);
+                    
+                } catch (\Exception $e) {
+                    Log::error('Error processing stock card ' . $stockCard->id . ': ' . $e->getMessage());
+                    Log::error('Stock card data: ' . json_encode($stockCard->toArray()));
+                    throw $e;
+                }
+            }
+
+            // Generate Excel file
+            $filename = 'stok_kartlari_' . date('Y-m-d_H-i-s') . '.csv';
+            
+            $headers = [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0'
+            ];
+
+            $callback = function() use ($excelData) {
+                $file = fopen('php://output', 'w');
+                
+                // Add UTF-8 BOM for proper encoding
+                fwrite($file, "\xEF\xBB\xBF");
+                
+                foreach ($excelData as $row) {
+                    fputcsv($file, $row, ';');
+                }
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            Log::error('StockCard Excel export error: ' . $e->getMessage());
+            return response()->json(['error' => 'Excel dosyası oluşturulurken hata oluştu.'], 500);
         }
     }
 }

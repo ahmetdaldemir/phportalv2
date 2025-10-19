@@ -293,7 +293,7 @@ $(document).ready(function () {
                         costPriceInput.val(data.sales_price.base_cost_price);
                         salesPriceInput.attr('data-cost', data.sales_price.base_cost_price);
                     }
-                    
+                    console.log(data,stocksData);
                     // Stock card'ı bul ve autocomplete'e doldur
                     if (data.sales_price.stock_card_id && typeof stocksData !== 'undefined') {
                         var selectedStock = stocksData.find(function(stock) {

@@ -2,6 +2,36 @@
 
 @section('custom-css')
     <link rel="stylesheet" href="{{asset('assets/css/list-page-base.css')}}">
+    <style>
+        /* Price formatting styles */
+        .price-display {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+        
+        .price-display.cost-price {
+            color: #dc3545;
+        }
+        
+        .price-display.sale-price {
+            color: #198754;
+        }
+        
+        /* Form input formatting */
+        .form-control[placeholder*="0,00"] {
+            text-align: right;
+        }
+        
+        .form-text {
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+        
+        /* Table price column styling */
+        .table td[style*="text-align: end"] {
+            font-family: 'Courier New', monospace;
+        }
+    </style>
 @endsection
 
 @section('content')
@@ -142,24 +172,23 @@
                     <table class="table professional-table">
                         <thead>
                         <tr>
-                            <th>
+                            <th style="width: 45px;">
                                 <input type="checkbox" 
                                        v-model="selectAll" 
                                        @change="toggleSelectAll"
                                        class="form-check-input">
                             </th>
-                            <th><i class="bx bx-hash me-1"></i>ID</th>
-                            <th><i class="bx bx-barcode me-1"></i>Seri No</th>
+                            <th style="width: 55px;"><i class="bx bx-hash me-1"></i>ID</th>
+                            <th style="width: 100px;"><i class="bx bx-barcode me-1"></i>Seri No</th>
                             @role(['Depo Sorumlusu','super-admin'])
-                            <th><i class="bx bx-dollar me-1"></i>Maliyet</th>
-                            <th><i class="bx bx-dollar me-1"></i>D. Maliyet</th>
+                            <th style="width: 90px;"><i class="bx bx-dollar me-1"></i>Maliyet</th>
                             @endrole
-                            <th><i class="bx bx-dollar me-1"></i>Satış F.</th>
-                            <th><i class="bx bx-palette me-1"></i>Renk</th>
+                            <th style="width: 90px;"><i class="bx bx-dollar me-1"></i>Satış F.</th>
+                            <th style="width: 90px;"><i class="bx bx-palette me-1"></i>Renk</th>
                             <th><i class="bx bx-purchase-tag me-1"></i>Marka</th>
                             <th><i class="bx bx-mobile me-1"></i>Model</th>
                             <th><i class="bx bx-category me-1"></i>Kategori</th>
-                            <th><i class="bx bx-store me-1"></i>Şube</th>
+                            <th style="width: 100px;"><i class="bx bx-store me-1"></i>Şube</th>
                             <th><i class="bx bx-cog me-1"></i>İşlemler</th>
                         </tr>
                         </thead>
@@ -176,20 +205,25 @@
                                        :value="stockData.id"
                                        class="form-check-input">
                             </td>
-                            <td>@{{ stockData.id }}</td>
+                            <td style="width: 55px;text-align:center">@{{ stockData.id }}</td>
                             <td>
                                 <div class="d-flex flex-column">
                                     <strong>@{{ stockData.serial_number }}</strong>
-                                    <a :href="'{{route('invoice.stockcardmovementform', ['id' => ''])}}/' + stockData.invoice_id" class="text-muted small">
+                                    <a :href="'{{route('invoice.sales', ['id' => ''])}}' + stockData.stock.id + '&serial=' + stockData.serial_number" class="text-muted small">
                                         <i class="bx bx-receipt me-1"></i>#@{{ stockData.invoice_id }}
+                                    </a>
+                                    <a :href="'{{route('invoice.sales', ['id' => ''])}}' + stockData.stock.id + '&serial=' + stockData.barcode" class="text-muted small">
+                                        <i class="bx bx-barcode me-1"></i>@{{ stockData.barcode }}
                                     </a>
                                 </div>
                             </td>
                             @role(['Depo Sorumlusu','super-admin'])
-                            <td><strong>@{{ stockData.cost_price }} ₺</strong></td>
-                            <td><strong>@{{ stockData.base_cost_price }} ₺</strong></td>
+                            <td style="text-align: end;font-weight: bold;color: #f00000;">
+                                <span style="display: flex;justify-content: flex-end;"> <i class="bx bx-price-tag me-1"></i> @{{ formatPrice(stockData.cost_price) }}</span>
+                                <span style="display: flex;justify-content: flex-end;"> <i class="bx bx-price-tag me-1"></i> @{{ formatPrice(stockData.base_cost_price) }}</span>
+                            </td>
                             @endrole
-                            <td><strong class="text-success">@{{ stockData.sale_price }} ₺</strong></td>
+                            <td style="text-align: end;font-weight: bold;color: #f00000;font-size: 1rem;">@{{ formatPrice(stockData.sale_price) }}</td>
                             <td>@{{ stockData.color?.name || '-' }}</td>
                             <td>@{{ stockData.stock?.brand?.name || '-' }}</td>
                             <td v-html="stockData.stock?.version || '-'"></td>
@@ -332,7 +366,8 @@
                     <div class="row">
                         <div class="col mb-3">
                             <label for="nameBackdrop" class="form-label">Satış Fiyatı</label>
-                            <input type="text" id="serialBackdrop" class="form-control" name="sale_price"/>
+                            <input type="text" id="serialBackdrop" class="form-control" name="sale_price" placeholder="0,00"/>
+                            <div class="form-text">Örnek: 1500,50</div>
                         </div>
                     </div>
 
@@ -417,19 +452,22 @@
                     <div class="row">
                         <div class="col mb-3">
                             <label for="nameBackdrop" class="form-label">Maliyet</label>
-                            <input type="text" id="cost_price" class="form-control" name="cost_price"/>
+                            <input type="text" id="cost_price" class="form-control" name="cost_price" placeholder="0,00"/>
+                            <div class="form-text">Örnek: 1200,75</div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col mb-3">
                             <label for="nameBackdrop" class="form-label">Destekli Maliyet</label>
-                            <input type="text" id="base_cost_price" class="form-control" name="base_cost_price"/>
+                            <input type="text" id="base_cost_price" class="form-control" name="base_cost_price" placeholder="0,00"/>
+                            <div class="form-text">Örnek: 1100,50</div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col mb-3">
                             <label for="nameBackdrop" class="form-label">Satış Fiyatı</label>
-                            <input type="text" id="serialBackdrop" class="form-control" name="sale_price"/>
+                            <input type="text" id="serialBackdrop" class="form-control" name="sale_price" placeholder="0,00"/>
+                            <div class="form-text">Örnek: 1500,50</div>
                         </div>
                     </div>
                 </div>
@@ -506,6 +544,18 @@
             },
             
             methods: {
+                // Format price for Turkish Lira
+                formatPrice(price) {
+                    if (!price && price !== 0) return '0,00 ₺';
+                    
+                    return new Intl.NumberFormat('tr-TR', {
+                        style: 'currency',
+                        currency: 'TRY',
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    }).format(price);
+                },
+                
                 // Load stock cards
                 async loadStockCards(page = 1) {
                     this.loading.stockCards = true;
@@ -563,6 +613,17 @@
                 // Open price modal
                 openPriceModal(id) {
                     this.currentStockCardId = id;
+                    
+                    // Find the stock card data and populate the form
+                    const stockCard = this.stockCards.find(item => item.id === id);
+                    if (stockCard) {
+                        // Set the current sale price in the form
+                        const salePriceInput = document.getElementById('serialBackdrop');
+                        if (salePriceInput) {
+                            salePriceInput.value = stockCard.sale_price || '';
+                        }
+                    }
+                    
                     $('#priceModal').modal('show');
                 },
                 
@@ -598,6 +659,11 @@
                         Swal.fire('Seçim Yapınız');
                         return;
                     }
+                    
+                    // Clear form inputs
+                    document.getElementById('cost_price').value = '';
+                    document.getElementById('base_cost_price').value = '';
+                    document.getElementById('serialBackdrop').value = '';
                     
                     $('#stockCardMovementIdArray').val(this.selectedItems.join(','));
                     $('#multiplepriceModal').modal('show');

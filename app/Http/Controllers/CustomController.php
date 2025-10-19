@@ -20,6 +20,7 @@ use App\Services\Seller\SellerService;
 use App\Services\StockCard\StockCardService;
 use App\Services\Transfer\TransferService;
 use Illuminate\Support\Facades\DB;
+use App\Helper\SearchHelper;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -364,7 +365,16 @@ class CustomController extends Controller
     public function serialcheck(Request $request)
     {
 
-        $stockcardmovement = StockCardMovement::where('type', 1)->where("serial_number", $request->id)->first();
+        $searchInfo = SearchHelper::determineSearchType($request->id);
+
+        if ($searchInfo) {
+            if ($searchInfo['type'] === 'barcode') {
+                $stockcardmovement = StockCardMovement::where('type', 1)->where('barcode', $searchInfo['value'])->first();
+            } else {
+                $stockcardmovement = StockCardMovement::where('type', 1)->where('serial_number', $searchInfo['value'])->first();
+            }
+        }
+
         if ($stockcardmovement) {
             if (!Auth::user()->hasRole('Depo Sorumlusu') && !Auth::user()->hasRole('super-admin')) {
                 if ($stockcardmovement->seller_id != Auth::user()->seller_id) {
@@ -374,7 +384,6 @@ class CustomController extends Controller
                 }
             }
 
-
             $stockcardmovementCheck = Sale::where('serial', $request->id)->first();
             if ($stockcardmovementCheck) {
                 $data['status'] = false;
@@ -382,13 +391,17 @@ class CustomController extends Controller
                 return response()->json($data, 200);
             } else {
                 $data['status'] = true;
-                $data['sales_price'] = StockCardMovement::where('serial_number', $request->id)->where('type', 1)->first();
+                $data['sales_price'] = $stockcardmovement->sale_price;
+                $data['stock_card_id'] = $stockcardmovement->stock_card_id;
+                $data['base_cost_price'] = $stockcardmovement->base_cost_price;
+                $data['serial_number'] = $stockcardmovement->serial_number;
                 return response()->json($data, 200);
             }
 
         }
 
     }
+
 
 
     public function getStockCardCategory(Request $request)

@@ -454,4 +454,143 @@ class SaleController extends Controller
             return redirect()->back()->with('error', 'Sayfa yüklenirken bir hata oluştu.');
         }
     }
+
+    /**
+     * Export sales data to Excel
+     */
+    public function exportToExcel(Request $request)
+    {
+        try {
+            Log::info('Excel export started', ['request_params' => $request->all()]);
+            
+            // Check if user is authenticated
+            if (!Auth::check()) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+            
+            // Get filtered sales data using the same logic as index
+            $query = Invoice::with(['account', 'staff', 'detail.stockCard.brand', 'detail.stockCard.category'])
+                ->where('company_id', Auth::user()->company_id);
+
+            // Apply filters
+            if ($request->filled('startDate')) {
+                $query->whereDate('create_date', '>=', Carbon::createFromFormat('Y-m-d', $request->startDate));
+            }
+            if ($request->filled('endDate')) {
+                $query->whereDate('create_date', '<=', Carbon::createFromFormat('Y-m-d', $request->endDate));
+            }
+            if ($request->filled('brand')) {
+                $query->whereHas('detail.stockCard', function (Builder $q) use ($request) {
+                    $q->where('brand_id', $request->brand);
+                });
+            }
+            if ($request->filled('category')) {
+                $query->whereHas('detail.stockCard', function (Builder $q) use ($request) {
+                    $q->where('category_id', $request->category);
+                });
+            }
+            if ($request->filled('seller')) {
+                $query->whereHas('detail', function (Builder $q) use ($request) {
+                    $q->where('seller_id', $request->seller);
+                });
+            }
+            if ($request->filled('staff')) {
+                $query->where('staff_id', $request->staff);
+            }
+            if ($request->filled('customer')) {
+                $query->where('customer_id', $request->customer);
+            }
+            if ($request->filled('search')) {
+                $searchTerm = $request->search;
+                $query->where(function (Builder $q) use ($searchTerm) {
+                    $q->where('number', 'like', "%{$searchTerm}%")
+                        ->orWhereHas('account', function (Builder $customerQuery) use ($searchTerm) {
+                            $customerQuery->where('fullname', 'like', "%{$searchTerm}%");
+                        })
+                        ->orWhereHas('detail', function (Builder $movementQuery) use ($searchTerm) {
+                            $movementQuery->where('serial_number', 'like', "%{$searchTerm}%")
+                                ->orWhereHas('stockCard', function (Builder $stockQuery) use ($searchTerm) {
+                                    $stockQuery->where('name', 'like', "%{$searchTerm}%");
+                                });
+                        });
+                });
+            }
+
+            // Get all data (no pagination for export)
+            $invoices = $query->orderBy('id', 'desc')->get();
+            
+            Log::info('Excel export - Found invoices: ' . $invoices->count());
+
+            // Prepare Excel data
+            $excelData = [];
+            $excelData[] = [
+                'Fatura No',
+                'Tarih',
+                'Müşteri',
+                'Personel',
+                'Ürün',
+                'Marka',
+                'Kategori',
+                'Seri No',
+                'Satış Fiyatı',
+                'Maliyet',
+                'Kar',
+                'Satışçı',
+                'Ödeme Durumu'
+            ];
+
+            foreach ($invoices as $invoice) {
+                $detailCount = is_array($invoice->detail) ? count($invoice->detail) : ($invoice->detail ? $invoice->detail->count() : 0);
+                Log::info('Invoice ' . $invoice->id . ' - Detail count: ' . $detailCount);
+                if ($invoice->detail && $detailCount > 0) {
+                    foreach ($invoice->detail as $movement) {
+                    $excelData[] = [
+                        $invoice->number,
+                        $invoice->create_date ? Carbon::parse($invoice->create_date)->format('d.m.Y') : '',
+                        $invoice->account ? $invoice->account->fullname : 'Genel Cari',
+                        $invoice->staff ? $invoice->staff->name : '',
+                        isset($movement['stockCard']) ? $movement['stockCard']['name'] : '',
+                        isset($movement['stockCard']['brand']) ? $movement['stockCard']['brand']['name'] : '',
+                        isset($movement['stockCard']['category']) ? $movement['stockCard']['category']['name'] : '',
+                        $movement['serial_number'] ?? '',
+                        number_format($movement['sale_price'] ?? 0, 2, ',', '.'),
+                        number_format($movement['base_cost_price'] ?? 0, 2, ',', '.'),
+                        number_format(($movement['sale_price'] ?? 0) - ($movement['base_cost_price'] ?? 0), 2, ',', '.'),
+                        isset($movement['seller']) ? $movement['seller']['name'] : '',
+                        $invoice->paymentStatus == 'paid' ? 'Ödendi' : 'Ödenecek'
+                    ];
+                    }
+                }
+            }
+
+            // Generate Excel file
+            $filename = 'satislar_' . date('Y-m-d_H-i-s') . '.csv';
+            
+            $headers = [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0'
+            ];
+
+            $callback = function() use ($excelData) {
+                $file = fopen('php://output', 'w');
+                
+                // Add BOM for UTF-8
+                fwrite($file, "\xEF\xBB\xBF");
+                
+                foreach ($excelData as $row) {
+                    fputcsv($file, $row, ';');
+                }
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            Log::error('Excel export error: ' . $e->getMessage());
+            return response()->json(['error' => 'Excel dosyası oluşturulurken hata oluştu.'], 500);
+        }
+    }
 }

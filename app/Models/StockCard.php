@@ -106,13 +106,17 @@ class StockCard extends BaseModel
 
     public function version()
     {
+        return $this->belongsTo(Version::class, 'version_id', 'id');
+    }
+    
+    public function versionNames()
+    {
         $array = $this->version_id;
 
         $names = collect($array)->map(function ($name, $key) {
              return Version::find($name)->name ?? "Belirtilmedi";
         });
         return $names->toJson();
-        //return $this->hasOne(Version::class, 'id', 'version_id');
     }
     
     public function color(): BelongsTo

@@ -4,6 +4,7 @@ namespace App\Repositories\StockCard;
 
 use App\Models\StockCardMovement;
 use App\Models\StockCardPrice;
+use App\Helper\SearchHelper;
 use Illuminate\Support\Facades\Auth;
 use LaravelEasyRepository\Implementations\Eloquent;
 use App\Models\StockCard;
@@ -84,13 +85,17 @@ class StockCardRepositoryImplement extends Eloquent implements StockCardReposito
         $stock_card = null;
         $stock_card_price = null;
 
-        // Get stock card movement if serial number provided
-        if (isset($arg->serial) && !empty($arg->serial)) {
+        $searchInfo =   SearchHelper::determineSearchType($arg->serial);
+        if ($searchInfo['type'] === 'barcode') {
+            $stock_card_movement = StockCardMovement::where('barcode', $arg->serial)
+                ->orderBy('id', 'desc')
+                ->first();
+        } else {
             $stock_card_movement = StockCardMovement::where('serial_number', $arg->serial)
                 ->orderBy('id', 'desc')
                 ->first();
         }
-
+ 
         // Get stock card if id provided
         if (isset($arg->id) && !empty($arg->id)) {
             $stock_card = $this->model->find($arg->id);

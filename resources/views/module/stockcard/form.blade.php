@@ -6,7 +6,7 @@
                 {{$stockcards->name}}
             @endif</h4>
         <div id="app">
-            <form action="{{route('stockcard.store')}}" method="post" class="needs-validation" novalidate @submit="submitForm">
+            <form action="{{route('stockcard.store')}}" method="post" class="needs-validation" novalidate @submit="submitForm($event)">
                 @csrf
                 <input type="hidden" name="id" @if(isset($stockcards)) value="{{$stockcards->id}}" @endif />
                 
@@ -243,8 +243,11 @@
                     </button>
                     <button type="submit" 
                             class="btn btn-primary btn-lg px-5"
-                            :disabled="loading.brands || loading.versions || loading.categories">
-                        <i class="bx bx-save me-2"></i>Kaydet
+                            :disabled="loading.brands || loading.versions || loading.categories || loading.submitting">
+                        <i v-if="!loading.submitting" class="bx bx-save me-2"></i>
+                        <span v-if="loading.submitting" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        <span v-if="loading.submitting">Kaydediliyor...</span>
+                        <span v-else>Kaydet</span>
                     </button>
                 </div>
             </form>
@@ -721,6 +724,7 @@
                     brands: false,
                     versions: false,
                     categories: false,
+                    submitting: false,
                     stockSearch: false
                 }
             }
@@ -870,9 +874,33 @@
             },
             
             // Form gönderimi
-            submitForm() {
-                // Form validasyonu burada yapılabilir
-                console.log('Form gönderiliyor:', this.formData);
+            async submitForm(event) {
+                // Eğer zaten gönderiliyorsa, tekrar gönderme
+                if (this.loading.submitting) {
+                    event.preventDefault();
+                    return false;
+                }
+                
+                // Loading state'ini aktif et
+                this.loading.submitting = true;
+                
+                try {
+                    // Form validasyonu burada yapılabilir
+                    console.log('Form gönderiliyor:', this.formData);
+                    
+                    // Form'u normal şekilde gönder (Laravel form submit)
+                    // Bu noktada form otomatik olarak submit edilecek
+                    
+                    // Form gönderiminden sonra loading state'ini sıfırla
+                    // (Sayfa yönlendirileceği için bu kod çalışmayabilir)
+                    setTimeout(() => {
+                        this.loading.submitting = false;
+                    }, 1000);
+                    
+                } catch (error) {
+                    console.error('Form gönderim hatası:', error);
+                    this.loading.submitting = false;
+                }
             },
             
             // Marka değiştiğinde versiyonları yükle

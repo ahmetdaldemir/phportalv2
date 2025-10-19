@@ -28,7 +28,7 @@
                             <i class="bx bx-printer me-1"></i>
                             Yazdır
                         </button>
-                        <button class="btn btn-warning btn-sm">
+                        <button class="btn btn-warning btn-sm" @click="exportToExcel">
                             <i class="bx bx-download me-1"></i>
                             Excel
                         </button>
@@ -376,7 +376,7 @@
                 </div>
             </div>
 
-        </div>
+     
 
         <!-- Invoice Sales Detail Modal -->
         <div class="modal fade" id="invoiceSalesModal" tabindex="-1" aria-labelledby="invoiceSalesModalLabel"
@@ -398,11 +398,7 @@
                         </div>
 
                         <div v-show="!loading.invoiceDetails">
-                            <!-- Test Content -->
-                            <div class="alert alert-success mb-3">
-                                <strong>Content is visible!</strong> Loading state is false.
-                            </div>
-
+                            <!-- Debug Content -->
                             <!-- Summary Cards -->
                             <div class="row mb-4">
                                 <div class="col-md-3">
@@ -797,15 +793,13 @@
                     this.selectedInvoice = this.invoices.find(inv => inv.id === invoiceId) || {};
                     console.log('Selected invoice:', this.selectedInvoice);
 
-                    // Reset modal data
-                    this.invoiceDetails = {
-                        sales: [],
-                        totals: {
-                            items_count: 0,
-                            total_sale_price: 0,
-                            total_cost_price: 0,
-                            total_profit: 0
-                        }
+                    // Reset modal data - use reactive assignment
+                    this.invoiceDetails.sales = [];
+                    this.invoiceDetails.totals = {
+                        items_count: 0,
+                        total_sale_price: 0,
+                        total_cost_price: 0,
+                        total_profit: 0
                     };
 
                     // Open modal first, then load data
@@ -825,11 +819,18 @@
                         console.log('Invoice details response:', response.data);
 
                         if (response.data && response.data.sales) {
-                            // Direct object assignment
-                            this.invoiceDetails = response.data;
+                            // Use reactive assignment for Vue 3
+                            this.invoiceDetails.sales = response.data.sales;
+                            this.invoiceDetails.totals = response.data.totals;
                             this.loading.invoiceDetails = false;
                             console.log('Invoice details loaded successfully');
                             console.log('Updated invoiceDetails:', this.invoiceDetails);
+                            
+                            // Force reactivity update
+                            this.$nextTick(() => {
+                                console.log('NextTick - invoiceDetails updated');
+                                console.log('Sales after nextTick:', this.invoiceDetails.sales);
+                            });
                         } else {
                             console.warn('No sales data received');
                         }
@@ -866,6 +867,10 @@
                                 contentDiv.style.display = 'block';
                                 console.log('Content div manually shown');
                             }
+                            
+                            // Debug: Check if data is in DOM
+                            const salesRows = document.querySelectorAll('#invoiceSalesModal tbody tr');
+                            console.log('Sales rows in DOM:', salesRows.length);
                         }, 100);
                     }
                 },
@@ -1186,6 +1191,65 @@
                     }
 
                     return rangeWithDots;
+                },
+
+                // Excel export functionality
+                async exportToExcel() {
+                    try {
+                        // Show loading state
+                        this.loading.search = true;
+                        
+                        // Prepare search parameters for export
+                        const exportParams = {
+                            ...this.searchForm,
+                            export: 'excel',
+                            per_page: 10000 // Get all records for export
+                        };
+                        
+                        console.log('Exporting with params:', exportParams);
+                        
+                        // Create URL with search parameters
+                        const params = new URLSearchParams();
+                        Object.keys(exportParams).forEach(key => {
+                            if (exportParams[key] !== null && exportParams[key] !== undefined && exportParams[key] !== '') {
+                                params.append(key, exportParams[key]);
+                            }
+                        });
+                        
+                        // Create download URL
+                        const downloadUrl = `/sale/export?${params.toString()}`;
+                        console.log('Download URL:', downloadUrl);
+                        
+                        // Test URL first
+                        try {
+                            const response = await fetch(downloadUrl, { method: 'HEAD' });
+                            console.log('URL test response:', response.status);
+                            
+                            if (response.ok) {
+                                // Create temporary link and trigger download
+                                const link = document.createElement('a');
+                                link.href = downloadUrl;
+                                link.download = `satislar_${new Date().toISOString().split('T')[0]}.csv`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                
+                                console.log('Excel export initiated');
+                            } else {
+                                console.error('URL not accessible:', response.status);
+                                this.showNotification('Hata', 'Export URL\'sine ulaşılamadı!', 'error');
+                            }
+                        } catch (error) {
+                            console.error('URL test error:', error);
+                            this.showNotification('Hata', 'Export URL\'si test edilemedi!', 'error');
+                        }
+                        
+                    } catch (error) {
+                        console.error('Excel export error:', error);
+                        this.showNotification('Hata', 'Excel dosyası oluşturulurken hata oluştu!', 'error');
+                    } finally {
+                        this.loading.search = false;
+                    }
                 }
             },
 

@@ -12,7 +12,7 @@
                             Satış Faturası
                         </h4>
                         <div class="d-flex gap-2">
-                            <button id="saveButton" onclick="save()" type="button" class="btn btn-primary">
+                            <button id="saveButton" @click="saveInvoice()" type="button" class="btn btn-primary">
                                 <i class="bx bx-paper-plane me-1"></i>Kaydet
                             </button>
                         </div>
@@ -132,7 +132,7 @@
                                 <h5 class="mb-0">
                                     <i class="bx bx-list-ul me-2"></i>Fatura Kalemleri
                                 </h5>
-                                <button type="button" onclick="myFunction()" class="btn btn-success">
+                                <button type="button" @click="addInvoiceItem()" class="btn btn-success">
                                     <i class="bx bx-plus me-1"></i>Kalem Ekle
                                 </button>
                             </div>
@@ -174,34 +174,55 @@
                                         </tr>
                                     </thead>
                                     <tbody style="overflow: visible !important;" id="myList1">
-                                        <tr id="99999999" class="invoice-item-row" style="overflow: visible !important; position: relative !important;">
+                                        <tr v-if="!isLoaded" class="text-center">
+                                            <td colspan="7" class="py-4">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Yükleniyor...</span>
+                                                </div>
+                                                <p class="mt-2">Vue.js yükleniyor...</p>
+                                            </td>
+                                        </tr>
+                                        <tr v-for="item in (invoiceItems || [])" :key="item.id" :id="item.id" class="invoice-item-row" style="overflow: visible !important; position: relative !important;">
                                             <!-- Stok -->
                                             <td style="overflow: visible !important; position: relative !important;">
                                                 <div class="position-relative flex-grow-1 stock-search-container">
                                                     <input 
                                                         type="text" 
                                                         class="form-control form-control-sm stock-search-input" 
-                                                        data-rowid="99999999"
+                                                        v-model="stockSearchQueries[item.id]"
+                                                        @input="filterStocks(item.id, $event.target.value)"
+                                                        @focus="stockDropdowns[item.id] = stockDropdowns[item.id] || []"
                                                         placeholder="Stok ara..."
                                                         autocomplete="off">
                                                     
                                                     <!-- Hidden input for form submission -->
-                                                    <input type="hidden" name="stock_card_id[]" id="stockId99999999" value="{{$product['stock_card']['id'] ?? ''}}">
+                                                    <input type="hidden" :name="`stock_card_id[${(invoiceItems || []).indexOf(item)}]`" :value="item.stockCardId">
                                                     
                                                     <!-- Stock Dropdown -->
-                                                    <div class="stock-dropdown position-absolute w-100 bg-white border rounded shadow-lg" style="z-index: 1000; max-height: 300px; overflow-y: auto; top: 100%; left: 0; display: none;">
-                                                        <!-- jQuery ile doldurulacak -->
+                                                    <div v-show="stockDropdowns[item.id] && stockDropdowns[item.id].length > 0" 
+                                                         class="stock-dropdown position-absolute w-100 bg-white border rounded shadow-lg" 
+                                                         style="z-index: 1000; max-height: 300px; overflow-y: auto; top: 100%; left: 0; display: block !important;">
+                                                        <div v-for="stock in stockDropdowns[item.id]" 
+                                                             :key="stock.id"
+                                                             @click="selectStock(item.id, stock)"
+                                                             class="stock-item p-2 border-bottom" 
+                                                             style="cursor: pointer;">
+                                                            <div class="fw-semibold">@{{ stock.name }}</div>
+                                                            <small class="text-muted">@{{ stock.brand?.name || 'Bilinmiyor' }} - @{{ stock.version_names || '' }}</small>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
 
                                             <!-- Seri No -->
                                             <td>
-                                                <input type="text" id="serialnumber99999999" class="form-control form-control-sm serialnumber"
-                                                       data-id="serialnumber99999999" name="serial[]"
-                                                       required placeholder="Seri numarası"
-                                                       @if(isset($request->serial)) value="{{$request->serial}}" @endif />
-                                                <small id="serialcheck99999999" class="text-danger d-none">
+                                                <input type="text" 
+                                                       class="form-control form-control-sm serialnumber"
+                                                       v-model="item.serialNumber"
+                                                       @blur="validateSerialNumber(item.id, item.serialNumber)"
+                                                       required 
+                                                       placeholder="Seri numarası" />
+                                                <small class="text-danger d-none">
                                                     <i class="bx bx-error-circle"></i> Zorunlu
                                                 </small>
                                             </td>
@@ -211,17 +232,15 @@
                                             <td>
                                                 <input type="text"
                                                        class="form-control form-control-sm invoice-item-price invoice-item-cost-price"
-                                                       name="base_cost_price[]" data-newid="99999999"
-                                                       value="{{$product['stock_card_movement']['base_cost_price'] ?? ''}}"
+                                                       v-model="item.costPrice"
                                                        readonly/>
                                             </td>
                                             @else
                                             <td style="display: none;">
-                                            <input type="hidden"
-                                                   class="form-control invoice-item-price invoice-item-cost-price"
-                                                   name="base_cost_price[]" data-newid="99999999"
-                                                   value="{{$product['stock_card_movement']['base_cost_price'] ?? ''}}"
-                                                   readonly/>
+                                                <input type="hidden"
+                                                       class="form-control invoice-item-price invoice-item-cost-price"
+                                                       v-model="item.costPrice"
+                                                       readonly/>
                                             </td>
                                             @endif
 
@@ -229,39 +248,40 @@
                                             <td>
                                                 <input type="text"
                                                        class="form-control form-control-sm invoice-item-price invoice-item-sales-price"
-                                                       name="sale_price[]" data-newid="99999999"
-                                                       id="serial99999999"
-                                                       data-sales="{{$product['stock_card_movement']['sale_price'] ?? ''}}"
-                                                       data-cost="{{$product['stock_card_movement']['base_cost_price'] ?? ''}}"
-                                                       value="{{$product['stock_card_movement']['sale_price'] ?? ''}}"
+                                                       v-model="item.salePrice"
                                                        readonly/>
-                                                <input name="reason_id[]" value="4" type="hidden" />
+                                                <input :name="`reason_id[${(invoiceItems || []).indexOf(item)}]`" :value="item.reasonId" type="hidden" />
                                             </td>
 
                                             <!-- İndirim -->
                                             <td>
-                                                <input type="number" data-newid="99999999" class="form-control form-control-sm"
-                                                       id="discountInput"
+                                                <input type="number" 
+                                                       class="form-control form-control-sm"
+                                                       v-model="item.discount"
+                                                       @change="applyDiscount(item.id, item.discount)"
                                                        min="0"
                                                        @role('admin')
-                                                max="{{setting('admin.discount_admin')}}"
-                                                @else
-                                                    max="{{setting('admin.discount')}}"
-                                                    @endrole
-                                                    name="discount[]"
-                                                    placeholder="0">
+                                                       max="{{setting('admin.discount_admin')}}"
+                                                       @else
+                                                       max="{{setting('admin.discount')}}"
+                                                       @endrole
+                                                       placeholder="0">
                                             </td>
 
                                             <!-- Açıklama -->
                                             <td>
-                                                <input type="text" class="form-control form-control-sm"
-                                                       name="description[]"
+                                                <input type="text" 
+                                                       class="form-control form-control-sm"
+                                                       v-model="item.description"
                                                        placeholder="Açıklama...">
                                             </td>
 
                                             <!-- Sil -->
                                             <td class="text-center">
-                                                <button type="button" class="btn btn-sm btn-icon btn-outline-danger" id="removeDiv" data-id="99999999" title="Satırı Sil">
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-icon btn-outline-danger" 
+                                                        @click="removeInvoiceItem(item.id)"
+                                                        title="Satırı Sil">
                                                     <i class="bx bx-trash"></i>
                                                 </button>
                                             </td>
@@ -375,7 +395,10 @@
                                     <div class="card bg-light-subtle border">
                                         <div class="card-body text-center">
                                             <h6 class="text-muted mb-2">Genel Toplam</h6>
-                                            <div id="totalArea" class="display-4 fw-bold text-success">0 ₺</div>
+                                            <div class="display-4 fw-bold text-success">
+                                                <span v-if="!isLoaded">0.00 ₺</span>
+                                                <span v-else>@{{ (totalAmount || 0).toFixed(2) }} ₺</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -482,9 +505,6 @@
         var paidOutOfPocketHTML = window.salesPageData.paidOutOfPocketHTML;
     </script>
 
-    <!-- Sales Page JavaScript -->
-    <script src="{{asset('assets/js/sales-page.js')}}"></script>
-    
     <!-- Sales Vue.js App -->
     <script src="{{asset('assets/js/sales-vue.js')}}"></script>
 @endsection
