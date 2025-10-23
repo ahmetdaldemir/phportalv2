@@ -104,11 +104,9 @@
                             <div>
                                 <label for="defaultFormControlInput" class="form-label">Şube Adı</label>
                                 <select id="seller_id" name="seller_id" class="select2 form-select"
-                                        @role('super-admin')
-                                ""
-                                @else
-                                    disabled
-                                    @endrole  >
+                                        @if(!\Illuminate\Support\Facades\Auth::user()->hasRole('super-admin'))
+                                        disabled
+                                        @endif>
                                     @foreach($sellers as $seller)
                                         <option  @if(\Illuminate\Support\Facades\Auth::user()->seller_id == $seller->id) selected  @endif  value="{{$seller->id}}">{{$seller->name}}</option>
                                     @endforeach
@@ -295,6 +293,68 @@
                 });
             }
         }).mount('#technical-service-app');
+    });
+
+    // Global function for getting versions by brand
+    function getVersion(brandId) {
+        if (!brandId || brandId === '') {
+            // Clear version select if no brand selected
+            const versionSelect = document.getElementById('version_id');
+            if (versionSelect) {
+                versionSelect.innerHTML = '<option value="">Seçiniz</option>';
+            }
+            return;
+        }
+
+        // Show loading state
+        const versionSelect = document.getElementById('version_id');
+        if (versionSelect) {
+            versionSelect.innerHTML = '<option value="">Yükleniyor...</option>';
+            versionSelect.disabled = true;
+        }
+
+        // Make AJAX request to get versions using existing API
+        fetch(`/api/common/versions?brand_id=${brandId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (versionSelect) {
+                    versionSelect.innerHTML = '<option value="">Seçiniz</option>';
+                    
+                    if (data && data.length > 0) {
+                        data.forEach(version => {
+                            const option = document.createElement('option');
+                            option.value = version.id;
+                            option.textContent = version.name;
+                            
+                            // Check if this version should be selected (for edit mode)
+                            @if(isset($technical_services) && $technical_services->version_id)
+                                if (version.id == {{$technical_services->version_id}}) {
+                                    option.selected = true;
+                                }
+                            @endif
+                            
+                            versionSelect.appendChild(option);
+                        });
+                    }
+                    
+                    versionSelect.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading versions:', error);
+                if (versionSelect) {
+                    versionSelect.innerHTML = '<option value="">Hata oluştu</option>';
+                    versionSelect.disabled = false;
+                }
+            });
+    }
+
+    // Load versions on page load if brand is already selected
+    document.addEventListener('DOMContentLoaded', function() {
+        const brandSelect = document.getElementById('brand_id');
+        if (brandSelect && brandSelect.value) {
+            getVersion(brandSelect.value);
+        }
     });
     </script>
 @endsection

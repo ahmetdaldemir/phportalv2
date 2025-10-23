@@ -134,7 +134,7 @@
                                         <i class="bx bx-category me-1 text-primary"></i>Kategori
                                         <span class="text-danger">*</span>
                                     </label>
-                                    <select class="form-select form-select-lg" 
+                                    <select class="form-select form-select-lg select2-category" 
                                             v-model="formData.category_id"
                                             name="category_id" 
                                             id="category_id" 
@@ -146,6 +146,10 @@
                                             @{{ category.path }}
                                         </option>
                                     </select>
+                                    <div v-if="loading.categories" class="form-text text-primary">
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                        Kategoriler yükleniyor...
+                                    </div>
                                 </div>
                             </div>
 
@@ -333,6 +337,86 @@
         .form-switch-lg .form-check-input:checked {
             background-color: #667eea;
             border-color: #667eea;
+        }
+
+        /* Select2 Custom Styling */
+        .select2-custom-container .select2-selection--single {
+            height: 48px !important;
+            border: 2px solid #e9ecef !important;
+            border-radius: 12px !important;
+            padding: 8px 16px !important;
+            transition: all 0.3s ease;
+        }
+
+        .select2-custom-container .select2-selection--single:focus,
+        .select2-custom-container.select2-container--open .select2-selection--single {
+            border-color: #667eea !important;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
+            transform: translateY(-2px);
+        }
+
+        .select2-custom-container .select2-selection__rendered {
+            line-height: 32px !important;
+            padding: 0 !important;
+            color: #2d3748;
+            font-size: 16px;
+        }
+
+        .select2-custom-container .select2-selection__placeholder {
+            color: #9ca3af !important;
+        }
+
+        .select2-custom-container .select2-selection__arrow {
+            height: 44px !important;
+            top: 2px !important;
+            right: 8px !important;
+        }
+
+        .select2-custom-dropdown {
+            border: 2px solid #667eea !important;
+            border-radius: 12px !important;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2) !important;
+            margin-top: 4px !important;
+        }
+
+        .select2-custom-dropdown .select2-search__field {
+            border: 2px solid #e9ecef !important;
+            border-radius: 8px !important;
+            padding: 8px 12px !important;
+            font-size: 14px;
+        }
+
+        .select2-custom-dropdown .select2-search__field:focus {
+            border-color: #667eea !important;
+            outline: none !important;
+        }
+
+        .select2-custom-dropdown .select2-results__option {
+            padding: 10px 16px !important;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .select2-custom-dropdown .select2-results__option--highlighted {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+        }
+
+        .select2-custom-dropdown .select2-results__option--selected {
+            background-color: #f3f4f6 !important;
+            color: #2d3748 !important;
+            font-weight: 600;
+        }
+
+        .select2-custom-dropdown .select2-results__option[aria-selected="true"] {
+            background-color: #e0e7ff !important;
+        }
+
+        .select2-custom-container .select2-selection__clear {
+            color: #ef4444 !important;
+            font-size: 20px;
+            margin-right: 8px;
+            margin-top: 4px;
         }
 
         /* Multiple Select Styling */
@@ -696,14 +780,14 @@
             return {
                 // Form verileri
                 formData: {
-                    name: '',
-                    barcode: '',
-                    tracking: false,
-                    tracking_quantity: '',
-                    category_id: '',
-                    brand_id: '',
-                    version_id: [],
-                    unit_id: ''
+                    name: @json($stockcards->name ?? ''),
+                    barcode: @json($stockcards->barcode ?? ''),
+                    tracking: @json($stockcards->tracking ?? false),
+                    tracking_quantity: @json($stockcards->tracking_quantity ?? ''),
+                    category_id: @json($stockcards->category_id ?? ''),
+                    brand_id: @json($stockcards->brand_id ?? ''),
+                    version_id: @json($stockcards->version_id ?? []),
+                    unit_id: @json($stockcards->unit ?? '')
                 },
                 
                 // AJAX verileri
@@ -732,6 +816,12 @@
         
         mounted() {
             this.loadInitialData();
+            
+            // Eğer düzenleme modundaysak ve marka seçiliyse, versiyonları yükle
+            if (this.formData.brand_id) {
+                console.log('Edit mode detected, loading versions for brand:', this.formData.brand_id);
+                this.getVersion();
+            }
         },
         
         methods: {
@@ -781,6 +871,14 @@
                     const data = await response.json();
                     this.categories = Array.isArray(data) ? data : [];
                     console.log('Categories loaded:', this.categories.length);
+                    console.log('First few categories:', this.categories.slice(0, 3));
+                    
+                    // Kategoriler yüklendikten sonra Select2'yi başlat/güncelle
+                    this.$nextTick(() => {
+                        setTimeout(() => {
+                            this.initializeSelect2();
+                        }, 100); // Kısa bir gecikme ile DOM'un güncellenmesini bekle
+                    });
                 } catch (error) {
                     console.error('Kategoriler yüklenemedi:', error);
                     this.categories = [];
@@ -793,6 +891,64 @@
             async loadUnits() {
                 // Units verisi zaten mevcut
                 this.units = @json($units ?? []);
+            },
+            
+            // Select2'yi başlat
+            initializeSelect2() {
+                const self = this;
+                
+                // Eğer Select2 zaten başlatılmışsa, önce yok et
+                if ($('#category_id').hasClass('select2-hidden-accessible')) {
+                    $('#category_id').select2('destroy');
+                }
+                
+                // Kategoriler yüklenene kadar bekle
+                if (this.categories.length === 0) {
+                    console.log('Kategoriler henüz yüklenmedi, Select2 başlatılamıyor');
+                    return;
+                }
+                
+                console.log('Select2 başlatılıyor, kategori sayısı:', this.categories.length);
+                
+                // Select2'yi başlat
+                $('#category_id').select2({
+                    placeholder: 'Kategori seçiniz veya arayınız...',
+                    allowClear: true,
+                    width: '100%',
+                    language: {
+                        noResults: function() {
+                            return "Sonuç bulunamadı";
+                        },
+                        searching: function() {
+                            return "Aranıyor...";
+                        },
+                        inputTooShort: function() {
+                            return "Lütfen daha fazla karakter giriniz";
+                        }
+                    },
+                    dropdownCssClass: 'select2-custom-dropdown',
+                    containerCssClass: 'select2-custom-container'
+                });
+                
+                // Select2 değişikliklerini Vue.js ile senkronize et
+                $('#category_id').on('change', function() {
+                    self.formData.category_id = $(this).val();
+                    console.log('Select2 değişti:', $(this).val());
+                });
+                
+                // Vue.js'teki değişiklikleri Select2'ye yansıt
+                this.$watch('formData.category_id', function(newVal) {
+                    if ($('#category_id').val() !== newVal) {
+                        $('#category_id').val(newVal).trigger('change.select2');
+                        console.log('Vue.js değişti, Select2 güncellendi:', newVal);
+                    }
+                });
+                
+                // Eğer düzenleme modundaysa, seçili kategoriyi set et
+                if (this.formData.category_id) {
+                    $('#category_id').val(this.formData.category_id).trigger('change.select2');
+                    console.log('Düzenleme modu: kategori seçildi:', this.formData.category_id);
+                }
             },
             
             // Stok adı arama
@@ -916,10 +1072,12 @@
                     return;
                 }
                 
+                // Mevcut seçili versiyonları sakla (düzenleme modu için)
+                const currentVersionIds = [...this.formData.version_id];
+                
                 // Loading state'i aç
                 this.loading.versions = true;
                 this.versions = []; // Önce temizle
-                this.formData.version_id = []; // Seçimi sıfırla
                 
                 const url = `/stockcard/versions-ajax?brand_id=${this.formData.brand_id}`;
                 console.log('📡 Fetching versions from:', url);
@@ -950,6 +1108,12 @@
                         console.log('📋 First version:', this.versions[0]);
                     }
                     
+                    // Eğer düzenleme modundaysak, önceki seçimleri geri yükle
+                    if (currentVersionIds.length > 0) {
+                        this.formData.version_id = currentVersionIds;
+                        console.log('🔄 Restored version selections:', currentVersionIds);
+                    }
+                    
                 } catch (error) {
                     console.error('❌ Error loading versions:', error.message);
                     this.versions = [];
@@ -976,7 +1140,10 @@
                 } else {
                     console.log('No brand selected, clearing versions');
                     this.versions = [];
-                    this.formData.version_id = [];
+                    // Sadece kullanıcı markayı temizlediyse version_id'leri sıfırla
+                    if (oldVal) {
+                        this.formData.version_id = [];
+                    }
                 }
             }
         }

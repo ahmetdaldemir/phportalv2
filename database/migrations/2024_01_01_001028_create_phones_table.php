@@ -30,7 +30,7 @@ return new class extends Migration
             $table->text('altered_parts')->nullable();
             $table->text('physical_condition')->nullable();
             $table->string('memory', 255)->nullable();
-            $table->string('batery', 255)->nullable();
+            $table->string('battery', 255)->nullable();
             $table->string('warranty', 255)->nullable();
             $table->boolean('status')->default(0);
             $table->integer('invoice_id')->nullable();

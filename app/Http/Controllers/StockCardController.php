@@ -34,6 +34,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class StockCardController extends Controller
 {
@@ -155,7 +156,7 @@ class StockCardController extends Controller
                     'category' => $card->category->name ?? 'Belirtilmedi',
                     'category_sperator_name' => $this->categorySeperator($card->category_id ?? 0) ?? '',
                     'brand' => $card->brand->name ?? 'Belirtilmedi',
-                    'version' => json_decode($card->version(), true) ?? [],
+                    'version' => $card->version ? json_decode($card->version->version, true) ?? [] : [],
                     'barcode' => $card->barcode ?? '',
                     'is_status' => $card->is_status ?? 0,
                     'quantity' => $card->quantity() ?? 0,
@@ -616,14 +617,9 @@ SELECT * FROM category_path ORDER BY path;");
     protected function store(Request $request)
     {
         $this->authorize('create-accessory');
-
-        if (is_null($request->name)) {
-            $name = $request->fakeproduct;
-        } else {
-            $name = $request->name;
-        }
+  
         $data = array(
-            'name' => $name,
+            'name' =>  Str::upper($request->name),
             'company_id' => Auth::user()->company_id,
             'user_id' => Auth::user()->id,
             'category_id' => $request->category_id,
@@ -638,9 +634,48 @@ SELECT * FROM category_path ORDER BY path;");
         );
 
         if (empty($request->id)) {
+            // Yeni kayıt eklenmeden önce aynı özelliklere sahip stok kartı var mı kontrol et
+            $existingStock = StockCard::where('company_id', Auth::user()->company_id)
+                ->where('name', Str::upper($request->name))
+                ->where('brand_id', $request->brand_id)
+                ->where('category_id', $request->category_id)
+                ->where('version_id', $request->version_id)
+                ->first();
+            
+            if ($existingStock) {
+                // Aynı özelliklere sahip stok kartı bulundu
+                Log::warning('Duplicate stock card attempt', [
+                    'user_id' => Auth::user()->id,
+                    'existing_stock_id' => $existingStock->id,
+                    'stock_name' => $request->name,
+                    'brand_id' => $request->brand_id,
+                    'category_id' => $request->category_id
+                ]);
+                
+                return redirect()
+                    ->route('invoice.create', ['id' => $existingStock->id])
+                    ->with('warning', 'Bu özelliklere sahip bir stok kartı zaten mevcut. Mevcut stok kartına yönlendirildiniz.');
+            }
+            
             $stock = $this->stockcardService->create($data);
             $id = $stock->id;
         } else {
+            // Düzenleme işlemi - aynı ID hariç kontrol et
+            $existingStock = StockCard::where('company_id', Auth::user()->company_id)
+                ->where('name', Str::upper($request->name))
+                ->where('brand_id', $request->brand_id)
+                ->where('category_id', $request->category_id)
+                ->where('version_id', $request->version_id)
+                ->where('id', '!=', $request->id)
+                ->first();
+            
+            if ($existingStock) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with('error', 'Bu özelliklere sahip başka bir stok kartı zaten mevcut (ID: ' . $existingStock->id . ')');
+            }
+            
             $this->stockcardService->update($request->id, $data);
             $id = $request->id;
         }
@@ -1141,13 +1176,18 @@ SELECT * FROM category_path ORDER BY path;");
     {
         $stockcardmovement = StockCardMovement::where('id', $request->stock_card_id)->where('type', 1)->first();
 
+        if (!$stockcardmovement) {
+            return response()->json(['error' => 'Stok kartı bulunamadı'], 404);
+        }
+
         if ($this->sanitize($stockcardmovement->base_cost_price) > $this->sanitize($request->sale_price)) {
-            return response()->json('Satış Fiyatı maliyetten küçük olamaz', 200);
+            return response()->json(['error' => 'Satış Fiyatı maliyetten küçük olamaz'], 400);
         }
 
         $stockcardmovement->sale_price = $request->sale_price;
         $stockcardmovement->save();
-        return response()->json('Kayıt Güncellendi', 200);
+        
+        return response()->json(['success' => true, 'message' => 'Kayıt Güncellendi'], 200);
     }
 
     public function multiplepriceupdate(Request $request)

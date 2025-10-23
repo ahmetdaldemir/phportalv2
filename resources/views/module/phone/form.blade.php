@@ -566,6 +566,11 @@
                         
                         console.log('Versions loaded:', this.versions.length);
                         
+                        // Select2'yi yeniden başlat
+                        this.$nextTick(() => {
+                            this.initializeSelect2();
+                        });
+                        
                     } catch (error) {
                         console.error('Error loading versions:', error);
                         this.versions = [];
@@ -612,6 +617,34 @@
                         
                     } catch (error) {
                         console.error('Error loading global data:', error);
+                    }
+                },
+                
+                // Select2'yi başlat ve Vue.js ile senkronize et
+                initializeSelect2() {
+                    const self = this;
+                    
+                    // Version select2'yi başlat
+                    if ($('#version_id').length) {
+                        $('#version_id').select2({
+                            placeholder: 'Model seçiniz...',
+                            allowClear: true,
+                            width: '100%'
+                        });
+                        
+                        // Select2 değişikliklerini Vue.js ile senkronize et
+                        $('#version_id').on('change', function() {
+                            self.form.version_id = $(this).val();
+                            console.log('Select2 version_id changed:', $(this).val());
+                        });
+                        
+                        // Vue.js'teki değişiklikleri Select2'ye yansıt
+                        this.$watch('form.version_id', function(newVal) {
+                            if ($('#version_id').val() !== newVal) {
+                                $('#version_id').val(newVal).trigger('change.select2');
+                                console.log('Vue.js version_id changed:', newVal);
+                            }
+                        });
                     }
                 },
                 
@@ -668,6 +701,11 @@
             mounted() {
                 // Global verileri yükle
                 this.loadGlobalData();
+                
+                // Select2'yi başlat ve Vue.js ile senkronize et
+                this.$nextTick(() => {
+                    this.initializeSelect2();
+                });
                 
                 // Listen for customer save events
                 window.addEventListener('customerSaved', (event) => {

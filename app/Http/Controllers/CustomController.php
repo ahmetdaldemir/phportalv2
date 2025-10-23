@@ -38,8 +38,8 @@ class CustomController extends Controller
     public function __construct(CustomerService $customerService, SellerService $sellerService, StockCardService $stockCardService, TransferService $transferService)
     {
         $this->customerService = $customerService;
-        $this->sellerService = $sellerService;
         $this->stockCardService = $stockCardService;
+        $this->sellerService = $sellerService;
         $this->transferService = $transferService;
         $this->stockCardMovement = new StockCardMovement();
     }
@@ -366,6 +366,7 @@ class CustomController extends Controller
     {
 
         $searchInfo = SearchHelper::determineSearchType($request->id);
+ 
 
         if ($searchInfo) {
             if ($searchInfo['type'] === 'barcode') {
@@ -374,6 +375,7 @@ class CustomController extends Controller
                 $stockcardmovement = StockCardMovement::where('type', 1)->where('serial_number', $searchInfo['value'])->first();
             }
         }
+    
 
         if ($stockcardmovement) {
             if (!Auth::user()->hasRole('Depo Sorumlusu') && !Auth::user()->hasRole('super-admin')) {
@@ -511,6 +513,24 @@ class CustomController extends Controller
         return response()->json('Yes',200);
     }
 
+    public function getTransferBarcodeCheck(Request $request)
+    {
+        $stockcardmovement = StockCardMovement::where('type', 1)->where('seller_id',$request->seller_id)->where("barcode", $request->barcode)->get();
+        if($stockcardmovement->count() == 0)
+        {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transfer Edilemez !'
+            ], 200);
+        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Barkod doğrulandı',
+            'available_quantity' => $stockcardmovement->count()
+        ], 200);
+    }
+
+    
     public function cost_update()
     {
         $sales = Sale::all();

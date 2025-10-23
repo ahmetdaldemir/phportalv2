@@ -240,12 +240,12 @@
                                        class="btn btn-sm btn-success" title="Sevk Et">
                                         <i class="bx bx-transfer"></i>
                                     </a>
-                                    <a :href="`/phone/sale/${phone.id}`"
+                                    <a :href="`/phone/sale?id=${phone.id}`"
                                        class="btn btn-sm btn-primary" title="Satış Yap">
                                         <i class="bx bx-shopping-bag"></i>
                                     </a>
                                     @role('Depo Sorumlusu|super-admin')
-                                    <a :href="`/phone/edit/${phone.id}`"
+                                    <a :href="`/phone/edit?id=${phone.id}`"
                                        class="btn btn-sm btn-warning" title="Düzenle">
                                         <i class="bx bx-edit"></i>
                                     </a>

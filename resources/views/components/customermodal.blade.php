@@ -274,7 +274,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-@section('custom-css')
 <style>
 .modal-simple .btn-close {
     position: absolute;
@@ -338,4 +337,3 @@ document.addEventListener('DOMContentLoaded', function() {
     border-radius: 0.375rem;
 }
 </style>
-@endsection

@@ -302,6 +302,66 @@
 
 <body>
 
+<!-- Flash Messages -->
+@if(session('success'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                icon: 'success',
+                title: 'Başarılı!',
+                text: '{{ session('success') }}',
+                timer: 3000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        });
+    </script>
+@endif
+
+@if(session('error'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata!',
+                text: '{{ session('error') }}',
+                showConfirmButton: true
+            });
+        });
+    </script>
+@endif
+
+@if(session('warning'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Uyarı!',
+                text: '{{ session('warning') }}',
+                timer: 5000,
+                showConfirmButton: true
+            });
+        });
+    </script>
+@endif
+
+@if(session('info'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Bilgi',
+                text: '{{ session('info') }}',
+                timer: 3000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        });
+    </script>
+@endif
+
 <div id="internet-check"></div>
 
 <div id="internet-not-available" style="display: none;    width: 100%;height: fit-content;">

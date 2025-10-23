@@ -207,18 +207,12 @@
                                                                 <div class="flex-grow-1">
                                                                     <div class="fw-bold text-dark">@{{ stock.name }}</div>
                                                                     <div class="text-muted small">
-                                                                        <span v-if="stock.brand?.name">@{{ stock.brand.name }}</span>
-                                                                        <span v-if="stock.sku" class="ms-2">SKU: @{{ stock.sku }}</span>
+                                                                        <div v-if="stock.barcode">@{{ stock.barcode }}</div>
+                                                                        <div v-if="stock.brand_name || stock.version_names">
+                                                                            <span v-if="stock.brand_name">@{{ stock.brand_name }}</span>
+                                                                            <span v-if="stock.version_names" class="ms-1">- @{{ stock.version_names }}</span>
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                                
-                                                                <div class="text-end">
-                                                                    <small class="text-success" v-if="stock.tracking">
-                                                                        <i class="fas fa-check-circle"></i> Takip Ediliyor
-                                                                    </small>
-                                                                    <small class="text-muted" v-else>
-                                                                        <i class="fas fa-times-circle"></i> Takip Edilmiyor
-                                                                    </small>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -255,8 +249,7 @@
                                                         type="text" 
                                                         class="form-control form-control-sm" 
                                                         placeholder="Renk ara..."
-                                                        autocomplete="off"
-                                                        required>
+                                                        autocomplete="off" >
                                                     <div v-show="item.show_color_dropdown && item.color_search && item.color_search.length >= 1" 
                                                          :id="'color-dropdown-' + index"
                                                          class="dropdown-menu show position-absolute w-100" 
@@ -464,10 +457,8 @@
                 isFormValid() {
                     return this.form.items.every(item =>
                         item.stock_card_id &&
-                        item.color_id &&
                         item.seller_id &&
-                        item.quantity > 0 &&
-                        item.prefix
+                        item.quantity > 0
                     );
                 }
             },
@@ -482,12 +473,7 @@
                     // Load common data from global store
                     await this.loadGlobalData();
                     
-                    // Debug data lengths
-                    console.log('Initial data loaded:', {
-                        colors: this.colors.length,
-                        warehouses: this.warehouses.length,
-                        stocks: this.stocks.length
-                    });
+          
                 } catch (error) {
                     console.error('Error loading global data:', error);
                 }
@@ -614,13 +600,7 @@
                         }
                         
                         // Debug data lengths
-                        console.log('Data loaded:', {
-                            customers: this.customers.length,
-                            sellers: this.sellers.length,
-                            colors: this.colors.length,
-                            warehouses: this.warehouses.length,
-                            stocks: this.stocks.length
-                        });
+              
                         
                         // Debug customer data
                         if (this.customers.length > 0) {
@@ -705,22 +685,21 @@
                         if (searchTerm.length < 2) {
                             return;
                         }
-                        
+                        console.log(this.stocks);
                         // Ensure stocks is an array
                         if (!Array.isArray(this.stocks) || this.stocks.length === 0) {
                             console.warn('Stocks data not available or empty');
                             return;
                         }
-                        
                         // Advanced filtering with multiple criteria
                         const filtered = this.stocks.filter(stock => {
                             if (!stock || !stock.name) return false;
                             
                             const stockName = stock.name.toLowerCase();
-                            const brandName = stock.brand?.name?.toLowerCase() || '';
+                            const brandName = stock.brand_name?.toLowerCase() || '';
                             const sku = stock.sku?.toLowerCase() || '';
                             const barcode = stock.barcode?.toLowerCase() || '';
-                            
+                    
                             // Multiple search criteria
                             return stockName.includes(searchTerm) ||
                                    brandName.includes(searchTerm) ||
@@ -825,7 +804,7 @@
                         
                         // Update item with selected stock
                         item.stock_card_id = stock.id;
-                        item.stock_search = `${stock.name}${stock.brand?.name ? ' - ' + stock.brand.name : ''}`;
+                        item.stock_search = `${stock.name}${stock.brand?.name ? ' - ' + stock.brand.name : ''}${stock.version_names ? ' - ' + stock.version_names : ''}`;
                         item.show_stock_dropdown = false;
                         item.filtered_stocks = [];
                         

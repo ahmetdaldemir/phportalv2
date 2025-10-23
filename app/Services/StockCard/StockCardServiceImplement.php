@@ -35,10 +35,28 @@ class StockCardServiceImplement extends Service implements StockCardService
     {
         try {
             if (Cache::has('stock_cards_all')) {
-                return  Cache::get('stock_cards_all');
+                $stocks = Cache::get('stock_cards_all');
             } else {
-                return $this->mainRepository->all();
+                $stocks = $this->mainRepository->all();
             }
+            
+            // Format version names for each stock
+            $stocks->each(function ($stock) {
+                if ($stock->version_id && is_array($stock->version_id)) {
+                    $versionNames = collect($stock->version_id)->map(function ($versionId) {
+                        $version = \App\Models\Version::find($versionId);
+                        return $version ? $version->name : 'Belirtilmedi';
+                    })->implode(', ');
+                    
+                    $stock->version_names = $versionNames;
+                } else {
+                    $stock->version_names = '';
+                }
+
+                $stock->brand_name = $stock->brand->name ?? 'Belirtilmedi';
+            });
+            
+            return $stocks;
         } catch (\Exception $exception) {
             Log::debug($exception->getMessage());
             return [];

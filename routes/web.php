@@ -23,7 +23,7 @@ Auth::routes();
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 // logout route is already included in Auth::routes()
 // Custom logout route (overrides Auth::routes logout if needed)
-Route::post('/logout', [App\Http\Controllers\Auth\LogoutController::class, 'logout'])->name('logout');
+Route::get('/logout', [App\Http\Controllers\Auth\LogoutController::class, 'logout'])->name('logout');
 
 // AJAX endpoints - performans optimizasyonu
 Route::get('/api/stocks', [App\Http\Controllers\HomeController::class, 'getStocksAjax'])->name('stocks.ajax');
@@ -157,6 +157,7 @@ Route::middleware(['companies'])->group(function () {
         Route::post('store', [App\Http\Controllers\UserController::class, 'store'])->name('store');
         Route::post('update', [App\Http\Controllers\UserController::class, 'update'])->name('update');
         Route::post('fieldUpdate', [App\Http\Controllers\UserController::class, 'fieldUpdate'])->name('fieldUpdate');
+        Route::post('change-password', [App\Http\Controllers\UserController::class, 'changePassword'])->name('changePassword');
     });
 
     Route::prefix('category')->name('category.')->middleware([])->group(function () {
@@ -344,6 +345,7 @@ Route::middleware(['companies'])->group(function () {
         Route::post('salesstore', [App\Http\Controllers\InvoiceController::class, 'salesstore'])->name('salesstore');
         Route::post('salesupdate', [App\Http\Controllers\InvoiceController::class, 'salesupdate'])->name('salesupdate');
         Route::get('stockcardmovementform', [App\Http\Controllers\InvoiceController::class, 'stockcardmovementform'])->name('stockcardmovementform');
+        Route::post('update-movements', [App\Http\Controllers\InvoiceController::class, 'updateMovements'])->name('update-movements');
         Route::get('stockcardmovementformrefund', [App\Http\Controllers\InvoiceController::class, 'stockcardmovementformrefund'])->name('stockcardmovementformrefund');
         Route::post('stockcardmovementstore', [App\Http\Controllers\InvoiceController::class, 'stockcardmovementstore'])->name('stockcardmovementstore');
         Route::get('stockmovementdelete', [App\Http\Controllers\InvoiceController::class, 'stockmovementdelete'])->name('stockmovementdelete');
@@ -558,6 +560,8 @@ Route::get('/personelsellernewreport', [App\Http\Controllers\ReportController::c
 Route::post('/stocktakingcheck', [App\Http\Controllers\StocktakingController::class, 'stocktakingcheck'])->name('stocktakingcheck');
 Route::get('/stocktakingserialcheck', [App\Http\Controllers\StocktakingController::class, 'stocktakingserialcheck'])->name('stocktakingserialcheck');
 Route::get('/getTransferSerialCheck', [App\Http\Controllers\CustomController::class, 'getTransferSerialCheck'])->name('getTransferSerialCheck');
+Route::get('/getTransferBarcodeCheck', [App\Http\Controllers\CustomController::class, 'getTransferBarcodeCheck'])->name('getTransferBarcodeCheck');
+
 
 
 Route::get('/getStockMovementList', [App\Http\Controllers\StockCardController::class, 'getStockMovementList'])->name('getStockMovementList');

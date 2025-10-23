@@ -133,7 +133,7 @@
                         <tr v-for="invoice in invoices" :key="invoice.id" class="invoice-row">
                             <td>
                                 <div class="d-flex flex-column">
-                                    <a :href="`{{route('invoice.stockcardmovementform', ['id' => ''])}}/${invoice.id}`" class="fw-bold text-primary" v-text="'#' + invoice.number"></a>
+                                    <a :href="`{{route('invoice.stockcardmovementform', ['id' => ''])}}${invoice.id}`" class="fw-bold text-primary" v-text="'#' + invoice.number"></a>
                                     <small class="text-muted" v-text="invoice.created_at"></small>
                                 </div>
                             </td>
@@ -175,10 +175,10 @@
                             </td>
                             <td class="text-center">
                                 <div class="d-flex gap-2 justify-content-center">
-                                    <a :href="`{{route('invoice.serialprint', ['id' => ''])}}/${invoice.id}`" target="_blank" title="Seri Numarası Yazdır" class="btn btn-sm btn-primary">
+                                    <a :href="`{{route('invoice.serialprint', ['id' => ''])}}${invoice.id}`" target="_blank" title="Seri Numarası Yazdır" class="btn btn-sm btn-primary">
                                         <i class="bx bx-barcode-reader"></i>
                                     </a>
-                                    <a :href="`{{route('invoice.stockcardmovementform', ['id' => ''])}}/${invoice.id}`" title="Düzenle" class="btn btn-sm btn-warning">
+                                    <a :href="`{{route('invoice.stockcardmovementform', ['id' => ''])}}${invoice.id}`" title="Düzenle" class="btn btn-sm btn-warning">
                                         <i class="bx bx-edit-alt"></i>
                                     </a>
                                 </div>

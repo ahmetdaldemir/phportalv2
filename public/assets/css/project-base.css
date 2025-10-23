@@ -897,6 +897,7 @@
     z-index: 99999 !important;
     visibility: visible !important;
     opacity: 1 !important;
+    width: 500px !important;
 }
 
 .table-responsive .dropdown-menu {

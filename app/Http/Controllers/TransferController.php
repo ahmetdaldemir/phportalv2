@@ -17,6 +17,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TransferController extends Controller
 {
@@ -130,11 +131,20 @@ SELECT * FROM category_path ORDER BY path;");
         return redirect()->back();
     }
 
-    protected function store(Request $request)
+    public function store(Request $request)
     {
+        Log::info('Transfer store method called', [
+            'user_id' => Auth::id(),
+            'request_data' => $request->all(),
+            'user_agent' => $request->userAgent(),
+            'ip' => $request->ip()
+        ]);
+        
         DB::beginTransaction();
         try {
+            Log::info('Starting authorization check');
             $this->authorize('create-dispatch');
+            Log::info('Authorization passed');
             if (Auth::user()->hasRole('Depo Sorumlusu') || Auth::user()->hasRole('super-admin')) {
                 $status = 2;
             } else {
@@ -145,6 +155,61 @@ SELECT * FROM category_path ORDER BY path;");
             }
 
             foreach ($request->sevkList as $item) {
+                
+                // Handle barcode transfer with quantity
+                if ($request->is_barcode_transfer && is_array($item)) {
+                    $barcode = $item['barcode'];
+                    $quantity = $item['quantity'] ?? 1;
+                    
+                    // Check if enough stock available for this barcode
+                    $availableStock = StockCardMovement::where('barcode', $barcode)
+                        ->where('seller_id', $request->main_seller_id)
+                        ->where('type', '!=', 4) // Not already transferred
+                        ->count();
+                    
+                    if ($availableStock < $quantity) {
+                        return response()->json("Yetersiz stok! {$barcode} barkodlu ürün için {$availableStock} adet mevcut, {$quantity} adet talep edildi.", 200);
+                    }
+                    
+                    // Get stock details for detail array
+                    $stockcheck = StockCardMovement::where('barcode', $barcode)
+                        ->where('seller_id', $request->main_seller_id)
+                        ->first();
+                    
+                    if (!$stockcheck) {
+                        return response()->json("Barkod bulunamadı: {$barcode}", 200);
+                    }
+                    
+                    // Add to detail array with quantity
+                    $versionData = $stockcheck->stock->version;
+                    $datas = [];
+                    if ($versionData && isset($versionData->version)) {
+                        $datas = json_decode($versionData->version, TRUE) ?? [];
+                    }
+                    $a = [];
+                    foreach ($datas as $mykey => $myValue) {
+                        $a[] = $myValue;
+                    }
+                    
+                    $detail[] = array(
+                        'name' => $stockcheck->stock->name,
+                        'serial' => $barcode,
+                        'brand' => $stockcheck->stock->brand->name,
+                        'version' => json_encode($a),
+                        'category' => $this->categorySeperator1($this->testParentS($stockcheck->stock->category->id)),
+                        'quantity' => $quantity,
+                        'color' => $stockcheck->color->name,
+                    );
+                    
+                    // Mark items as transferred (type = 4)
+                    StockCardMovement::where('barcode', $barcode)
+                        ->where('seller_id', $request->main_seller_id)
+                        ->where('type', '!=', 4)
+                        ->limit($quantity)
+                        ->update(['type' => 4]);
+                    
+                    continue; // Skip to next item
+                }
 
                 if ($request->type == 'phone') {
                     $phone = Phone::where('barcode', $item);
@@ -172,7 +237,12 @@ SELECT * FROM category_path ORDER BY path;");
 
                 } else {
 
-                    $stock = StockCardMovement::where('serial_number', $item);
+                    // Check if this is barcode transfer
+                    if ($request->is_barcode_transfer) {
+                        $stock = StockCardMovement::where('barcode', $item);
+                    } else {
+                        $stock = StockCardMovement::where('serial_number', $item);
+                    }
 
                     if (!Auth::user()->hasRole('super-admin') && !Auth::user()->hasRole('Depo Sorumlusu')) // HAsarlı Sorgusu
                     {
@@ -181,16 +251,22 @@ SELECT * FROM category_path ORDER BY path;");
                     $stockcheck = $stock->first();
 
                     if (!$stockcheck) {
-                        return response()->json('Sevk yapılamaz. Seçilen ürünler aynı bayiye ait olmalı.' . $stockcheck->serial_number . '', 200);
+                        $itemType = $request->is_barcode_transfer ? 'barkod' : 'seri numarası';
+                        return response()->json("Sevk yapılamaz. Seçilen {$itemType} aynı bayiye ait olmalı.", 200);
                     }
 
                     $a = Transfer::whereJsonContains('serial_list', $item)->where('is_status', 1)->get();
                     if (count($a) > 0) {
-                        return response()->json($item . ' Seri nolu ürün Sevk sürecinde', 200);
+                        $itemType = $request->is_barcode_transfer ? 'barkod' : 'seri numarası';
+                        return response()->json($item . " {$itemType} ürün Sevk sürecinde", 200);
                     }
 
 
-                    $datas = json_decode($stockcheck->stock->version(), TRUE);
+                    $versionData = $stockcheck->stock->version;
+                    $datas = [];
+                    if ($versionData && isset($versionData->version)) {
+                        $datas = json_decode($versionData->version, TRUE) ?? [];
+                    }
                     foreach ($datas as $mykey => $myValue) {
                         $a[] = $myValue;
                     }
@@ -198,7 +274,7 @@ SELECT * FROM category_path ORDER BY path;");
 
                     $detail[] = array(
                         'name' => $stockcheck->stock->name,
-                        'serial' => $stockcheck->serial_number,
+                        'serial' => $request->is_barcode_transfer ? $stockcheck->barcode : $stockcheck->serial_number,
                         'brand' => $stockcheck->stock->brand->name,
                         'version' => json_encode($a),
                         'category' => $this->categorySeperator1($this->testParentS($stockcheck->stock->category->id)),
@@ -208,7 +284,7 @@ SELECT * FROM category_path ORDER BY path;");
                 }
             }
 
-            if ($request->type == 'other') {
+            if ($request->type == 'other' && !$request->is_barcode_transfer) {
                 foreach ($request->sevkList as $item) {
                     $stock = StockCardMovement::where('serial_number', $item)->first();
                     $stock->type = 4;
@@ -239,6 +315,12 @@ SELECT * FROM category_path ORDER BY path;");
             //$this->dispatch(new SendTransferInfo($transfer));
 
         } catch (\Exception $e) {
+            Log::error('Transfer store error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => Auth::id(),
+                'request_data' => $request->all()
+            ]);
             DB::rollBack();
         }
         DB::commit();

@@ -120,7 +120,8 @@ class SaleController extends Controller
     {
         $this->invoiceService->delete($request->id);
         $collection = StockCardMovement::where('invoice_id', $request->id)->get(['id']);
-        StockCardMovement::destroy($collection->toArray());
+        Sale::where('invoice_id', $request->id)->delete();
+        StockCardMovement::whereIn('invoice_id', $collection->toArray())->update(['type' =>1]);
         return redirect()->back();
     }
 

@@ -132,12 +132,15 @@
                         <thead>
                             <tr>
                                 <th style="width: 5%;"><i class="bx bx-hash me-1"></i>#</th>
-                                <th style="width: 30%;"><i class="bx bx-package me-1"></i>Stok Adı</th>
-                                <th style="width: 15%;"><i class="bx bx-tag me-1"></i>Marka</th>
-                                <th style="width: 15%;"><i class="bx bx-mobile me-1"></i>Model</th>
-                                <th style="width: 25%;"><i class="bx bx-category me-1"></i>Kategori</th>
+                                <th style="width: 25%;"><i class="bx bx-package me-1"></i>Stok Adı</th>
+                                <th style="width: 12%;"><i class="bx bx-tag me-1"></i>Marka</th>
+                                <th style="width: 12%;"><i class="bx bx-mobile me-1"></i>Model</th>
+                                <th style="width: 20%;"><i class="bx bx-category me-1"></i>Kategori</th>
                                 <th style="width: 10%;"><i class="bx bx-tachometer me-1"></i>Devir Hızı</th>
-                                <th style="width: 10%;" class="text-center"><i class="bx bx-box me-1"></i>Adet</th>
+                                <th style="width: 8%;" class="text-center"><i class="bx bx-box me-1"></i>Adet</th>
+                                @role('super-admin')
+                                <th style="width: 8%;" class="text-center"><i class="bx bx-cog me-1"></i>İşlemler</th>
+                                @endrole
                             </tr>
                         </thead>
                         <tbody>
@@ -177,6 +180,15 @@
                                 <td class="text-center">
                                     <span class="badge" :class="stockcard.quantity > 0 ? 'bg-success' : 'bg-warning'" v-text="stockcard.quantity"></span>
                                 </td>
+                                @role('super-admin')
+                                <td class="text-center" @click.stop>
+                                    <a :href="`{{route('stockcard.edit')}}?id=${stockcard.id}`" 
+                                       class="btn btn-sm btn-warning" 
+                                       title="Düzenle">
+                                        <i class="bx bx-edit"></i>
+                                    </a>
+                                </td>
+                                @endrole
                             </tr>
                                 <!-- tr>
                                     <td colspan="2" class="hiddenRow">

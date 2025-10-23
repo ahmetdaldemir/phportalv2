@@ -223,7 +223,7 @@
                                 <span style="display: flex;justify-content: flex-end;"> <i class="bx bx-price-tag me-1"></i> @{{ formatPrice(stockData.base_cost_price) }}</span>
                             </td>
                             @endrole
-                            <td style="text-align: end;font-weight: bold;color: #f00000;font-size: 1rem;">@{{ formatPrice(stockData.sale_price) }}</td>
+                            <td style="text-align: end;font-weight: bold;color: #f00000;font-size: 0.8rem;">@{{ formatPrice(stockData.sale_price) }}</td>
                             <td>@{{ stockData.color?.name || '-' }}</td>
                             <td>@{{ stockData.stock?.brand?.name || '-' }}</td>
                             <td v-html="stockData.stock?.version || '-'"></td>
@@ -241,11 +241,12 @@
                                 </div>
                                 <!-- Action Buttons -->
                                 <div v-else class="d-flex gap-1">
-                                    <a :href="'{{route('transfer.create', ['serial_number' => '', 'type' => 'other'])}}' + stockData.serial_number"
-                                       title="Sevk Et"
-                                       class="btn btn-sm btn-success">
+                                    <button type="button"
+                                            @click="openTransferModal(stockData.serial_number)"
+                                            title="Sevk Et"
+                                            class="btn btn-sm btn-success">
                                         <i class="bx bx-transfer"></i>
-                                    </a>
+                                    </button>
                                     @role('Depo Sorumlusu|super-admin')
                                     <button type="button"
                                             @click="openPriceModal(stockData.id)"
@@ -297,7 +298,7 @@
         </div>
 
         <hr class="my-5">
-    </div>
+
     <div class="modal fade" id="backDropModal" data-bs-backdrop="static" tabindex="-1">
         <div class="modal-dialog">
             <form class="modal-content" id="transferForm">
@@ -357,7 +358,7 @@
         <div class="modal-dialog">
             <form class="modal-content" id="priceForm">
                 @csrf
-                <input id="stockCardMovementId" name="stock_card_id" type="hidden">
+                <input id="stockCardMovementId" name="stock_card_id" v-model="currentStockCardId" type="hidden">
                 <div class="modal-header">
                     <h5 class="modal-title" id="backDropModalTitle">Fiyat Değişiklik İşlemi</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -480,6 +481,134 @@
             </form>
         </div>
     </div>
+
+    <!-- Transfer Modal -->
+    <div class="modal fade" id="transferModal" data-bs-backdrop="static" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-gradient-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bx bx-transfer me-2"></i>
+                        Yeni Transfer Oluştur
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="transferCreateForm" @submit.prevent="submitTransfer">
+                        <input type="hidden" name="type" value="other" />
+                        
+                        <!-- Transfer Bilgileri -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">
+                                    <i class="bx bx-user me-1"></i>
+                                    Gönderici Bayi
+                                </label>
+                                <select v-model="transferFormModal.main_seller_id" 
+                                        class="form-select" 
+                                        required
+                                        :disabled="!hasRole(['Depo Sorumlusu', 'super-admin'])">
+                                    <option value="">Bayi Seçiniz</option>
+                                    <option v-for="seller in sellers" :key="seller.id" :value="seller.id" v-text="seller.name"></option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">
+                                    <i class="bx bx-building me-1"></i>
+                                    Alıcı Bayi
+                                </label>
+                                <select v-model="transferFormModal.delivery_seller_id" 
+                                        class="form-select" 
+                                        required>
+                                    <option value="">Bayi Seçiniz</option>
+                                    <option v-for="seller in sellers" :key="seller.id" :value="seller.id">
+                                        @{{ seller.name }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">
+                                    <i class="bx bx-hash me-1"></i>
+                                    Sevk Numarası
+                                </label>
+                                <input type="text" 
+                                       v-model="transferFormModal.number" 
+                                       class="form-control" 
+                                       required>
+                            </div>
+                        </div>
+
+                        <!-- Seri Numaraları -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="bx bx-barcode me-1"></i>
+                                Seri Numaraları
+                            </label>
+                            <div class="serial-list-container-modal p-3 bg-light rounded">
+                                <div v-if="transferFormModal.sevkList.length === 0" class="text-muted text-center py-3">
+                                    Seri numarası eklemek için aşağıdaki alana girin ve Enter tuşuna basın
+                                </div>
+                                <div v-for="(serial, index) in transferFormModal.sevkList" 
+                                     :key="index"
+                                     class="input-group mb-2">
+                                    <input type="text" 
+                                           :value="serial" 
+                                           class="form-control" 
+                                           readonly>
+                                    <button type="button" 
+                                            @click="removeSerialModal(index)"
+                                            class="btn btn-danger">
+                                        <i class="bx bx-trash"></i>
+                                    </button>
+                                </div>
+                                
+                                <!-- Yeni Seri Ekle -->
+                                <div class="input-group mt-3">
+                                    <input type="text" 
+                                           v-model="newSerialModal" 
+                                           @keyup.enter="addSerialModal"
+                                           class="form-control" 
+                                           placeholder="Seri numarası girin ve Enter tuşuna basın">
+                                    <button type="button" 
+                                            @click="addSerialModal"
+                                            class="btn btn-primary">
+                                        <i class="bx bx-plus"></i> Ekle
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Not -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="bx bx-note me-1"></i>
+                                Açıklama
+                            </label>
+                            <textarea v-model="transferFormModal.description" 
+                                      class="form-control" 
+                                      rows="3" 
+                                      placeholder="Transfer açıklaması..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bx bx-x me-1"></i>
+                        İptal
+                    </button>
+                    <button type="button" 
+                            @click="submitTransfer"
+                            class="btn btn-primary"
+                            :disabled="loading.transfer">
+                        <i class="bx bx-save me-1"></i>
+                        <span v-if="loading.transfer">Kaydediliyor...</span>
+                        <span v-else>Transfer Oluştur</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('custom-js')
@@ -490,7 +619,7 @@
     <script>
         const { createApp } = Vue;
 
-        createApp({
+        const app = createApp({
             data() {
                 return {
                     // Form data
@@ -509,13 +638,26 @@
                     // Loading states
                     loading: {
                         search: false,
-                        stockCards: false
+                        stockCards: false,
+                        transfer: false
                     },
                     
                     // Modal data
                     currentStockCardId: null,
                     currentStockCardName: '',
-                    currentColorId: null
+                    currentColorId: null,
+                    
+                    // Transfer modal data
+                    transferFormModal: {
+                        main_seller_id: '',
+                        delivery_seller_id: '',
+                        number: '',
+                        sevkList: [],
+                        description: '',
+                        type: 'other'
+                    },
+                    newSerialModal: '',
+                    sellers: []
                 }
             },
             
@@ -612,10 +754,13 @@
                 
                 // Open price modal
                 openPriceModal(id) {
+                    console.log('Opening price modal for ID:', id);
                     this.currentStockCardId = id;
+
+                    $('#priceModal #stockCardMovementId').val(id);
                     
                     // Find the stock card data and populate the form
-                    const stockCard = this.stockCards.find(item => item.id === id);
+                    const stockCard = this.stockCards.find(item => item.stock && item.stock.id === id);
                     if (stockCard) {
                         // Set the current sale price in the form
                         const salePriceInput = document.getElementById('serialBackdrop');
@@ -624,7 +769,11 @@
                         }
                     }
                     
-                    $('#priceModal').modal('show');
+                    // Force Vue to update the DOM
+                    this.$nextTick(() => {
+                        console.log('Current stock card ID after update:', this.currentStockCardId);
+                        $('#priceModal').modal('show');
+                    });
                 },
                 
                 // Open demand modal
@@ -667,6 +816,115 @@
                     
                     $('#stockCardMovementIdArray').val(this.selectedItems.join(','));
                     $('#multiplepriceModal').modal('show');
+                },
+                
+                // Role check function
+                hasRole(roles) {
+                    // Bu fonksiyon backend'den gelen user role bilgisine göre çalışmalı
+                    // Şimdilik basit bir kontrol yapıyoruz
+                    const userRoles = @json(\Illuminate\Support\Facades\Auth::user()->roles->pluck('name')->toArray());
+                    if (Array.isArray(roles)) {
+                        return roles.some(role => userRoles.includes(role));
+                    }
+                    return userRoles.includes(roles);
+                },
+                
+                // Transfer modal functions
+                openTransferModal(serialNumber) {
+                    console.log('Opening transfer modal for serial:', serialNumber);
+                    
+                    // Reset form
+                    this.transferFormModal = {
+                        main_seller_id: '',
+                        delivery_seller_id: '',
+                        number: '',
+                        sevkList: [serialNumber], // Seçilen seri numarasını otomatik ekle
+                        description: '',
+                        type: 'other'
+                    };
+                    this.newSerialModal = '';
+                    
+                    // Load sellers if not loaded
+                    if (this.sellers.length === 0) {
+                        this.loadSellers();
+                    }
+                    
+                    // Open modal
+                    const modal = new bootstrap.Modal(document.getElementById('transferModal'));
+                    modal.show();
+                    
+                    // Debug: Check if serial was added
+                    console.log('Transfer form sevkList:', this.transferFormModal.sevkList);
+                },
+                
+                async loadSellers() {
+                    try {
+                        const response = await axios.get('/api/common/sellers');
+                        this.sellers = response.data;
+                    } catch (error) {
+                        console.error('Error loading sellers:', error);
+                    }
+                },
+                
+                addSerialModal() {
+                    if (this.newSerialModal.trim() && !this.transferFormModal.sevkList.includes(this.newSerialModal.trim())) {
+                        this.transferFormModal.sevkList.push(this.newSerialModal.trim());
+                        this.newSerialModal = '';
+                    }
+                },
+                
+                removeSerialModal(index) {
+                    this.transferFormModal.sevkList.splice(index, 1);
+                },
+                
+                async submitTransfer() {
+                    if (this.transferFormModal.sevkList.length === 0) {
+                        Swal.fire('Hata', 'En az bir seri numarası eklemelisiniz', 'error');
+                        return;
+                    }
+                    
+                    this.loading.transfer = true;
+                    
+                    try {
+                        const response = await axios.post('/transfer/store', {
+                            main_seller_id: this.transferFormModal.main_seller_id,
+                            delivery_seller_id: this.transferFormModal.delivery_seller_id,
+                            number: this.transferFormModal.number,
+                            sevkList: this.transferFormModal.sevkList,
+                            description: this.transferFormModal.description,
+                            type: this.transferFormModal.type
+                        });
+                        
+                        // Close modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('transferModal'));
+                        modal.hide();
+                        
+                        // Show success message
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Başarılı',
+                            text: 'Transfer oluşturuldu',
+                            customClass: {
+                                confirmButton: "btn btn-success"
+                            }
+                        });
+                        
+                        // Reload stock cards
+                        this.loadStockCards();
+                        
+                    } catch (error) {
+                        console.error('Transfer error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Hata',
+                            text: error.response?.data?.message || 'Transfer oluşturulurken bir hata oluştu',
+                            customClass: {
+                                confirmButton: "btn btn-danger"
+                            }
+                        });
+                    } finally {
+                        this.loading.transfer = false;
+                    }
                 }
             },
             
@@ -751,29 +1009,50 @@
             
             const formData = new FormData(this);
             const stockCardId = document.getElementById('stockCardMovementId').value;
-            
             try {
-                const response = await axios.post(`{{route('stockcard.singlepriceupdate')}}?id=${stockCardId}`, {
-                    sale_price: formData.get('sale_price')
+                const response = await axios.post(`{{route('stockcard.singlepriceupdate')}}`, {
+                    sale_price: formData.get('sale_price'),
+                    stock_card_id: stockCardId,
+                    _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 });
                 
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Başarılı',
-                    text: 'Fiyat güncellendi',
-                    customClass: {
-                        confirmButton: "btn btn-success"
-                    }
-                });
+                console.log('Response status:', response.status);
+                console.log('Response data:', response.data);
+                console.log('Response data type:', typeof response.data);
+                
+                // Check if response is successful (either object with success: true or string message)
+                if (response.data && (response.data.success === true || typeof response.data === 'string')) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Başarılı',
+                        text: response.data.message || response.data || 'Fiyat güncellendi',
+                        customClass: {
+                            confirmButton: "btn btn-success"
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata',
+                        text: response.data.error || response.data || 'Bir hata oluştu',
+                        customClass: {
+                            confirmButton: "btn btn-danger"
+                        }
+                    });
+                }
                 
                 $('#priceModal').modal('hide');
                 app.loadStockCards();
                 
             } catch (error) {
+                console.log('Error status:', error.response?.status);
+                console.log('Error data:', error.response?.data);
+                console.log('Error message:', error.message);
+                
                 Swal.fire({
                     icon: 'error',
                     title: 'Hata',
-                    text: error.response?.data?.message || 'Bir hata oluştu',
+                    text: error.response?.data?.message || error.message || 'Bir hata oluştu',
                     customClass: {
                         confirmButton: "btn btn-danger"
                     }

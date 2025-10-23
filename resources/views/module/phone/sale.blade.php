@@ -15,14 +15,13 @@
                             <div class="row mb-4">
                                 <label for="selectCustomer" class="form-label">Cari Seçiniz</label>
                                 <div class="col-md-9">
-                                    <select id="selectCustomer" class="w-100 select2" data-style="btn-default"
-                                            name="customer_id" ng-init="getCustomers()">
-                                        <option value="1" data-tokens="ketchup mustard">Genel Cari</option>
-                                        <option ng-repeat="customer in customers"
-                                                @if(isset($invoices) && '@{{customer.id}}' == $invoices->customer_id) selected
-                                                @endif data-value="@{{customer.id}}" value="@{{customer.id}}">
-                                            @{{customer.fullname}}
-                                        </option>
+                                    <select id="selectCustomer" class="w-100 select2" data-style="btn-default" name="customer_id">
+                                        <option value="1">Genel Cari</option>
+                                        @foreach($customers as $customer)
+                                            <option value="{{$customer->id}}">
+                                                {{$customer->fullname}}
+                                            </option>
+                                        @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-3">
@@ -127,16 +126,6 @@
             Swal.fire('Satış fiyatından düşük satılamaz');
         </script>
     @endif
-    <script>
-        // The DOM element you wish to replace with Tagify
-        var input = document.querySelector('input[id=TagifyBasic]');
-        var input1 = document.querySelector('input[id=TagifyBasic1]');
-
-        // initialize Tagify on the above input node reference
-        new Tagify(input);
-        new Tagify(input1);
-
-    </script>
 
     <script>
         $("#discount_total").change(function () {
@@ -150,58 +139,33 @@
         })
     </script>
 
-    <!-- Vue.js App for Phone Sale -->
+    <!-- Customer Save Event Listener -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        if (typeof Vue === 'undefined') {
-            console.error('Vue.js is not loaded.');
-            return;
-        }
-
-        const { createApp } = Vue;
-
-        createApp({
-            data() {
-                return {
-                    customers: @json($customers ?? []),
-                    globalStore: window.globalStore || { cache: { brands: [], colors: [], versions: [], customers: [] } }
-                }
-            },
-            methods: {
-                updateSelectOptions() {
-                    // Update select2 if needed
-                    if (jQuery && jQuery.fn.select2) {
-                        setTimeout(() => {
-                            jQuery('#selectCustomer').trigger('change');
-                        }, 100);
+        // Listen for customer save events from modal
+        window.addEventListener('customerSaved', (event) => {
+            const customer = event.detail;
+            if (customer && customer.id) {
+                const selectCustomer = document.getElementById('selectCustomer');
+                if (selectCustomer) {
+                    // Add new option if it doesn't exist
+                    const existingOption = selectCustomer.querySelector(`option[value="${customer.id}"]`);
+                    if (!existingOption) {
+                        const newOption = new Option(customer.fullname, customer.id, true, true);
+                        selectCustomer.add(newOption);
+                    } else {
+                        selectCustomer.value = customer.id;
                     }
-                }
-            },
-            mounted() {
-                // Listen for customer save events
-                window.addEventListener('customerSaved', (event) => {
-                    const customer = event.detail;
-                    if (customer && customer.id) {
-                        // Check if customer already exists
-                        const exists = this.customers.find(c => c.id === customer.id);
-                        if (!exists) {
-                            this.customers.push(customer);
-                        }
-                        
-                        // Update select option
-                        setTimeout(() => {
-                            const selectCustomer = document.getElementById('selectCustomer');
-                            if (selectCustomer) {
-                                selectCustomer.value = customer.id;
-                                jQuery('#selectCustomer').trigger('change');
-                            }
-                        }, 100);
-                        
-                        console.log('New customer selected:', customer);
+                    
+                    // Trigger select2 update if available
+                    if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+                        jQuery(selectCustomer).trigger('change');
                     }
-                });
+                    
+                    console.log('Customer selected:', customer);
+                }
             }
-        }).mount('body');
+        });
     });
     </script>
 

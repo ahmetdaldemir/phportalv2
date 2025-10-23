@@ -14,11 +14,13 @@
                             <div class="row mb-4">
                                 <label for="selectCustomer" class="form-label">Cari Seçiniz</label>
                                 <div class="col-md-9">
-                                    <select id="selectCustomer" class="w-100 select2" data-style="btn-default" name="customer_id" ng-init="getCustomers()">
-                                        <option value="1" data-tokens="ketchup mustard">Genel Cari</option>
-                                        <option ng-repeat="customer in customers" @if(isset($invoices) && '@{{customer.id}}' == $invoices->customer_id) selected @endif data-value="@{{customer.id}}" value="@{{customer.id}}">
-                                            @{{customer.fullname}}
-                                        </option>
+                                    <select id="selectCustomer" class="w-100 select2" data-style="btn-default" name="customer_id">
+                                        <option value="1">Genel Cari</option>
+                                        @foreach($customers as $customer)
+                                            <option value="{{$customer->id}}" @if($phone->customer_id == $customer->id) selected @endif>
+                                                {{$customer->fullname}}
+                                            </option>
+                                        @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-3">
@@ -74,7 +76,7 @@
                         <div class="card-body">
                             <div>
                                 <label for="defaultFormControlInput" class="form-label">Marka</label>
-                                <select name="brand_id" id="brand_id" onchange="getVersion(this.value)" ng-init="getVersion({{$phone->brand_id}})" class="form-control" required>
+                                <select name="brand_id" id="brand_id" onchange="getVersion(this.value)" class="form-control" required>
                                     <option value="">Seçiniz</option>
                                     @foreach($brands as $brand)
                                         <option @if($brand->id == $phone->brand_id) selected @endif value="{{$brand->id}}">{{$brand->name}}</option>
@@ -133,7 +135,7 @@
 
                                 <div class="col-md-3">
                                     <label for="defaultFormControlInput" class="form-label">Garanti Süresi</label>
-                                    <input type="date" class="form-control" id="warranty" value="{{$phone->warranty}}"  name="warranty">
+                                    <input type="date" class="form-control" id="warranty" value="{{ is_null($phone->warranty) || in_array($phone->warranty, ['1', '2']) ? '' : $phone->warranty }}"  name="warranty">
                                 </div>
                                 <div class="col-md-2">
                                     <label for="defaultFormControlInput" class="form-label">Garantisiz Mi ?</label>
@@ -174,80 +176,92 @@
 @include('components.customermodal')
 
 @section('custom-js')
+    <!-- Get Versions by Brand -->
     <script>
-        var input = document.querySelector('input[id=TagifyBasic]');
-        var input1 = document.querySelector('input[id=TagifyBasic1]');
-
-        // initialize Tagify on the above input node reference
-        new Tagify(input);
-        new Tagify(input1);
-
-    </script>
-
-    <!-- Vue.js App for Phone Edit -->
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        if (typeof Vue === 'undefined') {
-            console.error('Vue.js is not loaded.');
+    function getVersion(brandId) {
+        const versionSelect = document.getElementById('version_id');
+        const selectedVersion = versionSelect.getAttribute('data-version');
+        
+        if (!brandId) {
+            versionSelect.innerHTML = '<option value="">Önce marka seçiniz</option>';
             return;
         }
-
-        const { createApp } = Vue;
-
-        createApp({
-            data() {
-                return {
-                    customers: @json($customers ?? []),
-                    globalStore: window.globalStore || { cache: { brands: [], colors: [], versions: [], customers: [] } }
-                }
-            },
-            computed: {
-                brands() {
-                    return this.globalStore.cache.brands.length > 0 
-                        ? this.globalStore.cache.brands 
-                        : @json($brands ?? []);
-                },
-                colors() {
-                    return this.globalStore.cache.colors.length > 0 
-                        ? this.globalStore.cache.colors 
-                        : @json($colors ?? []);
-                }
-            },
-            methods: {
-                updateSelectOptions() {
-                    // Update select2 if needed
-                    if (jQuery && jQuery.fn.select2) {
-                        setTimeout(() => {
-                            jQuery('#selectCustomer').trigger('change');
-                        }, 100);
-                    }
-                }
-            },
-            mounted() {
-                // Listen for customer save events
-                window.addEventListener('customerSaved', (event) => {
-                    const customer = event.detail;
-                    if (customer && customer.id) {
-                        // Check if customer already exists
-                        const exists = this.customers.find(c => c.id === customer.id);
-                        if (!exists) {
-                            this.customers.push(customer);
+        
+        // Show loading
+        versionSelect.innerHTML = '<option value="">Yükleniyor...</option>';
+        
+        // Fetch versions
+        fetch(`/api/common/versions?brand_id=${brandId}`)
+            .then(response => response.json())
+            .then(versions => {
+                versionSelect.innerHTML = '<option value="">Model Seçiniz</option>';
+                
+                if (versions && versions.length > 0) {
+                    versions.forEach(version => {
+                        const option = document.createElement('option');
+                        option.value = version.id;
+                        option.textContent = version.name;
+                        
+                        // Select the previously selected version
+                        if (selectedVersion && version.id == selectedVersion) {
+                            option.selected = true;
                         }
                         
-                        // Update select option
-                        setTimeout(() => {
-                            const selectCustomer = document.getElementById('selectCustomer');
-                            if (selectCustomer) {
-                                selectCustomer.value = customer.id;
-                                jQuery('#selectCustomer').trigger('change');
-                            }
-                        }, 100);
-                        
-                        console.log('New customer selected:', customer);
+                        versionSelect.appendChild(option);
+                    });
+                    
+                    // Trigger select2 refresh if available
+                    if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+                        jQuery('#version_id').trigger('change');
                     }
-                });
+                } else {
+                    versionSelect.innerHTML = '<option value="">Bu marka için model bulunamadı</option>';
+                }
+            })
+            .catch(error => {
+                console.error('Version yükleme hatası:', error);
+                versionSelect.innerHTML = '<option value="">Yükleme hatası</option>';
+            });
+    }
+    
+    // Load versions on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const brandSelect = document.getElementById('brand_id');
+        const initialBrand = brandSelect.value;
+        
+        if (initialBrand) {
+            getVersion(initialBrand);
+        }
+    });
+    </script>
+
+    <!-- Customer Save Event Listener -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Listen for customer save events from modal
+        window.addEventListener('customerSaved', (event) => {
+            const customer = event.detail;
+            if (customer && customer.id) {
+                const selectCustomer = document.getElementById('selectCustomer');
+                if (selectCustomer) {
+                    // Add new option if it doesn't exist
+                    const existingOption = selectCustomer.querySelector(`option[value="${customer.id}"]`);
+                    if (!existingOption) {
+                        const newOption = new Option(customer.fullname, customer.id, true, true);
+                        selectCustomer.add(newOption);
+                    } else {
+                        selectCustomer.value = customer.id;
+                    }
+                    
+                    // Trigger select2 update if available
+                    if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+                        jQuery(selectCustomer).trigger('change');
+                    }
+                    
+                    console.log('Customer selected:', customer);
+                }
             }
-        }).mount('body');
+        });
     });
     </script>
     <script>

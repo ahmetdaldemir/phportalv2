@@ -382,11 +382,12 @@ class InvoiceController extends Controller
         try {
             $data = [];
             $movements = $this->stockCardService->getInvoiceForSerial($request->id);
-            
             foreach ($movements as $item) {
+                $barcodeData =$item->barcode ?? $item->serial_number;
+
                 $data[] = [
                     'id' => $item->id,
-                    'serial_number' => BarcodeHelper::formatSerialNumber($item->serial_number),
+                    'serial_number' => BarcodeHelper::formatSerialNumber($barcodeData),
                     'sale_price' => $item->sale_price,
                     'brand_name' => $item->stock->brand->name ?? 'Bulunamadı',
                     'stock_name' => $item->stock->name ?? 'Bulunamadı',
@@ -394,7 +395,7 @@ class InvoiceController extends Controller
                     'category_sperator_name' => $item->stock->category ? 
                         $this->categorySeperator($item->testParent($item->stock->category->id)) : 'Bulunamadı',
                     'category_name' => $item->stock->category->name ?? 'Bulunamadı',
-                    'versions' => $item->stock ? $this->getVersionMap($item->stock->version()) : [],
+                    'versions' => $item->stock && method_exists($item->stock, 'version') ? $this->getVersionMap($item->stock->version()) : [],
                 ];
             }
             
@@ -691,13 +692,172 @@ class InvoiceController extends Controller
         $data['stocks'] = $this->stockCardService->get();
         $data['sellers'] = $this->sellerService->get();
         $data['colors'] = $this->colorService->get();
+        $data['customers'] = $this->customerService->all();
         $data['invoice'] = Invoice::find($request->id);
         $data['reasons'] = $this->reasonService->get();
         $data['citys'] = City::all();
         $data['invoice_id'] = $request->id;
         $data['stock_card_id'] = "";
-        $data['stock_card_movements'] = StockCardMovement::selectRaw('*,count(stock_card_id) as quant')->where('invoice_id', $request->id)->groupBy('stock_card_id')->get();
+        
+        // Invoice detail'den kalemleri al
+        $invoice = Invoice::find($request->id);
+        $stock_card_movements = [];
+        
+        if ($invoice && $invoice->detail) {
+            $detail = is_string($invoice->detail) ? json_decode($invoice->detail, true) : $invoice->detail;
+            if (is_array($detail)) {
+                foreach ($detail as $item) {
+                    // Stock card bilgilerini al
+                    $stock = StockCard::find($item['stockcardid']);
+                    $color = \App\Models\Color::find($item['color_id']);
+                    
+                    $stock_card_movements[] = [
+                        'id' => null, // Detail'de ID yok, yeni oluşturulacak
+                        'stock_card_id' => $item['stockcardid'],
+                        'stock_name' => $stock ? $stock->name : 'Bilinmeyen Stok',
+                        'color_id' => $item['color_id'],
+                        'color_name' => $color ? $color->name : 'Bilinmeyen Renk',
+                        'serial' => '', // Detail'de serial yok
+                        'quant' => $item['quantity'],
+                        'prefix' => $item['prefix'],
+                        'cost_price' => $item['cost_price'],
+                        'base_cost_price' => $item['base_cost_price'],
+                        'sale_price' => $item['sale_price'],
+                        'seller_id' => $item['seller_id'],
+                        'warehouse_id' => $item['warehouse_id'],
+                        'barcode' => $item['barcode'],
+                        'reason_id' => $item['reason_id'],
+                        'tracking_quantity' => $item['tracking_quantity'],
+                        'discount' => $item['discount'],
+                        'tax' => $item['tax'],
+                        'description' => $item['description']
+                    ];
+                }
+            }
+        }
+        
+        $data['stock_card_movements'] = $stock_card_movements;
         return view('module.invoice.stockcardmovementform', $data);
+    }
+
+    public function updateMovements(Request $request)
+    {
+
+        try {
+            $invoiceId = $request->invoice_id;
+            $items = $request->items;
+            $invoiceData = $request->invoice_data;
+
+            // Invoice'u bul
+            $invoice = Invoice::find($invoiceId);
+            if (!$invoice) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Fatura bulunamadı'
+                ], 404);
+            }
+
+            // Invoice detail'i güncelle
+            if ($invoice->detail) {
+                $detail = is_string($invoice->detail) ? json_decode($invoice->detail, true) : $invoice->detail;
+                if (is_array($detail)) {
+                    // Her item için detail'i güncelle
+                    foreach ($items as $item) {
+                        foreach ($detail as &$detailItem) {
+                            if ($detailItem['stockcardid'] == $item['stock_card_id'] && 
+                                $detailItem['color_id'] == $item['color_id']) {
+                                // Sadece düzenlenebilir alanları güncelle
+                                $detailItem['sale_price'] = $item['sale_price'];
+                                $detailItem['barcode'] = $item['barcode'];
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Güncellenmiş detail'i kaydet
+                    $invoice->detail = json_encode($detail);
+                }
+            }
+
+            foreach ($request->items as $item) {
+                $newBarcode = $this->newSerialNumberCreate(7);
+                $movement = StockCardMovement::where('invoice_id', $invoiceId)
+                    ->where('stock_card_id', $item['stock_card_id'])
+                    ->where('color_id', $item['color_id'])
+                    ->get();
+                foreach ($movement as $movementItem) {
+                    $movementItem->sale_price = $item['sale_price'];
+                    $movementItem->barcode = BarcodeHelper::formatBarcode( (string)$item['barcode'] ?? $newBarcode);
+                    $movementItem->save();
+                }
+
+            }
+
+
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+
+
+
+
+
+
+
+
+
+
+
+            // Invoice bilgilerini güncelle
+          /*  if ($invoiceData) {
+                if (isset($invoiceData['customer_id'])) {
+                    $invoice->customer_id = $invoiceData['customer_id'];
+                }
+                if (isset($invoiceData['number'])) {
+                    $invoice->number = $invoiceData['number'];
+                }
+                if (isset($invoiceData['create_date'])) {
+                    $invoice->create_date = $invoiceData['create_date'];
+                }
+                if (isset($invoiceData['description'])) {
+                    $invoice->description = $invoiceData['description'];
+                }
+                if (isset($invoiceData['payment_type'])) {
+                    $invoice->payment_type = $invoiceData['payment_type'];
+                }
+                if (isset($invoiceData['cash'])) {
+                    $invoice->cash = $invoiceData['cash'];
+                }
+                if (isset($invoiceData['credit_card'])) {
+                    $invoice->credit_card = $invoiceData['credit_card'];
+                }
+                if (isset($invoiceData['installment'])) {
+                    $invoice->installment = $invoiceData['installment'];
+                }
+            }*/
+
+            $invoice->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Fatura detayları başarıyla güncellendi'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Güncelleme sırasında bir hata oluştu: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function stockcardmovementstore(Request $request)
@@ -745,7 +905,7 @@ class InvoiceController extends Controller
             $stockcardlist[$a]['user_id'] = Auth::user()->id;
             $stockcardlist[$a]['company_id'] = Auth::user()->company_id;
             $stockcardlist[$a]['invoice_id'] = $invoiceID->id;
-            $stockcardlist[$a]['color_id'] = $request->color_id[$a];
+            $stockcardlist[$a]['color_id'] = $request->color_id[$a] ?? 1;
             $stockcardlist[$a]['warehouse_id'] = $request->warehouse_id[$a] ?? 1;
             $stockcardlist[$a]['seller_id'] = $request->seller_id[$a];
             $stockcardlist[$a]['reason_id'] = $request->reason_id[$a];
@@ -768,7 +928,7 @@ class InvoiceController extends Controller
             $stockmovementcount = StockCardMovement::where('invoice_id', $invoiceID->id)->whereNot('type', 1)->count();
 
             $newQuantity = $request->quantity[$a] - $stockmovementcount;
-
+            $newBarcode = $this->newSerialNumberCreate(7);
             for ($i = 0; $i < $newQuantity; $i++) {
 
                 $timer = date('');
@@ -801,7 +961,7 @@ class InvoiceController extends Controller
                 $stockcardmovement->description = $request->description[$a] ?? null;
                 $stockcardmovement->discount = $request->discount[$a] ?? 0; // NOT NULL in DB - default to 0
                 $stockcardmovement->tracking_quantity = $request->tracking_quantity[$a] ?? 0;
-                $stockcardmovement->barcode = (string)$stockcardlist[$a]['barcode'];
+                $stockcardmovement->barcode = BarcodeHelper::formatBarcode( (string)$stockcardlist[$a]['barcode'] ?? $newBarcode);
                 
                 // Debug: Log if we're about to save with problematic data
                 if (empty($stockcardmovement->company_id) || empty($stockcardmovement->stock_card_id)) {
@@ -858,7 +1018,7 @@ class InvoiceController extends Controller
                 'sale_price' => $item->sale_price,
                 'brand_name' => $item->stockcard()->brand->name,
                 'name' => $item->stockcard()->name,
-                'version' => $this->getVersionMap($item->stockcard()->version()),
+                'version' => method_exists($item->stockcard(), 'version') ? $this->getVersionMap($item->stockcard()->version()) : '',
             ];
         }
 
@@ -870,11 +1030,23 @@ class InvoiceController extends Controller
 
     public function getVersionMap($map)
     {
-
-        $datas = json_decode($map, TRUE);
+        // Check if $map is a string before trying to decode it
+        if (is_string($map)) {
+            $datas = json_decode($map, TRUE);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                // If JSON decode fails, return empty string
+                return "";
+            }
+        } else {
+            // If it's not a string (like a BelongsTo relationship), return empty string
+            return "";
+        }
+        
         $x = "";
-        foreach ($datas as $mykey => $myValue) {
-            $x .= $myValue . ",";
+        if (is_array($datas)) {
+            foreach ($datas as $mykey => $myValue) {
+                $x .= $myValue . ",";
+            }
         }
         return $x;
     }

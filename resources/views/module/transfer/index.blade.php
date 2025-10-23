@@ -613,32 +613,87 @@
                                 </div>
                             </div>
 
-                            <!-- Seri Numaraları -->
+                            <!-- Transfer Tipi -->
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" 
+                                           type="checkbox" 
+                                           v-model="transferFormModal.is_barcode_transfer"
+                                           id="barcodeTransferCheck">
+                                    <label class="form-check-label fw-bold" for="barcodeTransferCheck">
+                                        <i class="bx bx-barcode me-1"></i>
+                                        Barkod Transfer
+                                    </label>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="bx bx-info-circle me-1"></i>
+                                    Barkod transfer seçilirse seri numarası yerine barkodlar girilecektir
+                                </small>
+                            </div>
+
+                            <!-- Seri Numaraları / Barkodlar -->
                             <div class="mb-3">
                                 <label class="form-label fw-bold">
                                     <i class="bx bx-barcode me-1"></i>
-                                    Seri Numaraları
+                                    <span v-if="transferFormModal.is_barcode_transfer">Barkodlar ve Adetler</span>
+                                    <span v-else>Seri Numaraları</span>
                                 </label>
                                 <div class="serial-list-container-modal p-3 bg-light rounded">
                                     <div v-if="transferFormModal.sevkList.length === 0" class="text-muted text-center py-3">
-                                        Seri numarası eklemek için aşağıdaki alana girin ve Enter tuşuna basın
-                                    </div>
-                                    <div v-for="(serial, index) in transferFormModal.sevkList" 
-                                         :key="index"
-                                         class="input-group mb-2">
-                                        <input type="text" 
-                                               :value="serial" 
-                                               class="form-control" 
-                                               readonly>
-                                        <button type="button" 
-                                                @click="removeSerialModal(index)"
-                                                class="btn btn-danger">
-                                            <i class="bx bx-trash"></i>
-                                        </button>
+                                        <span v-if="transferFormModal.is_barcode_transfer">
+                                            Barkod ve adet eklemek için aşağıdaki alanları doldurun
+                                        </span>
+                                        <span v-else>
+                                            Seri numarası eklemek için aşağıdaki alana girin ve Enter tuşuna basın
+                                        </span>
                                     </div>
                                     
-                                    <!-- Yeni Seri Ekle -->
-                                    <div class="input-group mt-3">
+                                    <!-- Seri Numaraları Listesi (Normal Transfer) -->
+                                    <div v-if="!transferFormModal.is_barcode_transfer">
+                                        <div v-for="(serial, index) in transferFormModal.sevkList" 
+                                             :key="index"
+                                             class="input-group mb-2">
+                                            <input type="text" 
+                                                   :value="serial" 
+                                                   class="form-control" 
+                                                   readonly>
+                                            <button type="button" 
+                                                    @click="removeSerialModal(index)"
+                                                    class="btn btn-danger">
+                                                <i class="bx bx-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Barkod ve Adet Listesi (Barkod Transfer) -->
+                                    <div v-else>
+                                        <div v-for="(item, index) in transferFormModal.sevkList" 
+                                             :key="index"
+                                             class="row mb-2 align-items-center">
+                                            <div class="col-md-6">
+                                                <input type="text" 
+                                                       :value="item.barcode || item" 
+                                                       class="form-control" 
+                                                       readonly>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <input type="number" 
+                                                       :value="item.quantity || 1" 
+                                                       class="form-control" 
+                                                       readonly>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button" 
+                                                        @click="removeSerialModal(index)"
+                                                        class="btn btn-danger btn-sm">
+                                                    <i class="bx bx-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Yeni Ekleme Alanı -->
+                                    <div v-if="!transferFormModal.is_barcode_transfer" class="input-group mt-3">
                                         <input type="text" 
                                                v-model="newSerialModal" 
                                                @keyup.enter="addSerialModal"
@@ -649,6 +704,33 @@
                                                 class="btn btn-primary">
                                             <i class="bx bx-plus"></i> Ekle
                                         </button>
+                                    </div>
+                                    
+                                    <!-- Barkod ve Adet Ekleme Alanı -->
+                                    <div v-else class="mt-3">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <input type="text" 
+                                                       v-model="newBarcodeModal" 
+                                                       class="form-control" 
+                                                       placeholder="Barkod girin">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <input type="number" 
+                                                       v-model="newQuantityModal" 
+                                                       class="form-control" 
+                                                       min="1" 
+                                                       value="1"
+                                                       placeholder="Adet">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button" 
+                                                        @click="addBarcodeModal"
+                                                        class="btn btn-primary">
+                                                    <i class="bx bx-plus"></i> Ekle
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -861,6 +943,17 @@
         // Axios CSRF token setup
         const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         axios.defaults.headers.common['X-CSRF-TOKEN'] = token;
+        
+        // Axios interceptor for CSRF token
+        axios.interceptors.request.use(function (config) {
+            if (config.method === 'post' || config.method === 'put' || config.method === 'patch' || config.method === 'delete') {
+                config.headers['X-CSRF-TOKEN'] = token;
+                if (config.data && typeof config.data === 'object') {
+                    config.data._token = token;
+                }
+            }
+            return config;
+        });
 
         createApp({
             data() {
@@ -910,9 +1003,12 @@
                         number: '',
                         sevkList: [],
                         description: '',
-                        type: 'other'
+                        type: 'other',
+                        is_barcode_transfer: false
                     },
                     newSerialModal: '',
+                    newBarcodeModal: '',
+                    newQuantityModal: 1,
                     
                     // View Transfer Data
                     viewTransferData: null,
@@ -923,8 +1019,8 @@
                     // Status mappings
                     statusMap: {
                         1: { text: 'Beklemede', color: 'warning' },
-                        2: { text: 'İşleniyor', color: 'info' },
-                        3: { text: 'Onaylandı', color: 'success' },
+                        2: { text: 'Onaylandı', color: 'info' },
+                        3: { text: 'Tamamlandı', color: 'success' },
                         4: { text: 'Reddedildi', color: 'danger' }
                     }
                 }
@@ -1116,9 +1212,12 @@
                         number: this.generateTransferNumber(),
                         sevkList: [],
                         description: '',
-                        type: 'other'
+                        type: 'other',
+                        is_barcode_transfer: false
                     };
                     this.newSerialModal = '';
+                    this.newBarcodeModal = '';
+                    this.newQuantityModal = 1;
                     
                     // Open modal
                     const modal = new bootstrap.Modal(document.getElementById('transferModal'));
@@ -1169,6 +1268,64 @@
                     }
                 },
                 
+                // Add barcode with quantity to modal
+                async addBarcodeModal() {
+                    if (!this.newBarcodeModal || this.newBarcodeModal.length < 6) {
+                        alert('Lütfen geçerli bir barkod girin (min 6 karakter)');
+                        return;
+                    }
+                    
+                    if (!this.newQuantityModal || this.newQuantityModal < 1) {
+                        alert('Lütfen geçerli bir adet girin (min 1)');
+                        return;
+                    }
+                    
+                    // Check duplicate
+                    const existingItem = this.transferFormModal.sevkList.find(item => {
+                        const barcode = typeof item === 'string' ? item : item.barcode;
+                        return barcode === this.newBarcodeModal;
+                    });
+                    
+                    if (existingItem) {
+                        alert('Bu barkod zaten eklenmiş');
+                        this.newBarcodeModal = '';
+                        this.newQuantityModal = 1;
+                        return;
+                    }
+                    
+                    // Validate barcode with backend
+                    try {
+                        const response = await axios.get('/getTransferBarcodeCheck', {
+                            params: {
+                                barcode: this.newBarcodeModal,
+                                seller_id: this.transferFormModal.main_seller_id
+                            }
+                        });
+                        
+                        if (response.data.success) {
+                            // Check if requested quantity is available
+                            if (this.newQuantityModal > response.data.available_quantity) {
+                                alert(`Yetersiz stok! Mevcut adet: ${response.data.available_quantity}, Talep edilen: ${this.newQuantityModal}`);
+                                return;
+                            }
+                            
+                            // Add barcode with quantity
+                            this.transferFormModal.sevkList.push({
+                                barcode: this.newBarcodeModal,
+                                quantity: parseInt(this.newQuantityModal)
+                            });
+                            
+                            this.newBarcodeModal = '';
+                            this.newQuantityModal = 1;
+                        } else {
+                            alert(response.data.message || 'Barkod doğrulanamadı');
+                        }
+                    } catch (error) {
+                        console.error('Barkod doğrulama hatası:', error);
+                        alert('Barkod doğrulanırken bir hata oluştu');
+                    }
+                },
+                
                 // Remove serial from modal
                 removeSerialModal(index) {
                     this.transferFormModal.sevkList.splice(index, 1);
@@ -1187,7 +1344,8 @@
                     }
                     
                     if (this.transferFormModal.sevkList.length === 0) {
-                        alert('Lütfen en az bir seri numarası ekleyin');
+                        const itemType = this.transferFormModal.is_barcode_transfer ? 'barkod' : 'seri numarası';
+                        alert(`Lütfen en az bir ${itemType} ekleyin`);
                         return;
                     }
                     
@@ -1200,7 +1358,8 @@
                             number: this.transferFormModal.number,
                             sevkList: this.transferFormModal.sevkList,
                             description: this.transferFormModal.description,
-                            type: this.transferFormModal.type
+                            type: this.transferFormModal.type,
+                            is_barcode_transfer: this.transferFormModal.is_barcode_transfer
                         });
                         
                         // Close modal

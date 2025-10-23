@@ -578,15 +578,18 @@ class TechnicalServiceController extends Controller
 
     public function covering(Request $request)
     {
-        $data['stocks'] = $this->stockCardService->get();
-        $data['sellers'] = $this->sellerService->get();
-        $data['customers'] = $this->customerService->all();
-        $data['brands'] = $this->brandService->get();
-        $data['users'] = $this->userService->get();
-        $data['citys'] = City::all();
-        $data['categories_all'] = TechnicalProcess::all();
-        $data['tows'] = Town::where('city_id', 34)->get();
-        return view('module.technical_service.covering', $data);
+        $stocks = $this->stockCardService->get();
+        $sellers = $this->sellerService->get();
+        $customers = $this->customerService->all();
+        $brands = $this->brandService->get();
+        $users = $this->userService->get();
+        $citys = City::all();
+        $categories_all = TechnicalProcess::all();
+        $tows = Town::where('city_id', 34)->get();
+        
+        return view('module.technical_service.covering', compact(
+            'stocks', 'sellers', 'customers', 'brands', 'users', 'citys', 'categories_all', 'tows'
+        ));
     }
 
     public function coveringstore(Request $request)

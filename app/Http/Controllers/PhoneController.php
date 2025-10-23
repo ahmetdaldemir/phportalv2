@@ -140,6 +140,7 @@ class PhoneController extends Controller
         $data['colors'] = Color::where('company_id', Auth::user()->company_id)->get();
         $data['sellers'] = $this->sellerService->get();
         $data['citys'] = City::all();
+        $data['customers'] = \App\Models\Customer::where('company_id', Auth::user()->company_id)->get();
 
         return view('module.phone.form', $data);
     }
@@ -153,6 +154,7 @@ class PhoneController extends Controller
         $data['colors'] = Color::all();
         $data['sellers'] = $this->sellerService->get();
         $data['citys'] = City::all();
+        $data['customers'] = \App\Models\Customer::where('company_id', Auth::user()->company_id)->get();
         return view('module.phone.edit', $data);
     }
 
@@ -163,6 +165,7 @@ class PhoneController extends Controller
         $data['colors'] = Color::all();
         $data['sellers'] = $this->sellerService->get();
         $data['citys'] = City::all();
+        $data['customers'] = \App\Models\Customer::where('company_id', Auth::user()->company_id)->get();
         return view('module.phone.show', $data);
     }
 
@@ -184,6 +187,7 @@ class PhoneController extends Controller
         $data['citys'] = City::all();
         $data['sellers'] = $this->sellerService->get();
         $data['users'] = $this->userService->get()->where('is_status', 1);
+        $data['customers'] = \App\Models\Customer::where('company_id', Auth::user()->company_id)->get();
         return view('module.phone.sale', $data);
     }
 
@@ -249,7 +253,7 @@ class PhoneController extends Controller
             $phone->altered_parts = $request->altered_parts;
             $phone->physical_condition = $request->physical_condition;
             $phone->memory = $request->memory;
-            $phone->batery = $request->batery;
+            $phone->battery = $request->battery ?? $request->batery;
             $phone->warranty = $warranty;
             $phone->save();
         }else{
@@ -271,7 +275,7 @@ class PhoneController extends Controller
             $phone->altered_parts = $request->altered_parts;
             $phone->physical_condition = $request->physical_condition;
             $phone->memory = $request->memory;
-            $phone->batery = $request->batery;
+            $phone->battery = $request->battery ?? $request->batery;
             $phone->warranty = $warranty;
             $phone->save();
         }

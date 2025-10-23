@@ -263,6 +263,13 @@ document.addEventListener('DOMContentLoaded', function () {
             // Save Invoice
             async saveInvoice() {
                 // Validation
+
+                const staffEl = document.getElementById('staff_id_select');
+                const staffVal = (typeof $ !== 'undefined' && typeof $.fn !== 'undefined') ? $('#staff_id_select').val() : (staffEl ? staffEl.value : '');
+                if (!staffVal) {
+                    alert("Personel Seçimi Yapmadınız");
+                    return;
+                }
                 if (!this.selectedCustomerId || this.selectedCustomerId === '') {
                     alert("Müşteri Seçimi Yapmadınız");
                     return;
