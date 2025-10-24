@@ -71,7 +71,7 @@ class TransferController extends Controller
 
         $x = $transfers->orderBy('created_at', 'desc')->paginate(50);
 
-        $onlyTransfer = Transfer::where('company_id', Auth::user()->company_id)->where('main_seller_id', Auth::user()->seller_id)->orderBy('id','desc')->limit(50)->get();
+        $onlyTransfer = Transfer::where('company_id', Auth::user()->company_id)->where('main_seller_id', Auth::user()->seller_id)->orderBy('id','desc')->limit(20)->get();
 
 
         $data['brands'] = $this->brandService->get();
@@ -292,6 +292,8 @@ SELECT * FROM category_path ORDER BY path;");
                 }
             }
 
+            Log::info('Transfer oluşturma - sevkList', ['sevkList' => $request->sevkList]);
+            
             $data = array(
                 'company_id' => Auth::user()->company_id,
                 'user_id' => Auth::user()->id,
@@ -343,12 +345,39 @@ SELECT * FROM category_path ORDER BY path;");
             return redirect()->back();
         }
         if ($transfer->serial_list) {
+            Log::info('Transfer onaylama - serial_list', ['serial_list' => $transfer->serial_list]);
+            
             foreach ($transfer->serial_list as $key => $value) {
-                if($request->is_status == 4) //RED
-                {
-                    StockCardMovement::where('serial_number', $value)->update(['type' => 1]);
-                }else if($request->is_status == 3){
-                    StockCardMovement::where('serial_number', $value)->update(['type' => 1, 'seller_id' => $transfer->delivery_seller_id]);
+                Log::info('Transfer onaylama - işlenen item', ['item' => $value]);
+                
+                // Barkod transfer kontrolü
+                if (is_array($value) && isset($value['barcode'])) {
+                    // Barkod transfer - quantity kadar işlem yap
+                    $barcode = $value['barcode'];
+                    $quantity = $value['quantity'] ?? 1;
+                    
+                    // Quantity kadar stok hareketi bul ve güncelle
+                    $stockMovements = StockCardMovement::where('barcode', $barcode)
+                        ->where('type', 4) // Transfer edilmiş olanlar
+                        ->limit($quantity)
+                        ->get();
+                    
+                    foreach ($stockMovements as $movement) {
+                        if($request->is_status == 4) //RED
+                        {
+                            $movement->update(['type' => 1]);
+                        } else if($request->is_status == 3) {
+                            $movement->update(['type' => 1, 'seller_id' => $transfer->delivery_seller_id]);
+                        }
+                    }
+                } else {
+                    // Seri numarası transfer - normal işlem
+                    if($request->is_status == 4) //RED
+                    {
+                        StockCardMovement::where('serial_number', $value)->update(['type' => 1]);
+                    } else if($request->is_status == 3) {
+                        StockCardMovement::where('serial_number', $value)->update(['type' => 1, 'seller_id' => $transfer->delivery_seller_id]);
+                    }
                 }
             }
             $data = array('is_status' => $request->is_status, 'comfirm_id' => Auth::user()->id, 'comfirm_date' => Carbon::now());

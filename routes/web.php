@@ -306,13 +306,15 @@ Route::middleware(['companies'])->group(function () {
         Route::get('create', [App\Http\Controllers\TransferController::class, 'create'])->name('create');
         Route::post('store', [App\Http\Controllers\TransferController::class, 'store'])->name('store');
         Route::post('update', [App\Http\Controllers\TransferController::class, 'update'])->name('update');
-        Route::get('show', [App\Http\Controllers\TransferController::class, 'show'])->name('show');
         
-        // AJAX endpoints - Vue.js için
+        // AJAX endpoints - Vue.js için (these should come before the {id} route)
         Route::get('/incoming-ajax', [App\Http\Controllers\TransferController::class, 'getIncomingTransfersAjax'])->name('incoming.ajax');
         Route::get('/outgoing-ajax', [App\Http\Controllers\TransferController::class, 'getOutgoingTransfersAjax'])->name('outgoing.ajax');
         Route::get('/versions-ajax', [App\Http\Controllers\TransferController::class, 'getVersionsAjax'])->name('versions.ajax');
-        Route::get('/{id}', [App\Http\Controllers\TransferController::class, 'getTransferJson'])->where('id', '[0-9]+')->name('json');
+        
+        // Specific routes before the catch-all {id} route
+        Route::get('show', [App\Http\Controllers\TransferController::class, 'show'])->name('show');
+        Route::get('{id}', [App\Http\Controllers\TransferController::class, 'getTransferJson'])->where('id', '[0-9]+')->name('json');
     });
 
     Route::prefix('reason')->name('reason.')->middleware([])->group(function () {
@@ -548,6 +550,7 @@ Route::get('/customers', [App\Http\Controllers\CustomController::class, 'custome
 Route::get('/transferList', [App\Http\Controllers\CustomController::class, 'transferList'])->name('transferList');
 Route::post('/stockSearch', [App\Http\Controllers\CustomController::class, 'stockSearch'])->name('stockSearch');
 Route::get('/serialcheck', [App\Http\Controllers\CustomController::class, 'serialcheck'])->name('serialcheck');
+Route::get('/barcodecheck', [App\Http\Controllers\CustomController::class, 'barcodecheck'])->name('barcodecheck');
 Route::get('/getStockCardCategory', [App\Http\Controllers\CustomController::class, 'getStockCardCategory'])->name('getStockCardCategory');
 Route::get('/getStockSeller', [App\Http\Controllers\CustomController::class, 'getStockSeller'])->name('getStockSeller');
 Route::post('/custom_editItem', [App\Http\Controllers\CustomController::class, 'custom_editItem'])->name('custom_editItem');

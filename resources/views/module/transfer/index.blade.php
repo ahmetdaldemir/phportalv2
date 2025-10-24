@@ -1420,7 +1420,7 @@
                     if (!this.viewTransferData) return;
                     
                     // Open print page in new window
-                    window.open(`/transfer/${this.viewTransferData.id}/show`, '_blank');
+                    window.open(`/transfer/show?id=${this.viewTransferData.id}`, '_blank');
                 }
             }
         }).mount('#app');

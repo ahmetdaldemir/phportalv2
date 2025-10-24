@@ -364,44 +364,129 @@ class CustomController extends Controller
 
     public function serialcheck(Request $request)
     {
+        $input = $request->id;
+        
+        if (!$input) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Arama değeri boş olamaz'
+            ], 200);
+        }
 
-        $searchInfo = SearchHelper::determineSearchType($request->id);
- 
+        $searchInfo = SearchHelper::determineSearchType($input);
+        $stockcardmovement = null;
 
         if ($searchInfo) {
             if ($searchInfo['type'] === 'barcode') {
-                $stockcardmovement = StockCardMovement::where('type', 1)->where('barcode', $searchInfo['value'])->first();
+                $stockcardmovement = StockCardMovement::where('type', 1)
+                    ->where('barcode', $searchInfo['value'])
+                    ->with('stockCard')
+                    ->first();
             } else {
-                $stockcardmovement = StockCardMovement::where('type', 1)->where('serial_number', $searchInfo['value'])->first();
+                $stockcardmovement = StockCardMovement::where('type', 1)
+                    ->where('serial_number', $searchInfo['value'])
+                    ->with('stockCard')
+                    ->first();
             }
         }
-    
 
         if ($stockcardmovement) {
+            // Yetki kontrolü
             if (!Auth::user()->hasRole('Depo Sorumlusu') && !Auth::user()->hasRole('super-admin')) {
                 if ($stockcardmovement->seller_id != Auth::user()->seller_id) {
-                    $data['status'] = false;
-                    $data['message'] = "Seri numarası sevk edilmeli";
-                    return response()->json($data, 200);
+                    return response()->json([
+                        'status' => false,
+                        'message' => "Bu ürün farklı şubeye ait"
+                    ], 200);
                 }
             }
 
-            $stockcardmovementCheck = Sale::where('serial', $request->id)->first();
+            // Satış kontrolü
+            $stockcardmovementCheck = Sale::where('serial', $stockcardmovement->serial_number)->first();
             if ($stockcardmovementCheck) {
-                $data['status'] = false;
-                $data['message'] = "Seri numarası satılmıştır";
-                return response()->json($data, 200);
-            } else {
-                $data['status'] = true;
-                $data['sales_price'] = $stockcardmovement->sale_price;
-                $data['stock_card_id'] = $stockcardmovement->stock_card_id;
-                $data['base_cost_price'] = $stockcardmovement->base_cost_price;
-                $data['serial_number'] = $stockcardmovement->serial_number;
-                return response()->json($data, 200);
+                return response()->json([
+                    'status' => false,
+                    'message' => "Bu ürün daha önce satılmış"
+                ], 200);
             }
 
+            // Başarılı arama
+            return response()->json([
+                'status' => true,
+                'id' => $stockcardmovement->id,
+                'sales_price' => $stockcardmovement->sale_price,
+                'stock_card_id' => $stockcardmovement->stock_card_id,
+                'base_cost_price' => $stockcardmovement->base_cost_price,
+                'serial_number' => $stockcardmovement->serial_number,
+                'barcode' => $stockcardmovement->barcode ?? '',
+                'stock_card_name' => $stockcardmovement->stockCard->name ?? 'Bilinmeyen Ürün'
+            ], 200);
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => 'Bu ' . ($searchInfo['type'] === 'barcode' ? 'barkod' : 'seri numarası') . ' ile eşleşen ürün bulunamadı'
+            ], 200);
+        }
+    }
+
+    /**
+     * Barkod ile ürün arama - Kaplama için optimize edilmiş
+     */
+    public function barcodecheck(Request $request)
+    {
+        $barcode = $request->get('barcode');
+        
+        if (!$barcode) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Barkod boş olamaz'
+            ], 200);
         }
 
+        // Barkod ile stok hareketi ara
+        $stockcardmovement = StockCardMovement::where('type', 1)
+            ->where('barcode', $barcode)
+            ->with('stockCard')
+            ->first();
+
+        if (!$stockcardmovement) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Bu barkod ile eşleşen ürün bulunamadı'
+            ], 200);
+        }
+
+        // Kullanıcı yetki kontrolü
+        if (!Auth::user()->hasRole('Depo Sorumlusu') && !Auth::user()->hasRole('super-admin')) {
+            if ($stockcardmovement->seller_id != Auth::user()->seller_id) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Bu ürün farklı şubeye ait'
+                ], 200);
+            }
+        }
+
+        // Ürün satılmış mı kontrol et
+        $saleCheck = Sale::where('serial', $stockcardmovement->serial_number)->first();
+        if ($saleCheck) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Bu ürün daha önce satılmış'
+            ], 200);
+        }
+
+        // Başarılı - ürün bilgilerini döndür
+        return response()->json([
+            'status' => true,
+            'sales_price' => [
+                'id' => $stockcardmovement->id,
+                'sale_price' => $stockcardmovement->sale_price,
+                'stock_card_id' => $stockcardmovement->stock_card_id,
+                'serial_number' => $stockcardmovement->serial_number,
+                'stock_card_name' => $stockcardmovement->stockCard->name ?? 'Bilinmeyen Ürün',
+                'barcode' => $stockcardmovement->barcode
+            ]
+        ], 200);
     }
 
 

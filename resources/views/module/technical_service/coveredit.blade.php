@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="container-xxl flex-grow-1 container-p-y" onload="getTownLoad(34)">
+    <div id="technicalServiceCoverApp" class="container-xxl flex-grow-1 container-p-y" onload="getTownLoad(34)">
         <h4 class="fw-bold py-3 mb-4"><span
                 class="text-muted fw-light">Teknik Servis Formu /</span> @if(isset($technical_service_cover))
                 {{$technical_service_cover->name}}
@@ -18,12 +18,14 @@
                             <div class="row mb-4">
                                 <label for="selectpickerLiveSearch" class="form-label">Müşteri Seçiniz</label>
                                 <div class="col-md-9">
-                                    <select id="selectCustomer" class="w-100 select2" data-style="btn-default" name="customer_id" ng-init="getCustomers()">
+                                    <select id="selectCustomer" class="w-100 select2" data-style="btn-default" name="customer_id">
                                         <option value="1" data-tokens="ketchup mustard">Genel Cari</option>
-                                        <option ng-repeat="customer in customers"
-                                                ng-selected="customer.id == {{$technical_service_cover->customer_id}}"
-                                                value="@{{customer.id}}"> @{{customer.fullname}}
-                                        </option>
+                                        @foreach($customers as $customer)
+                                            <option value="{{ $customer->id }}" 
+                                                @if(isset($technical_service_cover) && $technical_service_cover->customer_id == $customer->id) selected @endif>
+                                                {{ $customer->fullname }}
+                                            </option>
+                                        @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-3">
@@ -108,7 +110,15 @@
                                 <label for="defaultFormControlInput" class="form-label">Model</label>
                                 <select id="version_id" name="version_id" class="select2 form-select"
                                         @if(isset($technical_service_cover)) data-version="{{$technical_service_cover->version_id}}"
-                                        @endif  required></select>
+                                        @endif  required>
+                                    @if(isset($technical_service_cover) && $technical_service_cover->version_id)
+                                        <option value="{{$technical_service_cover->version_id}}" selected>
+                                            {{$technical_service_cover->version->name ?? 'Yükleniyor...'}}
+                                        </option>
+                                    @else
+                                        <option value="">Önce marka seçiniz</option>
+                                    @endif
+                                </select>
                             </div>
                             <hr/>
                             <div class="row">
@@ -163,9 +173,19 @@
                     <div class="pt-0 pt-md-4">
                         <div class="d-flex border rounded position-relative pe-0">
                             <div class="row w-100 m-0 p-3">
-                                <div class="col-md-4 col-12 mb-md-0 mb-3 ps-md-0">
+                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
+                                    <p class="mb-2 ">Barkod <span class="text-danger">*</span></p>
+                                    <input type="text" class="form-control" name="barcode" id="barcode"
+                                           placeholder="Barkod okutun veya yazın" 
+                                           autocomplete="off"
+                                           @if($technical_service_cover->payment_status != 0) disabled @endif/>
+                                    <small class="text-muted">
+                                        <i class="bx bx-barcode me-1"></i>
+                                        Barkod okutarak hızlı arama yapabilirsiniz
+                                    </small>
+                                </div>
+                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
                                     <p class="mb-2 ">Stok</p>
-                                    <!-- onchange="stockCardId(this.value)" -->
                                     <select name="stock_card_id" id="stock_card_id"
                                             class="form-select item-details mb-2" disabled>
                                         <option>Seçiniz</option>
@@ -177,17 +197,17 @@
                                 <div class="col-md-2 col-12 mb-md-0 mb-3 ps-md-0">
                                     <p class="mb-2 ">Seri No</p>
                                     <input type="text" class="form-control" name="serial" id="serial"
-                                           placeholder="11111111" required/>
+                                           placeholder="Otomatik doldurulacak" readonly/>
                                 </div>
-                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
+                                <div class="col-md-2 col-12 mb-md-0 mb-3 ps-md-0">
                                     <p class="mb-2 ">Satış Fiyatı</p>
                                     <input type="text" class="form-control invoice-item-price" name="sale_price"
-                                           id="sale_price"/>
+                                           id="sale_price" readonly/>
                                 </div>
-                                <div class="col-md-1 col-12 mb-md-0 mb-3">
+                                <div class="col-md-2 col-12 mb-md-0 mb-3">
                                     <p class="mb-2 ">Adet</p>
                                     <input type="number" class="form-control invoice-item-qty" name="quantity"
-                                           id="quantity" min="1" max="50">
+                                           id="quantity" min="1" max="50" value="1">
                                 </div>
                             </div>
 
@@ -295,10 +315,9 @@
 
         const { createApp } = Vue;
 
-        createApp({
+        const app = createApp({
             data() {
                 return {
-                    customers: @json($customers ?? []),
                     globalStore: window.globalStore || { cache: { brands: [], colors: [], versions: [], customers: [] } }
                 }
             },
@@ -310,12 +329,27 @@
                 }
             },
             methods: {
-                updateSelectOptions() {
-                    // Update select2 if needed
-                    if (jQuery && jQuery.fn.select2) {
-                        setTimeout(() => {
-                            jQuery('#selectCustomer').trigger('change');
-                        }, 100);
+                addCustomerToSelect(customer) {
+                    const selectCustomer = document.getElementById('selectCustomer');
+                    if (!selectCustomer) return;
+                    
+                    // Check if customer already exists in select
+                    const existingOption = selectCustomer.querySelector(`option[value="${customer.id}"]`);
+                    
+                    if (!existingOption) {
+                        // Create new option
+                        const newOption = document.createElement('option');
+                        newOption.value = customer.id;
+                        newOption.textContent = customer.fullname;
+                        selectCustomer.appendChild(newOption);
+                    }
+                    
+                    // Select the customer
+                    selectCustomer.value = customer.id;
+                    
+                    // Trigger select2 update if available
+                    if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+                        jQuery(selectCustomer).trigger('change');
                     }
                 }
             },
@@ -324,30 +358,97 @@
                 window.addEventListener('customerSaved', (event) => {
                     const customer = event.detail;
                     if (customer && customer.id) {
-                        // Check if customer already exists
-                        const exists = this.customers.find(c => c.id === customer.id);
-                        if (!exists) {
-                            this.customers.push(customer);
-                        }
-                        
-                        // Update select option
-                        setTimeout(() => {
-                            const selectCustomer = document.getElementById('selectCustomer');
-                            if (selectCustomer) {
-                                selectCustomer.value = customer.id;
-                                jQuery('#selectCustomer').trigger('change');
-                            }
-                        }, 100);
-                        
-                        console.log('New customer selected:', customer);
+                        this.addCustomerToSelect(customer);
+                        console.log('New customer added and selected:', customer);
                     }
                 });
             }
-        }).mount('body');
+        }).mount('#technicalServiceCoverApp');
     });
     </script>
 
-
+    <!-- Get Versions by Brand -->
+    <script>
+    function getVersion(brandId) {
+        const versionSelect = document.getElementById('version_id');
+        const selectedVersion = versionSelect.getAttribute('data-version');
+        
+        if (!brandId) {
+            versionSelect.innerHTML = '<option value="">Önce marka seçiniz</option>';
+            return;
+        }
+        
+        // Show loading
+        versionSelect.innerHTML = '<option value="">Yükleniyor...</option>';
+        versionSelect.disabled = true;
+        
+        const url = `/api/common/versions?brand_id=${brandId}`;
+        
+        // Fetch versions
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(versions => {
+                versionSelect.innerHTML = '<option value="">Model Seçiniz</option>';
+                
+                if (versions && versions.length > 0) {
+                    versions.forEach(version => {
+                        const option = document.createElement('option');
+                        option.value = version.id;
+                        option.textContent = version.name;
+                        
+                        // Select the previously selected version
+                        if (selectedVersion && version.id == selectedVersion) {
+                            option.selected = true;
+                            console.log('✅ Seçili model bulundu ve işaretlendi:', version.name);
+                        }
+                        
+                        versionSelect.appendChild(option);
+                    });
+                    
+                    // Trigger select2 refresh if available
+                    if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+                        jQuery('#version_id').trigger('change');
+                    }
+                    
+                    console.log('✅ Modeller yüklendi, seçili model:', selectedVersion);
+                } else {
+                    versionSelect.innerHTML = '<option value="">Bu marka için model bulunamadı</option>';
+                }
+                
+                versionSelect.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error loading versions:', error);
+                versionSelect.innerHTML = '<option value="">Model yüklenirken hata oluştu</option>';
+                versionSelect.disabled = false;
+            });
+    }
+    
+    // Sayfa yüklendiğinde seçili marka için modelleri yükle
+    $(document).ready(function() {
+        const brandSelect = document.getElementById('brand_id');
+        const versionSelect = document.getElementById('version_id');
+        const selectedBrandId = brandSelect.value;
+        const selectedVersionId = versionSelect.getAttribute('data-version');
+        
+        if (selectedBrandId && selectedBrandId !== '') {
+            console.log('🔄 Sayfa yüklendi, seçili marka için modeller yükleniyor:', selectedBrandId);
+            console.log('🎯 Seçili model ID:', selectedVersionId);
+            
+            // Eğer zaten bir model seçiliyse, onu koru
+            if (selectedVersionId) {
+                versionSelect.innerHTML = '<option value="' + selectedVersionId + '" selected>Yükleniyor...</option>';
+            }
+            
+            getVersion(selectedBrandId);
+        }
+    });
+    </script>
 
     @if (\Illuminate\Support\Facades\Session::has('msg'))
         <script>
@@ -356,39 +457,147 @@
     @endif
 
     <script>
-        $("#detailForm").on('change', '#serial', function (e) {
-            e.preventDefault();
-            var postUrl = window.location.origin + '/serialcheck?id=' + $(this).val() + '';   // Returns base URL (https://example.com)
+        // Sayfa yüklendiğinde barkod alanına odaklan
+        $(document).ready(function() {
+            $('#barcode').focus();
+        });
+        
+        // Enter tuşu ile barkod arama
+        $(document).on('keypress', '#barcode', function (e) {
+            if (e.which === 13) { // Enter tuşu
+                e.preventDefault();
+                $(this).trigger('change');
+            }
+        });
+        
+        // Barkod ile ürün arama - basit ve etkili
+        $(document).on('change', '#barcode', function (e) {
+            var barcode = $(this).val().trim();
+            
+            if (!barcode) {
+                clearProductFields();
+                return;
+            }
+            
+            // Minimum 3 karakter gerekli
+            if (barcode.length < 3) {
+                return;
+            }
+            
+            
+            // serialcheck endpoint'ini kullan (zaten çalışıyor)
+            var postUrl = window.location.origin + '/serialcheck?id=' + encodeURIComponent(barcode);
+            
             $.ajax({
                 type: "GET",
                 url: postUrl,
                 beforeSend: function () {
-                    $('#loader').removeClass('display-none')
+                    $("#serial").val("Aranıyor...");
+                    $("#sale_price").val("Aranıyor...");
                 },
                 success: function (data) {
                     if (data.status == false) {
-                        Swal.fire(data.message);
-                        return false;
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Ürün Bulunamadı',
+                            text: data.message || 'Bu barkod ile eşleşen ürün bulunamadı'
+                        });
+                        clearProductFields();
                     } else {
-                        $("#detailForm").find('input#stock_card_movement_id').val(data.sales_price.id);
-                        $("#sale_price").val(data.sales_price.sale_price);
+                        // Başarılı arama - alanları doldur
+                        $("#detailForm").find('input#stock_card_movement_id').val(data.id);
+                        $("#serial").val(data.serial_number);
+                        $("#sale_price").val(data.sales_price);
                         $("#quantity").val(1);
-                        $("#detailForm").find('select#stock_card_id').val(data.sales_price.stock_card_id).trigger('change');
-                        e.stopPropagation();
-                        return false;
+                        $("#detailForm").find('select#stock_card_id').val(data.stock_card_id).trigger('change');
+                        
+                        // Başarı mesajı
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Ürün Bulundu!',
+                            text: data.stock_card_name + ' - ' + data.serial_number,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        
+                        // Barkod alanını temizle
+                        setTimeout(() => {
+                            $('#barcode').val('').focus();
+                        }, 500);
                     }
                 },
-                error: function (xhr) { // if error occured
-                    alert("Error occured.please try again");
-                    $(placeholder).append(xhr.statusText + xhr.responseText);
-                    $(placeholder).removeClass('loading');
-                },
-                complete: function (data) {
-
-                },
+                error: function (xhr) {
+                    console.error('Barkod arama hatası:', xhr);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata!',
+                        text: 'Barkod arama sırasında hata oluştu.'
+                    });
+                    clearProductFields();
+                }
             });
-            e.stopPropagation();
-            return false;
+        });
+        
+        // Alanları temizleme fonksiyonu
+        function clearProductFields() {
+            $("#serial").val("");
+            $("#sale_price").val("");
+            $("#quantity").val(1);
+            $("#detailForm").find('select#stock_card_id').val("").trigger('change');
+            $("#detailForm").find('input#stock_card_movement_id').val("");
+        }
+        
+        // Seri numarası ile arama (manuel giriş için)
+        $(document).on('change', '#serial', function (e) {
+            var serial = $(this).val().trim();
+            
+            if (!serial) {
+                clearProductFields();
+                return;
+            }
+            
+            var postUrl = window.location.origin + '/serialcheck?id=' + encodeURIComponent(serial);
+            
+            $.ajax({
+                type: "GET",
+                url: postUrl,
+                beforeSend: function () {
+                    $("#sale_price").val("Aranıyor...");
+                },
+                success: function (data) {
+                    if (data.status == false) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Ürün Bulunamadı',
+                            text: data.message || 'Bu seri numarası ile eşleşen ürün bulunamadı'
+                        });
+                        clearProductFields();
+                    } else {
+                        // Başarılı arama - alanları doldur
+                        $("#detailForm").find('input#stock_card_movement_id').val(data.id);
+                        $("#sale_price").val(data.sales_price);
+                        $("#quantity").val(1);
+                        $("#detailForm").find('select#stock_card_id').val(data.stock_card_id).trigger('change');
+                        
+                        // Başarı mesajı
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Ürün Bulundu!',
+                            text: data.stock_card_name + ' - ' + data.serial_number,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    }
+                },
+                error: function (xhr) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata!',
+                        text: 'Seri numarası arama sırasında hata oluştu.'
+                    });
+                    clearProductFields();
+                }
+            });
         })
     </script>
 @endsection
