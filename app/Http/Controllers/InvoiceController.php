@@ -137,7 +137,9 @@ class InvoiceController extends Controller
                     'type_name' => $invoice->invoice_type($invoice->type),
                     'type_color' => $invoice->invoice_type_color($invoice->type),
                     'is_status' => $invoice->is_status,
+                    'detail' => $invoice->detail,
                     'total_price' => $invoice->total_price,
+                    'payment_status' => $invoice->paymentStatus,
                     'created_at' => $invoice->created_at->format('d-m-Y H:i'),
                     'create_date' => $invoice->create_date ? \Carbon\Carbon::parse($invoice->create_date)->format('d-m-Y') : null
                 ];

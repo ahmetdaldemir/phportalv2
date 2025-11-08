@@ -441,7 +441,6 @@ Route::middleware(['companies'])->group(function () {
         
         // AJAX endpoints - Vue.js için
         Route::get('/ajax', [App\Http\Controllers\SaleController::class, 'getSalesAjax'])->name('ajax');
-        Route::get('/invoice-details/{id}', [App\Http\Controllers\SaleController::class, 'getInvoiceSalesDetails'])->name('invoice.details');
         Route::get('/totals-async', [App\Http\Controllers\SaleController::class, 'calculateTotalsAsync'])->name('totals.async');
         Route::get('/versions-ajax', [App\Http\Controllers\SaleController::class, 'getVersionsAjax'])->name('versions.ajax');
     });
