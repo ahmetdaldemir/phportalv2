@@ -13,5 +13,3 @@ if (! function_exists('sevkcount')) {
       return  \App\Models\Transfer::where('delivery_seller_id',auth()->user()->seller_id)->where('is_status',1)->get()->count();
     }
 }
-
-

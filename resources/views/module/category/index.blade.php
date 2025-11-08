@@ -1,5 +1,9 @@
 @extends('layouts.admin')
 
+@section('custom-css')
+    <link rel="stylesheet" href="{{asset('assets/css/list-page-base.css')}}">
+@endsection
+
 @section('content')
     <div class="container-xxl flex-grow-1 container-p-y">
         <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Kategoriler /</span> Kategori listesi</h4>
@@ -36,7 +40,7 @@
                                            id="flexSwitchCheckChecked" {{$category->is_status == 1 ? 'checked':''}} />
                                 </div>
                             </td>
-                            <td>
+                            <!--td>
 
                                 <a href="{{route('category.delete',['id' => $category->id])}}"
                                    class="btn btn-icon btn-primary">
@@ -47,7 +51,7 @@
                                     <span class="bx bx-edit-alt"></span>
                                 </a>
 
-                            </td>
+                            </td -->
                             @endif
                         </tr>
                     @endforeach

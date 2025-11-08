@@ -2,8 +2,8 @@
 
 namespace App\Repositories\Company;
 
-use App\Repositories\BaseRepository;
+use LaravelEasyRepository\Repository;
 
-interface CompanyRepository extends BaseRepository{
+interface CompanyRepository extends Repository{
 
 }

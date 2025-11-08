@@ -3,17 +3,17 @@
 namespace App\Repositories\FakeProduct;
 
 use Illuminate\Support\Facades\Auth;
-use App\Repositories\BaseRepositoryImplement;
+use LaravelEasyRepository\Implementations\Eloquent;
 use App\Models\FakeProduct;
 
-class FakeProductRepositoryImplement extends BaseRepositoryImplement implements FakeProductRepository{
+class FakeProductRepositoryImplement extends Eloquent implements FakeProductRepository{
 
     /**
      * Model class to be used in this repository for the common methods inside Eloquent
      * Don't remove or change $this->model variable name
      * @property Model|mixed $model;
      */
-    protected $model;
+    protected FakeProduct $model;
 
     public function __construct(FakeProduct $model)
     {

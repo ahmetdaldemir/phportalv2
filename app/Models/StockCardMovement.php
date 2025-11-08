@@ -16,6 +16,9 @@ class StockCardMovement extends BaseModel
     protected $table = "stock_card_movements";
     use HasFactory, SoftDeletes, NotifiesOnDelete;
 
+    public $incrementing = true; // bu olmalı
+    protected $keyType = 'int';
+    protected $primaryKey = 'id';
 
     protected static function boot()
     {
@@ -120,34 +123,39 @@ class StockCardMovement extends BaseModel
     }
 
 
-    public function seller()
+    public function seller(): BelongsTo
     {
-        return $this->hasOne(Seller::class, 'id', 'seller_id');
+        return $this->belongsTo(Seller::class, 'seller_id', 'id');      
     }
 
-    public function color()
+    public function reason(): BelongsTo
     {
-        return $this->hasOne(Color::class, 'id', 'color_id');
+        return $this->belongsTo(Reason::class, 'reason_id', 'id');      
     }
 
-    public function warehouse()
+    public function color(): BelongsTo
     {
-        return $this->hasOne(Warehouse::class, 'id', 'warehouse_id');
+        return $this->belongsTo(Color::class, 'color_id', 'id');
     }
 
-    public function invoice()
+    public function warehouse(): BelongsTo
     {
-        return $this->hasOne(Invoice::class, 'id', 'invoice_id');
+        return $this->belongsTo(Warehouse::class, 'warehouse_id', 'id');
     }
 
-    public function brand()
+    public function invoice(): BelongsTo
     {
-        return $this->hasOne(Brand::class, 'id', 'brand_id');
+        return $this->belongsTo(Invoice::class, 'invoice_id', 'id');
     }
 
-    public function version()
+    public function brand(): BelongsTo
     {
-        return $this->hasOne(Version::class, 'id', 'version_id');
+        return $this->belongsTo(Brand::class, 'brand_id', 'id');
+    }
+
+    public function version(): BelongsTo
+    {
+        return $this->belongsTo(Version::class, 'version_id', 'id');
     }
 
     public function transfer()
@@ -162,9 +170,9 @@ class StockCardMovement extends BaseModel
     }
 
 
-    public function stockcard()
+    public function stockCard(): BelongsTo
     {
-        return StockCard::find($this->stock_card_id);
+        return $this->belongsTo(StockCard::class, 'stock_card_id', 'id');
     }
 
     public function quantityCheckData()

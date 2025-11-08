@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Transfer;
 
-use App\Repositories\BaseRepository;
+use LaravelEasyRepository\Repository;
 
-interface TransferRepository extends BaseRepository{
+interface TransferRepository extends Repository{
 
     public function get();
 

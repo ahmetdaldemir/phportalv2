@@ -6,16 +6,16 @@ use App\Repositories\Category\CategoryRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use App\Services\BaseService;
+use LaravelEasyRepository\Service;
 
-class CategoryServiceImplement extends BaseService implements CategoryService{
+class CategoryServiceImplement extends Service implements CategoryService{
 
 
     /**
      * don't change $this->mainRepository variable name
      * because used in extends service class
      */
-    protected $mainRepository;
+    protected CategoryRepository $mainRepository;
 
     public function __construct(CategoryRepository $mainRepository)
     {

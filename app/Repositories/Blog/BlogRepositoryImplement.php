@@ -2,10 +2,10 @@
 
 namespace App\Repositories\Blog;
 
-use App\Repositories\BaseRepositoryImplement;
+use LaravelEasyRepository\Implementations\Eloquent;
 use App\Models\Blog;
 
-class BlogRepositoryImplement extends BaseRepositoryImplement implements BlogRepository{
+class BlogRepositoryImplement extends Eloquent implements BlogRepository{
 
     /**
     * Model class to be used in this repository for the common methods inside Eloquent

@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Blog;
 
-use App\Repositories\BaseRepository;
+use LaravelEasyRepository\Repository;
 
-interface BlogRepository extends BaseRepository{
+interface BlogRepository extends Repository{
 
     // Write something awesome :)
 }

@@ -4,11 +4,12 @@ namespace App\Repositories\StockCard;
 
 use App\Models\StockCardMovement;
 use App\Models\StockCardPrice;
+use App\Helper\SearchHelper;
 use Illuminate\Support\Facades\Auth;
-use App\Repositories\BaseRepositoryImplement;
+use LaravelEasyRepository\Implementations\Eloquent;
 use App\Models\StockCard;
 
-class StockCardRepositoryImplement extends BaseRepositoryImplement implements StockCardRepository
+class StockCardRepositoryImplement extends Eloquent implements StockCardRepository
 {
 
     /**
@@ -25,25 +26,97 @@ class StockCardRepositoryImplement extends BaseRepositoryImplement implements St
 
     public function get()
     {
-        return $this->model->where('company_id', Auth::user()->company_id)->orderBy('id', 'desc')->get();
+        return $this->model->with(['brand', 'category']) // Eager loading - N+1 sorununu çöz
+            ->where('company_id', Auth::user()->company_id)
+            ->orderBy('id', 'desc')
+            ->limit(50) // Performans optimizasyonu - maksimum 50 kayıt
+            ->get();
     }
 
     public function filter($arg)
     {
-        $stock_card_movement = StockCardMovement::where('serial_number', $arg)->orderBy('id', 'desc')->first();
+        // Validate input parameter
+        if (!$arg || empty($arg)) {
+            return [
+                'stock_card_movement' => null, 
+                'stock_card' => null
+            ];
+        }
+
+        $stock_card_movement = StockCardMovement::where('serial_number', $arg)
+            ->orderBy('id', 'desc')
+            ->first();
+        
+        // Check if movement found
+        if (!$stock_card_movement || !$stock_card_movement->stock_card_id) {
+            return [
+                'stock_card_movement' => $stock_card_movement, 
+                'stock_card' => null
+            ];
+        }
+
         $stock_card = $this->model->find($stock_card_movement->stock_card_id);
-        return ['stock_card_movement' => $stock_card_movement, 'stock_card' => $stock_card];
+        
+        return [
+            'stock_card_movement' => $stock_card_movement, 
+            'stock_card' => $stock_card
+        ];
     }
 
     public function getInvoiceForSerial($arg)
     {
-        return StockCardMovement::where('invoice_id', $arg)->orderBy('id', 'desc')->get();
+        return StockCardMovement::with(['stock.brand', 'stock.category', 'color'])
+            ->where('invoice_id', $arg)
+            ->orderBy('id', 'desc')
+            ->get();
     }
     public function getStockData($arg)
     {
-        $stock_card_movement = StockCardMovement::where('serial_number', $arg->serial)->orderBy('id', 'desc')->first();
-        $stock_card_prices = StockCardPrice::where('stock_card_id', $arg->id)->orderBy('id', 'desc')->first();
-        $stock_card = $this->model->find($arg->id);
-        return ['stock_card_movement' => $stock_card_movement, 'stock_card' => $stock_card,'stock_card_price' => $stock_card_movement->sale_price];
+        // Validate input parameters
+        if (!$arg || (!isset($arg->serial) && !isset($arg->id))) {
+            return [
+                'stock_card_movement' => null, 
+                'stock_card' => null,
+                'stock_card_price' => null
+            ];
+        }
+
+        $stock_card_movement = null;
+        $stock_card = null;
+        $stock_card_price = null;
+
+        $searchInfo =   SearchHelper::determineSearchType($arg->serial);
+        if ($searchInfo['type'] === 'barcode') {
+            $stock_card_movement = StockCardMovement::where('barcode', $arg->serial)
+                ->orderBy('id', 'desc')
+                ->first();
+        } else {
+            $stock_card_movement = StockCardMovement::where('serial_number', $arg->serial)
+                ->orderBy('id', 'desc')
+                ->first();
+        }
+ 
+        // Get stock card if id provided
+        if (isset($arg->id) && !empty($arg->id)) {
+            $stock_card = $this->model->find($arg->id);
+            
+            // Get stock card prices
+            $stock_card_prices = StockCardPrice::where('stock_card_id', $arg->id)
+                ->orderBy('id', 'desc')
+                ->first();
+        }
+
+        // Determine stock card price
+        if ($stock_card_movement) {
+            $stock_card_price = $stock_card_movement->sale_price;
+        } elseif ($stock_card_prices) {
+            $stock_card_price = $stock_card_prices->sale_price ?? null;
+        }
+
+        return [
+            'stock_card_movement' => $stock_card_movement, 
+            'stock_card' => $stock_card,
+            'stock_card_price' => $stock_card_price
+        ];
     }
 }

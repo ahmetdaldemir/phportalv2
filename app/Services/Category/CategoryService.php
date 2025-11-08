@@ -3,9 +3,9 @@
 namespace App\Services\Category;
 
 use Illuminate\Database\Eloquent\Collection;
+use LaravelEasyRepository\BaseService;
 
-
-interface CategoryService {
+interface CategoryService extends BaseService{
 
     public function all(): ?Collection;
     public function get(): ?Collection;

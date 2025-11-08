@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helper\SearchHelper;
 use App\Models\City;
 use App\Models\Customer;
 use App\Models\Safe;
@@ -30,6 +31,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TechnicalServiceController extends Controller
 {
@@ -145,7 +147,7 @@ class TechnicalServiceController extends Controller
         /* Cover END */
 
 
-        $data['technical_services'] = $technical_services->orderBy('status','asc')->paginate(100);
+        $data['technical_services'] = $technical_services->orderBy('created_at', 'desc')->orderBy('status', 'asc')->paginate(100);
         $data['technical_covering_services'] = $technical_cover->orderBy('id','desc')->paginate(100);
         $data['brands'] = $this->brandService->get();
         $data['sellers'] = $this->sellerService->get();
@@ -198,10 +200,13 @@ class TechnicalServiceController extends Controller
     {
         DB::beginTransaction();
         try {
+            if (!$request->payment_type['free_sale']) {
+          
             $total = $request->payment_type['cash'] + $request->payment_type['credit_card'] + $request->payment_type['installment'];
             if ($total != $request->totalprice) {
                 return redirect()->back()->with(['msg' => 'Tutarlar Eşleşmiyor']);;
             }
+        }
             $technicalservice = \App\Models\TechnicalService::find($request->id);
 
             $technicalserviceproducts = TechnicalServiceProducts::where('technical_service_id', $technicalservice->id)->get();
@@ -217,12 +222,13 @@ class TechnicalServiceController extends Controller
                 'credit_card' => $request->payment_type['credit_card'],
                 'cash' => $request->payment_type['cash'],
                 'installment' => $request->payment_type['installment'],
+                'free_sale' => $request->payment_type['free_sale'],
                 'description' => "Teknik Servis",
                 'is_status' => 1,
                 'total_price' => $request->totalprice,
                 'tax_total' => 1,
                 'discount_total' => 0,
-                'staff_id' => $request->payment_person,
+                'staff_id' => $request->technical_person,
                 'customer_id' => $technicalservice->customer_id ?? null,
                 'user_id' => Auth::user()->id,
                 'company_id' => Auth::user()->company_id,
@@ -243,8 +249,15 @@ class TechnicalServiceController extends Controller
 
             $invoiceID = $this->invoiceService->create($data);
             $i = 0;
+            if(count($technicalserviceproducts)  > 0){
             foreach ($technicalserviceproducts as $item) {
-                $stockcardmovement = StockCardMovement::where('type', 5)->where('serial_number', $item->serial_number)->first();
+
+                $searchInfo = SearchHelper::determineSearchType($request->id);
+                if ($searchInfo['type'] === 'barcode') {
+                    $stockcardmovement = StockCardMovement::where('type', 5)->where('barcode', $item->serial_number)->first();
+                }else{
+                    $stockcardmovement = StockCardMovement::where('type', 5)->where('serial_number', $item->serial_number)->first();
+                }
                 $SaleCheck = Sale::where('serial', $item->serial_number)->first();
 
                 if (!$SaleCheck) {
@@ -270,7 +283,7 @@ class TechnicalServiceController extends Controller
                 $stockcardmovement->type =2;
                 $stockcardmovement->save();
             }
-
+            }
             $technicalservice->payment_status = 1;
             $technicalservice->status = 6;
             $technicalservice->technical_person = $request->technical_person;
@@ -373,7 +386,6 @@ class TechnicalServiceController extends Controller
         return view('module.technical_service.detail', $data);
     }
 
-
     function array_column_recursive(array $haystack, $needle)
     {
         $found = [];
@@ -413,18 +425,80 @@ class TechnicalServiceController extends Controller
 
     protected function detaildelete(Request $request)
     {
-        $technicalService = \App\Models\TechnicalService::find($request->technical_service_id);
-        if ($technicalService->status == "1") {
-            $technicalServiceProduct = TechnicalServiceProducts::find($request->id);
-            $technicalServiceProduct->delete();
+        try {
+            $technicalService = \App\Models\TechnicalService::find($request->technical_service_id);
+            
+            if (!$technicalService) {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Teknik servis kaydı bulunamadı.'
+                    ], 404);
+                }
+                return redirect()->back()->with('error', 'Teknik servis kaydı bulunamadı.');
+            }
+            
+            if ($technicalService->status == "1") {
+                $technicalServiceProduct = TechnicalServiceProducts::find($request->id);
+                
+                if (!$technicalServiceProduct) {
+                    if ($request->ajax()) {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Ürün bulunamadı.'
+                        ], 404);
+                    }
+                    return redirect()->back()->with('error', 'Ürün bulunamadı.');
+                }
+                
+                $stockcardmovement = StockCardMovement::find($technicalServiceProduct->stock_card_movement_id);
+                
+                // Ürünü sil
+                $technicalServiceProduct->delete();
 
-            $stockcardmovement = StockCardMovement::find($technicalServiceProduct->stock_card_movement_id);
-            $stockcardmovement->type = 1;
-            $stockcardmovement->save();
+                // Stock card movement'ı güncelle
+                if ($stockcardmovement) {
+                    $stockcardmovement->type = 1;
+                    $stockcardmovement->save();
+                }
+                
+                // Yeni toplam tutarı hesapla
+                $totalPrice = $technicalService->sumPrice();
+                
+                if ($request->ajax()) {
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Ürün başarıyla silindi.',
+                        'total_price' => $totalPrice,
+                        'formatted_total_price' => number_format($totalPrice, 2)
+                    ]);
+                }
+                
+                return redirect()->back()->with('success', 'Ürün başarıyla silindi.');
+            }
+            
+            if ($request->ajax()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Bu ürün silinemez. Teknik servis durumu uygun değil.'
+                ], 400);
+            }
+            
+            return redirect()->back()->with('error', 'Bu ürün silinemez.');
+            
+        } catch (\Exception $e) {
+            \Log::error('Product delete error: ' . $e->getMessage());
+            
+            if ($request->ajax()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Silme işlemi sırasında bir hata oluştu.'
+                ], 500);
+            }
+            
+            return redirect()->back()->with('error', 'Silme işlemi sırasında bir hata oluştu.');
         }
-        return redirect()->back();
     }
-
 
     protected function store(Request $request)
     {
@@ -505,26 +579,90 @@ class TechnicalServiceController extends Controller
 
     protected function detailstore(Request $request)
     {
-        $stockcardmovement = StockCardMovement::find($request->stock_card_movement_id);
+        Log::info($request->all());
+        try {
+            // Stock card movement kontrolü
+            if (!$request->filled('stock_card_movement_id')) {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Stok kartı hareketi bulunamadı. Lütfen geçerli bir seri numarası giriniz.'
+                    ], 400);
+                }
+                return redirect()->back()->with('error', 'Stok kartı hareketi bulunamadı. Lütfen geçerli bir seri numarası giriniz.');
+            }
 
-        $user = TechnicalServiceProducts::firstOrCreate(
-            ['stock_card_movement_id' => request('stock_card_movement_id')
-                , 'serial_number' => request('serial')
-                , 'technical_service_id' => request('id')],
-            [
-                'user_id' => Auth::id(),
-                'company_id' => Auth::user()->company_id,
-                'stock_card_id' => $stockcardmovement->stock_card_id,
-                'quantity' => 1,
-                'sale_price' => request('sale_price'),
-            ]
-        );
+            $stockcardmovement = StockCardMovement::find($request->stock_card_movement_id);
 
-        if ($user) {
-            $stockcardmovement->type = 5;
-            $stockcardmovement->save();
+            // Eğer stock card movement bulunamazsa hata döndür
+            if (!$stockcardmovement) {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Belirtilen seri numarası için stok hareketi bulunamadı.'
+                    ], 404);
+                }
+                return redirect()->back()->with('error', 'Belirtilen seri numarası için stok hareketi bulunamadı.');
+            }
+
+            // Technical service ürünü oluştur veya bul
+            $product = TechnicalServiceProducts::firstOrCreate(
+                [
+                    'stock_card_movement_id' => $request->stock_card_movement_id,
+                    'serial_number' => $request->serial_number,
+                    'technical_service_id' => $request->id
+                ],
+                [
+                    'user_id' => Auth::id(),
+                    'company_id' => Auth::user()->company_id,
+                    'stock_card_id' => $stockcardmovement->stock_card_id,
+                    'quantity' => $request->quantity ?? 1,
+                    'sale_price' => $request->sale_price,
+                ]
+            );
+
+            // Başarılı kayıt sonrası stock card movement'ı güncelle
+            if ($product) {
+                $stockcardmovement->type = 5;
+                $stockcardmovement->save();
+            }
+
+            // Technical service'i bul ve toplam tutarı hesapla
+            $technicalService = \App\Models\TechnicalService::find($request->id);
+            $totalPrice = $technicalService ? $technicalService->sumPrice() : 0;
+
+            // AJAX isteği ise JSON döndür
+            if ($request->ajax()) {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Ürün başarıyla eklendi.',
+                    'product' => [
+                        'id' => $product->id,
+                        'stock_card_name' => $product->stock_card ? $product->stock_card->name : 'Bilinmiyor',
+                        'serial_number' => $product->serial_number,
+                        'sale_price' => $product->sale_price,
+                        'technical_service_id' => $product->technical_service_id,
+                        'formatted_price' => number_format($product->sale_price, 2)
+                    ],
+                    'total_price' => $totalPrice,
+                    'formatted_total_price' => number_format($totalPrice, 2)
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Ürün başarıyla eklendi.');
+            
+        } catch (\Exception $e) {
+            Log::error('Product add error: ' . $e->getMessage());
+            
+            if ($request->ajax()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Bir hata oluştu: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            return redirect()->back()->with('error', 'Bir hata oluştu. Lütfen tekrar deneyin.');
         }
-        return redirect()->back();
     }
 
 
@@ -541,8 +679,8 @@ class TechnicalServiceController extends Controller
                         'user_id' => Auth::id(),
                         'company_id' => Auth::user()->company_id,
                         'stock_card_id' => $stockcardmovement->stock_card_id,
-                        'quantity' => 1,
-                        'sale_price' => request('sale_price'),
+                        'quantity' => $request->quantity ?? 1,
+                        'sale_price' => request('sale_price') * ($request->quantity ?? 1)
                     ]
                 );
             }
@@ -578,15 +716,18 @@ class TechnicalServiceController extends Controller
 
     public function covering(Request $request)
     {
-        $data['stocks'] = $this->stockCardService->get();
-        $data['sellers'] = $this->sellerService->get();
-        $data['customers'] = $this->customerService->all();
-        $data['brands'] = $this->brandService->get();
-        $data['users'] = $this->userService->get();
-        $data['citys'] = City::all();
-        $data['categories_all'] = TechnicalProcess::all();
-        $data['tows'] = Town::where('city_id', 34)->get();
-        return view('module.technical_service.covering', $data);
+        $stocks = $this->stockCardService->get();
+        $sellers = $this->sellerService->get();
+        $customers = $this->customerService->all();
+        $brands = $this->brandService->get();
+        $users = $this->userService->get();
+        $citys = City::all();
+        $categories_all = TechnicalProcess::all();
+        $tows = Town::where('city_id', 34)->get();
+        
+        return view('module.technical_service.covering', compact(
+            'stocks', 'sellers', 'customers', 'brands', 'users', 'citys', 'categories_all', 'tows'
+        ));
     }
 
     public function coveringstore(Request $request)
@@ -621,13 +762,16 @@ class TechnicalServiceController extends Controller
     {
         DB::beginTransaction();
         try {
-            $total = $request->payment_type['cash'] + $request->payment_type['credit_card'];
-            if ($total != $request->customer_price) {
-                return redirect()->back()->with(['msg' => 'Tutarlar Eşleşmiyor']);;
-            }else if($total < $request->total_price){
-                return redirect()->back()->with(['msg' => 'Nakıt Veya Kart Tutar toplamı Toplam tutardan küçük olamaz']);;
-            }else if ($total == 0) {
-                return redirect()->back()->with(['msg' => 'Toplam 0 Olamaz']);;
+
+            if ($request->payment_type['free_sale'] != 1) {
+                $total = $request->payment_type['cash'] + $request->payment_type['credit_card'];
+                if ($total != $request->customer_price) {
+                    return redirect()->back()->with(['msg' => 'Tutarlar Eşleşmiyor']);;
+                }else if($total < $request->total_price){
+                    return redirect()->back()->with(['msg' => 'Nakıt Veya Kart Tutar toplamı Toplam tutardan küçük olamaz']);;
+                }else if ($total == 0) {
+                    return redirect()->back()->with(['msg' => 'Toplam 0 Olamaz']);;
+                }
             }
             $technicalservice = \App\Models\TechnicalCustomService::find($request->id);
 
@@ -644,6 +788,7 @@ class TechnicalServiceController extends Controller
                 'credit_card' => $request->payment_type['credit_card'],
                 'cash' => $request->payment_type['cash'],
                 'installment' => $request->payment_type['installment'],
+                'free_sale' => $request->payment_type['free_sale'],
                 'description' => "Teknik Servis",
                 'is_status' => 1,
                 'total_price' => $request->customer_price,
@@ -701,12 +846,12 @@ class TechnicalServiceController extends Controller
                     $sale->stock_card_movement_id = $stockcardmovement->id;
                     $sale->invoice_id = $invoiceID->id;
                     $sale->customer_id = $technicalservice->customer_id;
-                    $sale->sale_price = $item->sale_price;
+                    $sale->sale_price = ($request->customer_price != 0)?$request->customer_price:$request->total_price;
                     $sale->customer_price = $stockcardmovement->customer_price;
                     $sale->name = StockCard::find($stockcardmovement->stock_card_id)->name;
                     $sale->seller_id = Auth::user()->seller_id;
                     $sale->company_id = Auth::user()->company_id;
-                    $sale->user_id = Auth::user()->id;
+                    $sale->user_id = $request->delivery_staff;
                     $sale->serial = $item->serial_number;
                     $sale->technical_service_person_id = $request->delivery_staff;
                     $sale->discount = 0;

@@ -4,17 +4,17 @@ namespace App\Services\User;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use App\Services\BaseService;
+use LaravelEasyRepository\Service;
 use App\Repositories\User\UserRepository;
 
-class UserServiceImplement extends BaseService implements UserService
+class UserServiceImplement extends Service implements UserService
 {
 
     /**
      * don't change $this->mainRepository variable name
      * because used in extends service class
      */
-    protected $mainRepository;
+    protected UserRepository $mainRepository;
 
     public function __construct(UserRepository $mainRepository)
     {

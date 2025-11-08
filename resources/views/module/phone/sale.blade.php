@@ -15,14 +15,13 @@
                             <div class="row mb-4">
                                 <label for="selectCustomer" class="form-label">Cari Seçiniz</label>
                                 <div class="col-md-9">
-                                    <select id="selectCustomer" class="w-100 select2" data-style="btn-default"
-                                            name="customer_id" ng-init="getCustomers()">
-                                        <option value="1" data-tokens="ketchup mustard">Genel Cari</option>
-                                        <option ng-repeat="customer in customers"
-                                                @if(isset($invoices) && '@{{customer.id}}' == $invoices->customer_id) selected
-                                                @endif data-value="@{{customer.id}}" value="@{{customer.id}}">
-                                            @{{customer.fullname}}
-                                        </option>
+                                    <select id="selectCustomer" class="w-100 select2" data-style="btn-default" name="customer_id">
+                                        <option value="1">Genel Cari</option>
+                                        @foreach($customers as $customer)
+                                            <option value="{{$customer->id}}">
+                                                {{$customer->fullname}}
+                                            </option>
+                                        @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-3">
@@ -127,16 +126,6 @@
             Swal.fire('Satış fiyatından düşük satılamaz');
         </script>
     @endif
-    <script>
-        // The DOM element you wish to replace with Tagify
-        var input = document.querySelector('input[id=TagifyBasic]');
-        var input1 = document.querySelector('input[id=TagifyBasic1]');
-
-        // initialize Tagify on the above input node reference
-        new Tagify(input);
-        new Tagify(input1);
-
-    </script>
 
     <script>
         $("#discount_total").change(function () {
@@ -150,50 +139,34 @@
         })
     </script>
 
+    <!-- Customer Save Event Listener -->
     <script>
-        app.controller("mainController", function ($scope, $http, $httpParamSerializerJQLike, $window) {
-            $scope.getCustomers = function () {
-                var postUrl = window.location.origin + '/customers?type=customer';   // Returns base URL (https://example.com)
-                $http({
-                    method: 'GET',
-                    //url: './comment/change_status?id=' + id + '&status='+status+'',
-                    url: postUrl,
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
+    document.addEventListener('DOMContentLoaded', function() {
+        // Listen for customer save events from modal
+        window.addEventListener('customerSaved', (event) => {
+            const customer = event.detail;
+            if (customer && customer.id) {
+                const selectCustomer = document.getElementById('selectCustomer');
+                if (selectCustomer) {
+                    // Add new option if it doesn't exist
+                    const existingOption = selectCustomer.querySelector(`option[value="${customer.id}"]`);
+                    if (!existingOption) {
+                        const newOption = new Option(customer.fullname, customer.id, true, true);
+                        selectCustomer.add(newOption);
+                    } else {
+                        selectCustomer.value = customer.id;
                     }
-                }).then(function successCallback(response) {
-                    $scope.customers = response.data;
-                });
-            }
-            $scope.customerSave = function () {
-                var postUrl = window.location.origin + '/custom_customerstore';   // Returns base URL (https://example.com)
-                var formData = $("#customerForm").serialize();
-
-                $http({
-                    method: 'POST',
-                    url: postUrl,
-                    data: formData,
-                    dataType: "json",
-                    encode: true,
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
+                    
+                    // Trigger select2 update if available
+                    if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+                        jQuery(selectCustomer).trigger('change');
                     }
-                }).then(function successCallback(response) {
-                    $scope.getCustomers();
-                    $(".customerinformation").html('<p className="mb-1">\'+data.address+\'</p>\n' + '<p className="mb-1">\'+data.phone1+\'</p>');
-                    $('#selectCustomer option:selected').val(response.data.id);
-                    var modalDiv = $("#editUser");
-                    modalDiv.modal('hide');
-                    modalDiv
-                        .find("input,textarea,select")
-                        .val('')
-                        .end()
-                        .find("input[type=checkbox], input[type=radio]")
-                        .prop("checked", "")
-                        .end();
-                });
+                    
+                    console.log('Customer selected:', customer);
+                }
             }
         });
+    });
     </script>
 
 @endsection

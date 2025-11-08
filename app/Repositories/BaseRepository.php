@@ -9,6 +9,7 @@ namespace App\Repositories;
 interface BaseRepository
 {
     public function all();
+    public function get($columns = ['*']);
     public function find($id);
     public function create(array $data);
     public function update($id, array $data);

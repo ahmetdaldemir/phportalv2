@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="container-xxl flex-grow-1 container-p-y" onload="getTownLoad(34)">
+    <div id="technical-service-covering-app" class="container-xxl flex-grow-1 container-p-y" onload="getTownLoad(34)">
         <h4 class="fw-bold py-3 mb-4"><span
                 class="text-muted fw-light">Teknik Servis Formu /</span> @if(isset($technical_services))
                 {{$technical_services->name}}
@@ -18,12 +18,11 @@
                                 <label for="selectpickerLiveSearch" class="form-label">Müşteri Seçiniz</label>
                                 <div class="col-md-9">
                                     <select id="selectCustomer" class="w-100 select2"
-                                            data-style="btn-default" name="customer_id" ng-init="getCustomers()">
+                                            data-style="btn-default" name="customer_id">
                                         <option value="1" data-tokens="ketchup mustard">Genel Cari</option>
-                                        <option ng-repeat="customer in customers" ng-selected="customer.id == idNew"
-                                                value="@{{customer.id}}">
-                                            @{{customer.fullname}}
-                                        </option>
+                                        @foreach($customers as $customer)
+                                            <option value="{{ $customer->id }}">{{ $customer->fullname }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-3">
@@ -116,7 +115,7 @@
         <hr class="my-5">
     </div>
 @endsection
-@include('components.customermodaltechnicservice')
+@include('components.customermodal')
 @section('custom-js')
     <script src="{{asset('assets/vendor/libs/jquery-repeater/jquery-repeater.js')}}"></script>
     <script src="{{asset('assets/js/pages-account-settings-account.js')}}"></script>
@@ -163,64 +162,120 @@
 
     </script>
 
+    <!-- Vue.js App for Technical Service Covering -->
     <script>
-        app.controller("mainController", function ($scope, $http, $httpParamSerializerJQLike, $window) {
-            $scope.getCustomers = function () {
-                var postUrl = window.location.origin + '/customers?type=customer';   // Returns base URL (https://example.com)
-                $http({
-                    method: 'GET',
-                    //url: './comment/change_status?id=' + id + '&status='+status+'',
-                    url: postUrl,
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof Vue === 'undefined') {
+            console.error('Vue.js is not loaded.');
+            return;
+        }
+
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    // No data needed for this simple app
+                }
+            },
+            methods: {
+                addCustomerToSelect(customer) {
+                    // Add new customer option to select
+                    const selectCustomer = document.getElementById('selectCustomer');
+                    if (selectCustomer) {
+                        // Check if option already exists
+                        const existingOption = selectCustomer.querySelector(`option[value="${customer.id}"]`);
+                        if (!existingOption) {
+                            const newOption = document.createElement('option');
+                            newOption.value = customer.id;
+                            newOption.textContent = customer.fullname;
+                            selectCustomer.appendChild(newOption);
+                        }
+                        
+                        // Select the new customer
+                        selectCustomer.value = customer.id;
+                        
+                        // Trigger select2 update if available
+                        if (jQuery && jQuery.fn.select2) {
+                            jQuery('#selectCustomer').trigger('change');
+                        }
+                        
+                        console.log('New customer added and selected:', customer);
                     }
-                }).then(function successCallback(response) {
-                    $scope.customers = response.data;
-                    if($scope.idNew == undefined)
-                    {
-                        $scope.idNew = 1;
+                }
+            },
+            mounted() {
+                // Listen for customer save events
+                window.addEventListener('customerSaved', (event) => {
+                    const customer = event.detail;
+                    if (customer && customer.id) {
+                        this.addCustomerToSelect(customer);
                     }
                 });
             }
-            $scope.customerSave = function () {
+        }).mount('#technical-service-covering-app');
+    });
 
-                if ($("input[name='phone1']").val() == "") {
-                    alert('Telefon numarası boş olamaz');
-                } else if ($("input[name='firstname']").val() == "") {
-                    alert('İsim Alanı boş olamaz');
-                } else if ($("input[name='lastname']").val() == "") {
-                    alert('Soyisim alanı boş olamaz');
-                } else {
-
-                    var postUrl = window.location.origin + '/custom_customerstore';   // Returns base URL (https://example.com)
-                    var formData = $("#customerForm").serialize();
-
-                    $http({
-                        method: 'POST',
-                        url: postUrl,
-                        data: formData,
-                        dataType: "json",
-                        encode: true,
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        }
-                    }).then(function successCallback(response) {
-                        $scope.getCustomers();
-                        $('#selectCustomer option:selected').val(response.data.id);
-                        $scope.idNew = response.data.id;
-                        var modalDiv = $("#editUser");
-                        modalDiv.modal('hide');
-                        modalDiv
-                            .find("input,textarea,select")
-                            .val('')
-                            .end()
-                            .find("input[type=checkbox], input[type=radio]")
-                            .prop("checked", "")
-                            .end();
-                    });
-                }
-
+    // Global function for getting versions by brand
+    function getVersion(brandId) {
+        if (!brandId || brandId === '') {
+            // Clear version select if no brand selected
+            const versionSelect = document.getElementById('version_id');
+            if (versionSelect) {
+                versionSelect.innerHTML = '<option value="">Seçiniz</option>';
             }
-        });
+            return;
+        }
+
+        // Show loading state
+        const versionSelect = document.getElementById('version_id');
+        if (versionSelect) {
+            versionSelect.innerHTML = '<option value="">Yükleniyor...</option>';
+            versionSelect.disabled = true;
+        }
+
+        // Make AJAX request to get versions using existing API
+        fetch(`/api/common/versions?brand_id=${brandId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (versionSelect) {
+                    versionSelect.innerHTML = '<option value="">Seçiniz</option>';
+                    
+                    if (data && data.length > 0) {
+                        data.forEach(version => {
+                            const option = document.createElement('option');
+                            option.value = version.id;
+                            option.textContent = version.name;
+                            
+                            // Check if this version should be selected (for edit mode)
+                            @if(isset($technical_services) && $technical_services->version_id)
+                                if (version.id == {{$technical_services->version_id}}) {
+                                    option.selected = true;
+                                }
+                            @endif
+                            
+                            versionSelect.appendChild(option);
+                        });
+                    }
+                    
+                    versionSelect.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading versions:', error);
+                if (versionSelect) {
+                    versionSelect.innerHTML = '<option value="">Hata oluştu</option>';
+                    versionSelect.disabled = false;
+                }
+            });
+    }
+
+    // Load versions on page load if brand is already selected
+    document.addEventListener('DOMContentLoaded', function() {
+        const brandSelect = document.getElementById('brand_id');
+        if (brandSelect && brandSelect.value) {
+            getVersion(brandSelect.value);
+        }
+    });
     </script>
 @endsection

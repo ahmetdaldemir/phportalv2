@@ -14,11 +14,13 @@
                             <div class="row mb-4">
                                 <label for="selectCustomer" class="form-label">Cari Seçiniz</label>
                                 <div class="col-md-9">
-                                    <select id="selectCustomer" class="w-100 select2" data-style="btn-default" name="customer_id" ng-init="getCustomers()">
-                                        <option value="1" data-tokens="ketchup mustard">Genel Cari</option>
-                                        <option ng-repeat="customer in customers" @if(isset($invoices) && '@{{customer.id}}' == $invoices->customer_id) selected @endif data-value="@{{customer.id}}" value="@{{customer.id}}">
-                                            @{{customer.fullname}}
-                                        </option>
+                                    <select id="selectCustomer" class="w-100 select2" data-style="btn-default" name="customer_id">
+                                        <option value="1">Genel Cari</option>
+                                        @foreach($customers as $customer)
+                                            <option value="{{$customer->id}}" @if($phone->customer_id == $customer->id) selected @endif>
+                                                {{$customer->fullname}}
+                                            </option>
+                                        @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-3">
@@ -74,7 +76,7 @@
                         <div class="card-body">
                             <div>
                                 <label for="defaultFormControlInput" class="form-label">Marka</label>
-                                <select name="brand_id" id="brand_id" onchange="getVersion(this.value)" ng-init="getVersion({{$phone->brand_id}})" class="form-control" required>
+                                <select name="brand_id" id="brand_id" onchange="getVersion(this.value)" class="form-control" required>
                                     <option value="">Seçiniz</option>
                                     @foreach($brands as $brand)
                                         <option @if($brand->id == $phone->brand_id) selected @endif value="{{$brand->id}}">{{$brand->name}}</option>
@@ -133,7 +135,7 @@
 
                                 <div class="col-md-3">
                                     <label for="defaultFormControlInput" class="form-label">Garanti Süresi</label>
-                                    <input type="date" class="form-control" id="warranty" value="{{$phone->warranty}}"  name="warranty">
+                                    <input type="date" class="form-control" id="warranty" value="{{ is_null($phone->warranty) || in_array($phone->warranty, ['1', '2']) ? '' : $phone->warranty }}"  name="warranty">
                                 </div>
                                 <div class="col-md-2">
                                     <label for="defaultFormControlInput" class="form-label">Garantisiz Mi ?</label>
@@ -174,80 +176,93 @@
 @include('components.customermodal')
 
 @section('custom-js')
+    <!-- Get Versions by Brand -->
     <script>
-        var input = document.querySelector('input[id=TagifyBasic]');
-        var input1 = document.querySelector('input[id=TagifyBasic1]');
-
-        // initialize Tagify on the above input node reference
-        new Tagify(input);
-        new Tagify(input1);
-
+    function getVersion(brandId) {
+        const versionSelect = document.getElementById('version_id');
+        const selectedVersion = versionSelect.getAttribute('data-version');
+        
+        if (!brandId) {
+            versionSelect.innerHTML = '<option value="">Önce marka seçiniz</option>';
+            return;
+        }
+        
+        // Show loading
+        versionSelect.innerHTML = '<option value="">Yükleniyor...</option>';
+        
+        // Fetch versions
+        fetch(`/api/common/versions?brand_id=${brandId}`)
+            .then(response => response.json())
+            .then(versions => {
+                versionSelect.innerHTML = '<option value="">Model Seçiniz</option>';
+                
+                if (versions && versions.length > 0) {
+                    versions.forEach(version => {
+                        const option = document.createElement('option');
+                        option.value = version.id;
+                        option.textContent = version.name;
+                        
+                        // Select the previously selected version
+                        if (selectedVersion && version.id == selectedVersion) {
+                            option.selected = true;
+                        }
+                        
+                        versionSelect.appendChild(option);
+                    });
+                    
+                    // Trigger select2 refresh if available
+                    if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+                        jQuery('#version_id').trigger('change');
+                    }
+                } else {
+                    versionSelect.innerHTML = '<option value="">Bu marka için model bulunamadı</option>';
+                }
+            })
+            .catch(error => {
+                console.error('Version yükleme hatası:', error);
+                versionSelect.innerHTML = '<option value="">Yükleme hatası</option>';
+            });
+    }
+    
+    // Load versions on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const brandSelect = document.getElementById('brand_id');
+        const initialBrand = brandSelect.value;
+        
+        if (initialBrand) {
+            getVersion(initialBrand);
+        }
+    });
     </script>
 
+    <!-- Customer Save Event Listener -->
     <script>
-        app.controller("mainController", function ($scope, $http, $httpParamSerializerJQLike, $window) {
-            $scope.getCustomers = function () {
-                var postUrl = window.location.origin + '/customers?type=customer';   // Returns base URL (https://example.com)
-                $http({
-                    method: 'GET',
-                    //url: './comment/change_status?id=' + id + '&status='+status+'',
-                    url: postUrl,
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
+    document.addEventListener('DOMContentLoaded', function() {
+        // Listen for customer save events from modal
+        window.addEventListener('customerSaved', (event) => {
+            const customer = event.detail;
+            if (customer && customer.id) {
+                const selectCustomer = document.getElementById('selectCustomer');
+                if (selectCustomer) {
+                    // Add new option if it doesn't exist
+                    const existingOption = selectCustomer.querySelector(`option[value="${customer.id}"]`);
+                    if (!existingOption) {
+                        const newOption = new Option(customer.fullname, customer.id, true, true);
+                        selectCustomer.add(newOption);
+                    } else {
+                        selectCustomer.value = customer.id;
                     }
-                }).then(function successCallback(response) {
-                    $scope.customers = response.data;
-                });
-            }
-            $scope.customerSave = function () {
-                var postUrl = window.location.origin + '/custom_customerstore';   // Returns base URL (https://example.com)
-                var formData = $("#customerForm").serialize();
-
-                $http({
-                    method: 'POST',
-                    url: postUrl,
-                    data: formData,
-                    dataType: "json",
-                    encode: true,
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
+                    
+                    // Trigger select2 update if available
+                    if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+                        jQuery(selectCustomer).trigger('change');
                     }
-                }).then(function successCallback(response) {
-                    $scope.getCustomers();
-                    $(".customerinformation").html('<p className="mb-1">\'+data.address+\'</p>\n' + '<p className="mb-1">\'+data.phone1+\'</p>');
-                    $('#selectCustomer option:selected').val(response.data.id);
-                    var modalDiv = $("#editUser");
-                    modalDiv.modal('hide');
-                    modalDiv
-                        .find("input,textarea,select")
-                        .val('')
-                        .end()
-                        .find("input[type=checkbox], input[type=radio]")
-                        .prop("checked", "")
-                        .end();
-                });
-            }
-
-            $scope.getVersion = function (id) {
-                var postUrl = window.location.origin + '/get_version?id=' + id + '';   // Returns base URL (https://example.com)
-                $http({
-                    method: 'GET',
-                    //url: './comment/change_status?id=' + id + '&status='+status+'',
-                    url: postUrl,
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    }
-                }).then(function successCallback(response) {
-                    $('#version_id').append('<option value="">Tümü</option>');
-                    $.each(response, function (index, value) {
-                        $('#version_id').append($('<option>', {
-                            value: value.id,
-                            text: value.name
-                        }));
-                    });
-                });
+                    
+                    console.log('Customer selected:', customer);
+                }
             }
         });
+    });
     </script>
     <script>
         $('select#type').on('change', function() {

@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use LaravelEasyRepository\Traits\FileUpload;
 
 class Customer extends BaseModel
 {
-    use HasFactory,SoftDeletes;
+    use FileUpload,HasFactory,SoftDeletes;
 
 
     const TYPE = [
@@ -27,7 +27,9 @@ class Customer extends BaseModel
 
     protected $fillable = [
         'code',
-        'fullname',
+        'firstname',    // Exists in DB but not actively used
+        'lastname',     // Exists in DB but not actively used
+        'fullname',     // Primary name field (firstname + lastname combined)
         'tc',
         'iban',
         'phone1',

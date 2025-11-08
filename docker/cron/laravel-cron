@@ -1,0 +1,14 @@
+# Laravel Cron Job
+* * * * * cd /var/www && php artisan schedule:run >> /dev/null 2>&1
+
+# Clean old logs every day at 2 AM
+0 2 * * * cd /var/www && php artisan logs:clean --days=7 >> /dev/null 2>&1
+
+# Optimize slow pages every 6 hours
+0 */6 * * * cd /var/www && php artisan optimize:slow-pages >> /dev/null 2>&1
+
+# Clear cache every day at 3 AM
+0 3 * * * cd /var/www && php artisan cache:clear >> /dev/null 2>&1
+
+# Clear config cache every day at 4 AM
+0 4 * * * cd /var/www && php artisan config:clear >> /dev/null 2>&1

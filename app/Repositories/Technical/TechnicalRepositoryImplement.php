@@ -4,9 +4,9 @@ namespace App\Repositories\Technical;
 
 use App\Models\TechnicalService;
 use Illuminate\Support\Facades\Auth;
-use App\Repositories\BaseRepositoryImplement;
+use LaravelEasyRepository\Implementations\Eloquent;
 
-class TechnicalRepositoryImplement extends BaseRepositoryImplement implements TechnicalRepository{
+class TechnicalRepositoryImplement extends Eloquent implements TechnicalRepository{
 
     /**
      * Model class to be used in this repository for the common methods inside Eloquent

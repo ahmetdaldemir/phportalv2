@@ -81,8 +81,12 @@
                                             <td class="text-nowrap"> {{$value['category']}}</td>
                                             <td class="text-nowrap">{{$value['brand'] ?? 'Bulunamadı'}}</td>
                                             <td class="text-nowrap"><?php
-                                                $as =json_decode($value['version'],JSON_UNESCAPED_UNICODE);
-                                               echo $as[0]
+                                                $as = json_decode($value['version'], JSON_UNESCAPED_UNICODE);
+                                                if (is_array($as) && count($as) > 0) {
+                                                    echo $as[0];
+                                                } else {
+                                                    echo 'N/A';
+                                                }
                                                 ?>
                                                  </td>
                                             <td class="text-nowrap">{{$value['color']}} </td>
@@ -100,7 +104,7 @@
                                 <td colspan="3" class="align-top px-4 py-5">
                                     <p class="mb-2">
                                         <span class="me-1 fw-semibold">Personel:</span>
-                                        <span>{{$transfer->user($transfer->user_id)->name}}</span>
+                                        <span>{{$transfer->user->name ?? 'N/A'}}</span>
                                     </p>
                                 </td>
 

@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Category;
 
-use App\Repositories\BaseRepository;
+use LaravelEasyRepository\Repository;
 
-interface CategoryRepository extends BaseRepository{
+interface CategoryRepository extends Repository{
 
     public function get();
     public function getList($category_id);

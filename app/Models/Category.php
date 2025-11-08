@@ -25,4 +25,9 @@ class Category extends BaseModel
     {
         return $this->belongsTo(self::class, 'parent_id');
     }
+    
+    public function parent()
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
 }

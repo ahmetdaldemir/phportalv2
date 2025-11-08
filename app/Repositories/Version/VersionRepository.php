@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Version;
 
-use App\Repositories\BaseRepository;
+use LaravelEasyRepository\Repository;
 
-interface VersionRepository extends BaseRepository{
+interface VersionRepository extends Repository{
 
     public function get();
     public function fileUpload($file);

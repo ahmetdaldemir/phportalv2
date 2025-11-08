@@ -3,16 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 
 class BaseModel extends Model
 {
-    use LogsActivity;
 
     protected $fillable = ['name', 'text'];
 
@@ -99,8 +95,4 @@ class BaseModel extends Model
         }
     }
 
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName}");
-    }
 }

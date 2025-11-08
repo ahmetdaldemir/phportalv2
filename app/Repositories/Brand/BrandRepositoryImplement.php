@@ -3,10 +3,10 @@
 namespace App\Repositories\Brand;
 
 use Illuminate\Support\Facades\Auth;
-use App\Repositories\BaseRepositoryImplement;
+use LaravelEasyRepository\Implementations\Eloquent;
 use App\Models\Brand;
 
-class BrandRepositoryImplement extends BaseRepositoryImplement implements BrandRepository{
+class BrandRepositoryImplement extends Eloquent implements BrandRepository{
 
     /**
     * Model class to be used in this repository for the common methods inside Eloquent

@@ -17,6 +17,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TransferController extends Controller
 {
@@ -57,69 +58,22 @@ class TransferController extends Controller
         {
             $transfers->where('delivery_seller_id', Auth::user()->seller_id);
         }
-
-        if (Auth::user()->hasRole('super-admin') && Auth::user()->hasRole('Depo Sorumlusu') && $request->filled('seller_id')) // HAsarlı Sorgusu
-        {
-            $transfers->where('delivery_seller_id', $request->seller_id);
-        }
+//
+//        if (Auth::user()->hasRole('super-admin') && Auth::user()->hasRole('Depo Sorumlusu') && $request->filled('seller_id')) // HAsarlı Sorgusu
+//        {
+//            $transfers->where('delivery_seller_id', $request->seller_id);
+//        }
 
 
         if ($request->filled('serialNumber')) {
             $transfers->whereJsonContains('serial_list', $request->serialNumber);
         }
 
-        $x = $transfers->orderBy('is_status', 'asc')->orderBy('created_at', 'desc')->paginate(20);
+        $x = $transfers->orderBy('created_at', 'desc')->paginate(50);
 
-        $onlyTransfer = Transfer::where('company_id', Auth::user()->company_id)->where('main_seller_id', Auth::user()->seller_id)->get();
+        $onlyTransfer = Transfer::where('company_id', Auth::user()->company_id)->where('main_seller_id', Auth::user()->seller_id)->orderBy('id', 'desc')->limit(20)->get();
 
-        /*
-        $stockcardlist = StockCardMovement::where('type',1);
-        if ($request->filled('brand')) {
-            foreach ($x as $item) {
-                foreach ($item->serial_list as $list) {
-                    $stockcardlist = StockCardMovement::where('serial_number', $list)
-                        ->whereHas('stock', function ($q) use ($request) {
-                            $q->where('brand_id', '=', $request->brand);
-                        });
 
-                }
-            }
-        }
-
-        if ($request->filled('category')) {
-            foreach ($x as $item) {
-                foreach ($item->serial_list as $list) {
-                    $stockcardlist = StockCardMovement::where('serial_number', $list)
-                        ->whereHas('stock', function ($q) use ($request) {
-                            $q->where('category_id', '=', $request->category);
-                        });
-                }
-            }
-        }
-
-        if ($request->filled('color')) {
-            foreach ($x as $item) {
-                foreach ($item->serial_list as $list) {
-                    $stockcardlist = StockCardMovement::where('serial_number', $list)
-                        ->whereHas('stock', function ($q) use ($request) {
-                            $q->where('color_id', '=', $request->color);
-                        });
-                }
-            }
-        }
-        if ($request->filled('stockName')) {
-            foreach ($x as $item) {
-                foreach ($item->serial_list as $list) {
-                    $stockcardlist = StockCardMovement::where('serial_number', $list)
-                        ->whereHas('stock', function ($q) use ($request) {
-                            $q->where('name', '=', $request->stockName);
-                        });
-                }
-            }
-        }
-
-        dd($x,$stockcardlist->get());
-        */
         $data['brands'] = $this->brandService->get();
         $data['sellers'] = $this->sellerService->all();
         $data['stocks'] = $this->stockCardService->all();
@@ -158,8 +112,7 @@ SELECT * FROM category_path ORDER BY path;");
         return view('module.transfer.form', $data);
     }
 
-    protected
-    function edit(Request $request)
+    protected function edit(Request $request)
     {
         $data['sellers'] = $this->sellerService->all();
         $data['stocks'] = $this->stockCardService->all();
@@ -170,18 +123,26 @@ SELECT * FROM category_path ORDER BY path;");
         return view('module.transfer.form', $data);
     }
 
-    protected
-    function delete(Request $request)
+    protected function delete(Request $request)
     {
         $this->transferService->delete($request->id);
         return redirect()->back();
     }
 
-    protected function store(Request $request)
+    public function store(Request $request)
     {
+        Log::info('Transfer store method called', [
+            'user_id' => Auth::id(),
+            'request_data' => $request->all(),
+            'user_agent' => $request->userAgent(),
+            'ip' => $request->ip()
+        ]);
+
         DB::beginTransaction();
         try {
+            Log::info('Starting authorization check');
             $this->authorize('create-dispatch');
+            Log::info('Authorization passed');
             if (Auth::user()->hasRole('Depo Sorumlusu') || Auth::user()->hasRole('super-admin')) {
                 $status = 2;
             } else {
@@ -192,6 +153,84 @@ SELECT * FROM category_path ORDER BY path;");
             }
 
             foreach ($request->sevkList as $item) {
+
+                // Handle barcode transfer with quantity
+                if ($request->is_barcode_transfer && is_array($item)) {
+                    $barcode = $item['barcode'];
+                    $quantity = $item['quantity'] ?? 1;
+
+                    // Check if enough stock available for this barcode
+                    $availableStock = StockCardMovement::where('barcode', $barcode)
+                        ->where('seller_id', $request->main_seller_id)
+                        ->where('type', '!=', 4) // Not already transferred
+                        ->count();
+
+                    if ($availableStock < $quantity) {
+                        return response()->json("Yetersiz stok! {$barcode} barkodlu ürün için {$availableStock} adet mevcut, {$quantity} adet talep edildi.", 200);
+                    }
+
+                    // Get stock details for detail array
+                    $stockcheck = StockCardMovement::where('barcode', $barcode)
+                        ->where('seller_id', $request->main_seller_id)
+                        ->first();
+
+                    if (!$stockcheck) {
+                        return response()->json("Barkod bulunamadı: {$barcode}", 200);
+                    }
+
+                    // Add to detail array with quantity
+                    $versionData = $stockcheck->stock->version;
+                    $datas = [];
+                    if ($versionData && isset($versionData->version)) {
+                        $datas = json_decode($versionData->version, TRUE) ?? [];
+                    }
+                    $a = [];
+                    foreach ($datas as $mykey => $myValue) {
+                        $a[] = $myValue;
+                    }
+
+                    // Mark items as transferred (type = 4)
+                    $updateQuery = StockCardMovement::where('barcode', $barcode)
+                        ->where('seller_id', $request->main_seller_id)
+                        ->where('type', '!=', 4);
+
+                    // pluck as a Collection so we can iterate with ->each
+                    $updatedIds = $updateQuery->limit($quantity)->pluck('id');
+
+                    // Eğer Collection ise ->each kullan, aksi halde foreach ile döndür
+                    if ($updatedIds instanceof \Illuminate\Support\Collection) {
+                        $updatedIds->each(function ($id) {
+                            $movement = StockCardMovement::find($id);
+                            if ($movement) {
+                                $movement->type = 4; // Mark as transferred
+                                $movement->save();
+                            }
+                        });
+                        $serialsForDetail = $updatedIds->toArray();
+                    } else {
+                        $serialsForDetail = (array) $updatedIds;
+                        foreach ($serialsForDetail as $id) {
+                            $movement = StockCardMovement::find($id);
+                            if ($movement) {
+                                $movement->type = 4;
+                                $movement->save();
+                            }
+                        }
+                    }
+
+                    $detail[] = array(
+                        'name' => $stockcheck->stock->name,
+                        'serial' => $barcode,
+                        'brand' => $stockcheck->stock->brand->name,
+                        'version' => json_encode($a),
+                        'category' => $this->categorySeperator1($this->testParentS($stockcheck->stock->category->id)),
+                        'quantity' => $quantity,
+                        'color' => $stockcheck->color->name,
+                        'serials' => json_encode($serialsForDetail)
+                    );
+
+                    continue; // Skip to next item
+                }
 
                 if ($request->type == 'phone') {
                     $phone = Phone::where('barcode', $item);
@@ -219,49 +258,62 @@ SELECT * FROM category_path ORDER BY path;");
 
                 } else {
 
-                    $stock = StockCardMovement::where('serial_number', $item);
+                    if ($request->is_barcode_transfer == false) {
 
-                    if (!Auth::user()->hasRole('super-admin') && !Auth::user()->hasRole('Depo Sorumlusu')) // HAsarlı Sorgusu
-                    {
-                        $stock->where('seller_id', Auth::user()->seller_id);
+                        $stock = StockCardMovement::where('serial_number', $item);
+
+                        if (!Auth::user()->hasRole('super-admin') && !Auth::user()->hasRole('Depo Sorumlusu')) // HAsarlı Sorgusu
+                        {
+                            $stock->where('seller_id', Auth::user()->seller_id);
+                        }
+                        $stockcheck = $stock->first();
+
+                        if (!$stockcheck) {
+                            $itemType = $request->is_barcode_transfer ? 'barkod' : 'seri numarası';
+                            return response()->json("Sevk yapılamaz. Seçilen {$itemType} aynı bayiye ait olmalı.", 200);
+                        }
+
+                        $a = Transfer::whereJsonContains('serial_list', $item)->where('is_status', 1)->get();
+                        if (count($a) > 0) {
+                            $itemType = $request->is_barcode_transfer ? 'barkod' : 'seri numarası';
+                            return response()->json($item . " {$itemType} ürün Sevk sürecinde", 200);
+                        }
+
+
+                        $versionData = $stockcheck->stock->version;
+                        $datas = [];
+                        if ($versionData && isset($versionData->version)) {
+                            $datas = json_decode($versionData->version, TRUE) ?? [];
+                        }
+                        foreach ($datas as $mykey => $myValue) {
+                            $a[] = $myValue;
+                        }
+                        $serialnumberf[] = $stockcheck->id;
+
+
+                        $detail[] = array(
+                            'name' => $stockcheck->stock->name,
+                            'serial' => $request->is_barcode_transfer ? $stockcheck->barcode : $stockcheck->serial_number,
+                            'brand' => $stockcheck->stock->brand->name,
+                            'version' => json_encode($a),
+                            'category' => $this->categorySeperator1($this->testParentS($stockcheck->stock->category->id)),
+                            'quantity' => '1',
+                            'color' => $stockcheck->color->name,
+                            'serials' => $serialnumberf
+                        );
                     }
-                    $stockcheck = $stock->first();
-
-                    if (!$stockcheck) {
-                        return response()->json('Sevk yapılamaz. Seçilen ürünler aynı bayiye ait olmalı.' . $stockcheck->serial_number . '', 200);
-                    }
-
-                    $a = Transfer::whereJsonContains('serial_list', $item)->where('is_status', 1)->get();
-                    if (count($a) > 0) {
-                        return response()->json($item . ' Seri nolu ürün Sevk sürecinde', 200);
-                    }
-
-
-                    $datas = json_decode($stockcheck->stock->version(), TRUE);
-                    foreach ($datas as $mykey => $myValue) {
-                        $a[] = $myValue;
-                    }
-
-
-                    $detail[] = array(
-                        'name' => $stockcheck->stock->name,
-                        'serial' => $stockcheck->serial_number,
-                        'brand' => $stockcheck->stock->brand->name,
-                        'version' => json_encode($a),
-                        'category' => $this->categorySeperator1($this->testParentS($stockcheck->stock->category->id)),
-                        'quantity' => '1',
-                        'color' => $stockcheck->color->name,
-                    );
                 }
             }
 
-            if ($request->type == 'other') {
+            if ($request->type == 'other' && !$request->is_barcode_transfer) {
                 foreach ($request->sevkList as $item) {
                     $stock = StockCardMovement::where('serial_number', $item)->first();
                     $stock->type = 4;
                     $stock->save();
                 }
             }
+
+            Log::info('Transfer oluşturma - sevkList', ['sevkList' => $request->sevkList]);
 
             $data = array(
                 'company_id' => Auth::user()->company_id,
@@ -270,14 +322,14 @@ SELECT * FROM category_path ORDER BY path;");
                 'main_seller_id' => $request->main_seller_id ?? Auth::user()->seller_id,
                 'description' => $request->description,
                 'number' => $request->number ?? null,
-                'stocks' => array_unique($request->sevkList),
-                'serial_list' => array_unique($request->sevkList),
+                'stocks' => $request->is_barcode_transfer ? array_unique(array_map(function($it){ if (is_array($it) && isset($it['barcode'])) return $it['barcode']; if (is_string($it)) return $it; return json_encode($it); }, $request->sevkList ?? [])) : array_unique($request->sevkList ?? []),
+                'serial_list' => $request->sevkList,
+                'is_barcode_transfer' =>$request->is_barcode_transfer,
                 'comfirm_id' => 1,
                 'type' => $request->type,
                 'detail' => $detail,
                 'delivery_seller_id' => $request->delivery_seller_id,
             );
-
             if (empty($request->id)) {
                 $transfer = $this->transferService->create($data);
             } else {
@@ -286,6 +338,12 @@ SELECT * FROM category_path ORDER BY path;");
             //$this->dispatch(new SendTransferInfo($transfer));
 
         } catch (\Exception $e) {
+            Log::error('Transfer store error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => Auth::id(),
+                'request_data' => $request->all()
+            ]);
             DB::rollBack();
         }
         DB::commit();
@@ -308,12 +366,77 @@ SELECT * FROM category_path ORDER BY path;");
             return redirect()->back();
         }
         if ($transfer->serial_list) {
+            Log::info('Transfer onaylama - serial_list', ['serial_list' => $transfer->serial_list]);
+
             foreach ($transfer->serial_list as $key => $value) {
-                if($request->is_status == 4) //RED
-                {
-                    StockCardMovement::where('serial_number', $value)->update(['type' => 1]);
-                }else if($request->is_status == 3){
-                    StockCardMovement::where('serial_number', $value)->update(['type' => 1, 'seller_id' => $transfer->delivery_seller_id]);
+                Log::info('Transfer onaylama - işlenen item', ['item' => $value]);
+
+                // Barkod transfer kontrolü
+                if ($transfer->is_barcode_transfer == 1 && is_array($value) && isset($value['barcode'])) {
+                    // Barkod transfer - quantity kadar işlem yap
+                    $barcode = $value['barcode'];
+                    $quantity = $value['quantity'] ?? 1;
+
+                    // Quantity kadar stok hareketi bul ve güncelle
+                    $stockMovements = StockCardMovement::where('barcode', $barcode)
+                        ->where('type', 4) // Transfer edilmiş olanlar
+                        ->limit($quantity)
+                        ->get();
+                    $detailEntry = collect($transfer->detail)->first(function ($d) use ($barcode) {
+                        return isset($d['serial']) && $d['serial'] == $barcode;
+                    });
+                    $serials = [];
+                    if ($detailEntry && !empty($detailEntry['serials'])) {
+                        // Eğer string olarak "[116630,116631]" geldiyse json_decode ile diziye çevir
+                        $serials = json_decode($detailEntry['serials'], true);
+                        if (!is_array($serials)) {
+                            // Fallback: köşeli parantezleri temizle ve virgülden ayır
+                            $trim = trim($detailEntry['serials'], "[] \t\n\r\0\x0B");
+                            $serials = $trim === '' ? [] : array_map('intval', array_map('trim', explode(',', $trim)));
+                        }
+                    }
+                    if(count($serials) > 0) {
+                        foreach ($serials as $serial) {
+                            $movement = StockCardMovement::find($serial);
+                            if ($request->is_status == 4) //RED
+                            {
+                                $movement->type = 1;
+                                $movement->save();
+                            } else if ($request->is_status == 3) {
+                                $movement->type = 1;
+                                $movement->seller_id = $transfer->delivery_seller_id;
+                                $movement->save();
+                            }
+                        }
+                    }else{
+                        foreach ($stockMovements as $movement) {
+                            if ($request->is_status == 4) //RED
+                            {
+                                $movement->type = 1;
+                                $movement->save();
+                            } else if ($request->is_status == 3) {
+                                $movement->type = 1;
+                                $movement->seller_id = $transfer->delivery_seller_id;
+                                $movement->save();
+                            }
+                        }
+                    }
+
+                } else {
+                    $stockMovements = StockCardMovement::where('serial_number', $value)->first();
+                    if($stockMovements){
+                        if ($request->is_status == 4) //RED
+                        {
+                            $stockMovements->type = 1;
+                            $stockMovements->save();
+                        } else if ($request->is_status == 3) {
+                            $stockMovements->type = 1;
+                            $stockMovements->seller_id = $transfer->delivery_seller_id;
+                            $stockMovements->save();
+                        }
+                    }else{
+                        Log::warning('Transfer onaylama - Stok hareketi bulunamadı', ['serial_number' => $value]);
+                    }
                 }
             }
             $data = array('is_status' => $request->is_status, 'comfirm_id' => Auth::user()->id, 'comfirm_date' => Carbon::now());
@@ -323,16 +446,226 @@ SELECT * FROM category_path ORDER BY path;");
         return redirect()->back()->withErrors(['msg' => 'Seri Numaraları Seçilmedi']);
     }
 
-    protected
-    function show(Request $request)
+    protected function show(Request $request)
     {
         $data['transfer'] = $this->transferService->find($request->id);
         return view('module.transfer.show', $data);
     }
 
-    public
-    function getSerialList($stockCardId, $quantity, $color_id)
+    public function getSerialList($stockCardId, $quantity, $color_id)
     {
         return StockCardMovement::select('serial_number')->where('stock_card_id', $stockCardId)->where('color_id', $color_id)->pluck('serial_number')->take($quantity);
+    }
+
+    /**
+     * AJAX endpoint for incoming transfers - Vue.js için
+     */
+    public function getIncomingTransfersAjax(Request $request)
+    {
+        try {
+            $query = Transfer::with(['main_seller', 'delivery_seller', 'user', 'confirm_user'])
+                ->where('company_id', Auth::user()->company_id);
+
+            // Filtreler
+            if ($request->filled('stockName')) {
+                $query->where('stocks', 'like', '%' . $request->stockName . '%');
+            }
+
+            if ($request->filled('number')) {
+                $query->where('number', 'like', '%' . $request->number . '%');
+            }
+
+            if ($request->filled('serialNumber')) {
+                $query->whereJsonContains('serial_list', $request->serialNumber);
+            }
+
+            if ($request->filled('seller') && $request->seller !== 'all') {
+                $query->where('delivery_seller_id', $request->seller);
+            }
+
+            // Pagination
+            $page = $request->get('page', 1);
+            $perPage = 20;
+
+            $transfers = $query->orderBy('created_at', 'desc')
+                ->paginate($perPage, ['*'], 'page', $page);
+
+            // Veriyi Vue.js için formatla
+            $formattedData = $transfers->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'number' => $item->number,
+                    'type' => $item->type,
+                    'is_status' => $item->is_status,
+                    'created_at' => $item->created_at,
+                    'comfirm_date' => $item->comfirm_date,
+                    'main_seller' => $item->main_seller,
+                    'delivery_seller' => $item->delivery_seller,
+                    'user' => $item->user,
+                    'confirm_user' => $item->confirm_user
+                ];
+            });
+
+            return response()->json([
+                'transfers' => $formattedData,
+                'pagination' => [
+                    'current_page' => $transfers->currentPage(),
+                    'last_page' => $transfers->lastPage(),
+                    'per_page' => $transfers->perPage(),
+                    'total' => $transfers->total(),
+                    'from' => $transfers->firstItem(),
+                    'to' => $transfers->lastItem()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Gelen sevkler yüklenemedi: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * AJAX endpoint for outgoing transfers - Vue.js için
+     */
+    public function getOutgoingTransfersAjax(Request $request)
+    {
+        try {
+            $query = Transfer::with(['main_seller', 'delivery_seller', 'user', 'confirm_user'])
+                ->where('company_id', Auth::user()->company_id)
+                ->where('main_seller_id', Auth::user()->seller_id);
+
+            // Filtreler
+            if ($request->filled('stockName')) {
+                $query->where('stocks', 'like', '%' . $request->stockName . '%');
+            }
+
+            if ($request->filled('serialNumber')) {
+                $query->whereJsonContains('serial_list', $request->serialNumber);
+            }
+
+            // Pagination
+            $page = $request->get('page', 1);
+            $perPage = 20;
+
+            $transfers = $query->orderBy('created_at', 'desc')
+                ->paginate($perPage, ['*'], 'page', $page);
+
+            // Veriyi Vue.js için formatla
+            $formattedData = $transfers->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'number' => $item->number,
+                    'type' => $item->type,
+                    'is_status' => $item->is_status,
+                    'created_at' => $item->created_at,
+                    'comfirm_date' => $item->comfirm_date,
+                    'main_seller' => $item->main_seller,
+                    'delivery_seller' => $item->delivery_seller,
+                    'user' => $item->user,
+                    'confirm_user' => $item->confirm_user
+                ];
+            });
+
+            return response()->json([
+                'transfers' => $formattedData,
+                'pagination' => [
+                    'current_page' => $transfers->currentPage(),
+                    'last_page' => $transfers->lastPage(),
+                    'per_page' => $transfers->perPage(),
+                    'total' => $transfers->total(),
+                    'from' => $transfers->firstItem(),
+                    'to' => $transfers->lastItem()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Yapılan sevkler yüklenemedi: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * AJAX endpoint for versions - Vue.js için
+     */
+    public function getVersionsAjax(Request $request)
+    {
+        try {
+            $brandId = $request->get('brand_id');
+            if (!$brandId) {
+                return response()->json([]);
+            }
+
+            $versions = \App\Models\Version::where('brand_id', $brandId)->get();
+            return response()->json($versions);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Versiyonlar yüklenemedi'], 500);
+        }
+    }
+
+    /**
+     * Get transfer details as JSON - Vue.js modal için
+     */
+    public function getTransferJson($id)
+    {
+        try {
+            $transfer = Transfer::with(['main_seller', 'delivery_seller', 'user', 'confirm_user'])
+                ->where('company_id', Auth::user()->company_id)
+                ->findOrFail($id);
+
+            // Format response
+            $response = [
+                'id' => $transfer->id,
+                'number' => $transfer->number,
+                'type' => $transfer->type,
+                'is_status' => $transfer->is_status,
+                'created_at' => $transfer->created_at,
+                'comfirm_date' => $transfer->comfirm_date,
+                'description' => $transfer->description,
+                'serial_list' => $transfer->serial_list,
+                'detail' => $transfer->detail,
+                'main_seller' => $transfer->main_seller,
+                'delivery_seller' => $transfer->delivery_seller,
+                'user' => $transfer->user,
+                'confirm_user' => $transfer->confirm_user
+            ];
+
+            return response()->json($response);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Transfer bulunamadı: ' . $e->getMessage()], 404);
+        }
+    }
+
+
+    public function updateTransfer(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            Log::info('Starting authorization check for updateTransfer');
+            $this->authorize('create-dispatch');
+            Log::info('Authorization passed for updateTransfer');
+
+            $transfer = Transfer::whereJsonContains('serial_list', $request->serial_number)
+                ->where('is_status', 3)
+                ->first();
+            if (!$transfer) {
+                return response()->json('Transfer bulunamadı', 404);
+            }
+            $stockcardmovement = StockCardMovement::where('serial_number', $request->serial_number)->first();
+            $stockcardmovement->seller_id = $transfer->delivery_seller_id;
+            $stockcardmovement->type = 1; // Stok tipi güncellemesi
+            $stockcardmovement->save();
+
+        } catch (\Exception $e) {
+            Log::error('Transfer updateTransfer error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => Auth::id(),
+                'request_data' => $request->all()
+            ]);
+            DB::rollBack();
+            return response()->json('Güncelleme başarısız: ' . $e->getMessage(), 500);
+        }
+        DB::commit();
+        return response()->json('Transfer güncellendi', 200);
     }
 }

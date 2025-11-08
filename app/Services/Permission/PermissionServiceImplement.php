@@ -4,10 +4,10 @@ namespace App\Services\Permission;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use App\Services\BaseService;
+use LaravelEasyRepository\Service;
 use App\Repositories\Permission\PermissionRepository;
 
-class PermissionServiceImplement extends BaseService implements PermissionService{
+class PermissionServiceImplement extends Service implements PermissionService{
 
     /**
      * don't change $this->mainRepository variable name

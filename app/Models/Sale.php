@@ -41,14 +41,19 @@ class Sale extends Model
 
     }
 
-    public function user(): HasOne
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->hasOne(User::class, 'id', 'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function customer(): HasOne
+    public function customer(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->hasOne(Customer::class, 'id', 'customer_id');
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function invoice(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Invoice::class, 'invoice_id');
     }
 
     public function stock_card_movement(): HasOne
@@ -56,9 +61,19 @@ class Sale extends Model
         return $this->hasOne(StockCardMovement::class, 'id', 'stock_card_movement_id');
     }
 
+    public function stockCardMovement(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(StockCardMovement::class, 'stock_card_movement_id');
+    }
+
     public function stock_card(): HasOne
     {
         return $this->hasOne(StockCard::class, 'id', 'stock_card_id');
+    }
+
+    public function stockCard(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(StockCard::class, 'stock_card_id');
     }
 
     public function statusName()
@@ -67,9 +82,9 @@ class Sale extends Model
     }
 
 
-    public function phone(): HasOne
+    public function phone(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->hasOne(Phone::class, 'id', 'stock_card_id');
+        return $this->belongsTo(Phone::class, 'stock_card_movement_id');
     }
 
     public function stock_card_list(): HasOne
@@ -85,6 +100,16 @@ class Sale extends Model
     public function sellerTable(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Seller::class);
+    }
+
+    public function seller(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Seller::class, 'seller_id');
+    }
+
+    public function deliveryPersonnel(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'delivery_personnel');
     }
 
 

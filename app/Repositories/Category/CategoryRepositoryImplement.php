@@ -4,10 +4,10 @@ namespace App\Repositories\Category;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Repositories\BaseRepositoryImplement;
+use LaravelEasyRepository\Implementations\Eloquent;
 use App\Models\Category;
 
-class CategoryRepositoryImplement extends BaseRepositoryImplement implements CategoryRepository
+class CategoryRepositoryImplement extends Eloquent implements CategoryRepository
 {
 
     /**
@@ -15,7 +15,7 @@ class CategoryRepositoryImplement extends BaseRepositoryImplement implements Cat
      * Don't remove or change $this->model variable name
      * @property Model|mixed $model;
      */
-    protected $model;
+    protected Category $model;
 
     public function __construct(Category $model)
     {

@@ -40,10 +40,8 @@
       <path value="$PROJECT_DIR$/vendor/ramsey/collection" />
       <path value="$PROJECT_DIR$/vendor/spatie/flare-client-php" />
       <path value="$PROJECT_DIR$/vendor/spatie/backtrace" />
-      <path value="$PROJECT_DIR$/vendor/spatie/laravel-package-tools" />
       <path value="$PROJECT_DIR$/vendor/spatie/image-optimizer" />
       <path value="$PROJECT_DIR$/vendor/spatie/laravel-ignition" />
-      <path value="$PROJECT_DIR$/vendor/spatie/laravel-activitylog" />
       <path value="$PROJECT_DIR$/vendor/spatie/ignition" />
       <path value="$PROJECT_DIR$/vendor/vlucas/phpdotenv" />
       <path value="$PROJECT_DIR$/vendor/dflydev/dot-access-data" />
@@ -297,9 +295,14 @@
       <path value="$PROJECT_DIR$/vendor/dompdf/php-font-lib" />
       <path value="$PROJECT_DIR$/vendor/laravel/prompts" />
       <path value="$PROJECT_DIR$/vendor/symfony/polyfill-php83" />
+      <path value="$PROJECT_DIR$/vendor/itsgoingd/clockwork" />
+      <path value="$PROJECT_DIR$/vendor/barryvdh/laravel-debugbar" />
+      <path value="$PROJECT_DIR$/vendor/php-debugbar/php-debugbar" />
+      <path value="$PROJECT_DIR$/vendor/mongodb/mongodb" />
+      <path value="$PROJECT_DIR$/vendor/jenssegers/mongodb" />
     </include_path>
   </component>
-  <component name="PhpProjectSharedConfiguration" php_language_level="8.3" />
+  <component name="PhpProjectSharedConfiguration" php_language_level="8.1" />
   <component name="PhpStanOptionsConfiguration">
     <option name="transferred" value="true" />
   </component>

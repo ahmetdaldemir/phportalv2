@@ -5,16 +5,16 @@ namespace App\Services\Bank;
 use App\Repositories\Bank\BankRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use App\Services\BaseService;
+use LaravelEasyRepository\Service;
 
-class BankServiceImplement extends BaseService implements BankService{
+class BankServiceImplement extends Service implements BankService{
 
 
     /**
      * don't change $this->mainRepository variable name
      * because used in extends service class
      */
-    protected $mainRepository;
+    protected BankRepository $mainRepository;
 
     public function __construct(BankRepository $mainRepository)
     {

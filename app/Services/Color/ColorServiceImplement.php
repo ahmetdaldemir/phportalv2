@@ -4,10 +4,10 @@ namespace App\Services\Color;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use App\Services\BaseService;
+use LaravelEasyRepository\Service;
 use App\Repositories\Color\ColorRepository;
 
-class ColorServiceImplement extends BaseService implements ColorService{
+class ColorServiceImplement extends Service implements ColorService{
 
      /**
      * don't change $this->mainRepository variable name

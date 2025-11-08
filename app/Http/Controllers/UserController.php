@@ -120,4 +120,30 @@ class UserController extends Controller
         return $this->userService->update($request->id, $data);
     }
 
+    protected function changePassword(Request $request)
+    {
+        try {
+            $request->validate([
+                'user_id' => 'required|integer|exists:users,id',
+                'new_password' => 'required|string|min:8'
+            ]);
+
+            $user = User::findOrFail($request->user_id);
+            
+            $user->password = bcrypt($request->new_password);
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Şifre başarıyla değiştirildi'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Şifre değiştirilirken bir hata oluştu: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

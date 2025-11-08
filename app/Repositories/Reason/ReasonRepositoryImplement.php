@@ -4,9 +4,9 @@ namespace App\Repositories\Reason;
 
 use App\Models\Reason;
 use Illuminate\Support\Facades\Auth;
-use App\Repositories\BaseRepositoryImplement;
+use LaravelEasyRepository\Implementations\Eloquent;
 
-class ReasonRepositoryImplement extends BaseRepositoryImplement implements ReasonRepository{
+class ReasonRepositoryImplement extends Eloquent implements ReasonRepository{
 
     /**
     * Model class to be used in this repository for the common methods inside Eloquent

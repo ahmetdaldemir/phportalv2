@@ -4,16 +4,16 @@ namespace App\Services\Accounting;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use App\Services\BaseService;
+use LaravelEasyRepository\Service;
 use App\Repositories\AccountingCategory\AccountingCategoryRepository;
 
-class AccountingServiceImplement extends BaseService implements AccountingService{
+class AccountingServiceImplement extends Service implements AccountingService{
 
      /**
      * don't change $this->mainRepository variable name
      * because used in extends service class
      */
-     protected $mainRepository;
+     protected AccountingCategoryRepository $mainRepository;
 
     public function __construct(AccountingCategoryRepository $mainRepository)
     {

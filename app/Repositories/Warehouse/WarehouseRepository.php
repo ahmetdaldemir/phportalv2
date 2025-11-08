@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Warehouse;
 
-use App\Repositories\BaseRepository;
+use LaravelEasyRepository\Repository;
 
-interface WarehouseRepository extends BaseRepository{
+interface WarehouseRepository extends Repository{
 
     public function get();
 

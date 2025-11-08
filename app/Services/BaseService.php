@@ -21,4 +21,34 @@ abstract class BaseService
     {
         return $this->mainRepository;
     }
+    
+    public function get($columns = ['*'])
+    {
+        return $this->mainRepository->get($columns);
+    }
+    
+    public function all()
+    {
+        return $this->mainRepository->all();
+    }
+    
+    public function find($id)
+    {
+        return $this->mainRepository->find($id);
+    }
+    
+    public function create($data)
+    {
+        return $this->mainRepository->create($data);
+    }
+    
+    public function update($id, $data)
+    {
+        return $this->mainRepository->update($id, $data);
+    }
+    
+    public function delete($id)
+    {
+        return $this->mainRepository->delete($id);
+    }
 }

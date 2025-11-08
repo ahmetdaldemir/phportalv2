@@ -205,7 +205,7 @@
         <hr class="my-5">
     </div>
 @endsection
-@include('components.customermodaltechnicservice')
+@include('components.customermodal')
 @section('custom-js')
     <script src="{{asset('assets/vendor/libs/jquery-repeater/jquery-repeater.js')}}"></script>
     <script src="{{asset('assets/js/pages-account-settings-account.js')}}"></script>
@@ -274,60 +274,65 @@
 
     </script>
 
+    <!-- Vue.js App for Technical Service Edit -->
     <script>
-        app.controller("mainController", function ($scope, $http, $httpParamSerializerJQLike, $window) {
-            $scope.getCustomers = function () {
-                var postUrl = window.location.origin + '/customers?type=customer';   // Returns base URL (https://example.com)
-                $http({
-                    method: 'GET',
-                    //url: './comment/change_status?id=' + id + '&status='+status+'',
-                    url: postUrl,
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof Vue === 'undefined') {
+            console.error('Vue.js is not loaded.');
+            return;
+        }
+
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    customers: @json($customers ?? []),
+                    globalStore: window.globalStore || { cache: { brands: [], colors: [], versions: [], customers: [] } }
+                }
+            },
+            computed: {
+                brands() {
+                    return this.globalStore.cache.brands.length > 0 
+                        ? this.globalStore.cache.brands 
+                        : @json($brands ?? []);
+                }
+            },
+            methods: {
+                updateSelectOptions() {
+                    // Update select2 if needed
+                    if (jQuery && jQuery.fn.select2) {
+                        setTimeout(() => {
+                            jQuery('#selectCustomer').trigger('change');
+                        }, 100);
                     }
-                }).then(function successCallback(response) {
-                    $scope.customers = response.data;
+                }
+            },
+            mounted() {
+                // Listen for customer save events
+                window.addEventListener('customerSaved', (event) => {
+                    const customer = event.detail;
+                    if (customer && customer.id) {
+                        // Check if customer already exists
+                        const exists = this.customers.find(c => c.id === customer.id);
+                        if (!exists) {
+                            this.customers.push(customer);
+                        }
+                        
+                        // Update select option
+                        setTimeout(() => {
+                            const selectCustomer = document.getElementById('selectCustomer');
+                            if (selectCustomer) {
+                                selectCustomer.value = customer.id;
+                                jQuery('#selectCustomer').trigger('change');
+                            }
+                        }, 100);
+                        
+                        console.log('New customer selected:', customer);
+                    }
                 });
             }
-            $scope.customerSave = function () {
-
-                 if($("input[name='phone1']").val() == "")
-                 {
-                     alert('Telefon numarası boş olamaz');
-                 }else if($("input[name='firstname']").val() == ""){
-                     alert('İsim Alanı boş olamaz');
-                 }else if($("input[name='lastname']").val() == ""){
-                     alert('Soyisim alanı boş olamaz');
-                 }else{
-
-                     var postUrl = window.location.origin + '/custom_customerstore';   // Returns base URL (https://example.com)
-                     var formData = $("#customerForm").serialize();
-
-                     $http({
-                         method: 'POST',
-                         url: postUrl,
-                         data: formData,
-                         dataType: "json",
-                         encode: true,
-                         headers: {
-                             'Content-Type': 'application/x-www-form-urlencoded'
-                         }
-                     }).then(function successCallback(response) {
-                         $scope.getCustomers();
-                         $('#selectCustomer option:selected').val(response.data.id);
-                         var modalDiv = $("#editUser");
-                         modalDiv.modal('hide');
-                         modalDiv
-                             .find("input,textarea,select")
-                             .val('')
-                             .end()
-                             .find("input[type=checkbox], input[type=radio]")
-                             .prop("checked", "")
-                             .end();
-                     });
-                 }
-
-            }
-        });
+        }).mount('body');
+    });
     </script>
 @endsection

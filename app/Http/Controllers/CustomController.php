@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Admin\User;
+use App\Models\User;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\City;
@@ -20,6 +20,7 @@ use App\Services\Seller\SellerService;
 use App\Services\StockCard\StockCardService;
 use App\Services\Transfer\TransferService;
 use Illuminate\Support\Facades\DB;
+use App\Helper\SearchHelper;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -37,8 +38,8 @@ class CustomController extends Controller
     public function __construct(CustomerService $customerService, SellerService $sellerService, StockCardService $stockCardService, TransferService $transferService)
     {
         $this->customerService = $customerService;
-        $this->sellerService = $sellerService;
         $this->stockCardService = $stockCardService;
+        $this->sellerService = $sellerService;
         $this->transferService = $transferService;
         $this->stockCardMovement = new StockCardMovement();
     }
@@ -51,12 +52,60 @@ class CustomController extends Controller
 
     public function customerstore(Request $request)
     {
+        // Validate required fields
+        $request->validate([
+            'firstname' => 'required|string|max:255',
+            'lastname' => 'required|string|max:255',
+            'phone1' => 'required|string|max:20',
+            'type' => 'nullable|in:account,customer,siteCustomer'
+        ]);
+
+        // Determine the type to use for duplicate check
+        $typeToCheck = $request->type ?? 'customer';
+        
+        // Check if customer with same phone1 and type already exists
+        $existingCustomer = Customer::where('phone1', $request->phone1)
+            ->where('type', $typeToCheck)
+            ->where('company_id', Auth::user()->company_id)
+            ->first();
+
+        // If updating, exclude the current record from duplicate check
+        if (!empty($request->id)) {
+            $existingCustomer = Customer::where('phone1', $request->phone1)
+                ->where('type', $typeToCheck)
+                ->where('company_id', Auth::user()->company_id)
+                ->where('id', '!=', $request->id)
+                ->first();
+        }
+
+        // If duplicate found, return warning with existing customer data
+        if ($existingCustomer) {
+            // Parse firstname and lastname from fullname
+            $nameParts = explode(' ', $existingCustomer->fullname, 2);
+            $existingFirstname = $nameParts[0] ?? '';
+            $existingLastname = $nameParts[1] ?? '';
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Bu telefon numarası ve tip kombinasyonu zaten kayıtlı!',
+                'warning' => true,
+                'customer' => $existingCustomer,
+                'existing_customer' => [
+                    'id' => $existingCustomer->id,
+                    'fullname' => $existingCustomer->fullname,
+                    'phone1' => $existingCustomer->phone1,
+                    'type' => $existingCustomer->type,
+                    'firstname' => $existingFirstname,  // Parsed from fullname
+                    'lastname' => $existingLastname     // Parsed from fullname
+                ]
+            ], 409); // 409 Conflict
+        }
+
+        // Prepare data for create/update
+        // Combine firstname and lastname into fullname (not stored separately)
         $data = array(
-            'firstname' => $request->firstname,
-            'lastname' => $request->lastname,
-            'fullname' => $request->firstname . ' ' . $request->lastname,
+            'fullname' => trim($request->firstname . ' ' . $request->lastname),
             'iban' => $request->iban,
-            'code' => Str::uuid(),
             'tc' => $request->tc,
             'phone1' => $request->phone1,
             'phone2' => $request->phone2,
@@ -65,18 +114,70 @@ class CustomController extends Controller
             'district' => $request->district,
             'email' => $request->email,
             'note' => $request->note,
-            'seller_id' => $request->seller_id,
-            'type' => $request->type,
+            'seller_id' => $request->seller_id ?? Auth::user()->seller_id, // Use logged in user's seller_id as default
+            'type' => $request->type ?? 'customer', // Default to 'customer'
             'company_id' => Auth::user()->company_id,
             'user_id' => Auth::id()
         );
+
+        // Only set code for new customers
         if (empty($request->id)) {
-            $this->customerService->create($data);
-        } else {
-            $this->customerService->update($request->id, $data);
+            $data['code'] = Str::uuid();
         }
 
-        return Customer::latest()->first();
+        try {
+            if (empty($request->id)) {
+                // Create new customer
+                $customer = $this->customerService->create($data);
+
+                // Check if customer creation failed
+                if (!$customer || is_array($customer)) {
+                    throw new \Exception('Müşteri oluşturulamadı. Lütfen bilgileri kontrol edip tekrar deneyin (1).');
+                }
+                
+                $message = 'Müşteri başarıyla oluşturuldu!';
+            } else {
+                // Update existing customer
+                $updateResult = $this->customerService->update($request->id, $data);
+                
+                // Check if update failed
+                if (is_array($updateResult) && empty($updateResult)) {
+                    throw new \Exception('Müşteri güncellenemedi. Lütfen bilgileri kontrol edip tekrar deneyin (2).');
+                }
+                
+                $customer = Customer::find($request->id);
+                $message = 'Müşteri başarıyla güncellendi!';
+            }
+
+            // Final validation
+            if (!$customer) {
+                throw new \Exception('Müşteri bilgileri alınamadı.');
+            }
+
+            // Parse firstname and lastname from fullname for frontend compatibility
+            $nameParts = explode(' ', $customer->fullname, 2);
+            $firstname = $nameParts[0] ?? '';
+            $lastname = $nameParts[1] ?? '';
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'customer' => $customer,
+                'id' => $customer->id,
+                'fullname' => $customer->fullname,
+                'firstname' => $firstname,  // Parsed from fullname
+                'lastname' => $lastname,    // Parsed from fullname
+                'phone1' => $customer->phone1,
+                'type' => $customer->type
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Müşteri kaydedilirken bir hata oluştu: ' . $e->getMessage(),
+                'error' => true
+            ], 500);
+        }
     }
 
     public function customerget(Request $request)
@@ -144,19 +245,38 @@ class CustomController extends Controller
 
     public function searchStockCard(Request $request)
     {
-        $keyword = $request->key;
-        $stockcard = StockCard::where('name', 'LIKE', '%' . $keyword . '%')->get();
+        $keyword = $request->search ?? $request->key;
+        
+        if (!$keyword || strlen($keyword) < 2) {
+            return response()->json([]);
+        }
+        
+        $user = Auth::user();
+        $stockcard = StockCard::where('company_id', $user->company_id)
+            ->where('name', 'LIKE', '%' . $keyword . '%')
+            ->with(['brand', 'category'])
+            ->limit(10)
+            ->get();
+            
         if (count($stockcard) == 0) {
             $stockcardmovement = StockCardMovement::where('serial_number', 'LIKE', '%' . $keyword . '%')->first();
             if ($stockcardmovement) {
-                $stockcard[] = StockCard::find($stockcardmovement->stock_card_id);
+                $stockcard[] = StockCard::with(['brand', 'category'])->find($stockcardmovement->stock_card_id);
             }
         }
+        
+        $data = [];
         foreach ($stockcard as $item) {
-            $data[] = array(
-                'name' => $item->name . " - " . Brand::find($item->brand_id)->name . " - " . $this->getVersionName($item->version_id),
-                'quantity' => $this->getStockQuantity($item->id),
-            );
+            if ($item) {
+                $data[] = array(
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'brand_name' => $item->brand->name ?? '',
+                    'category_name' => $item->category->name ?? '',
+                    'version_name' => $this->getVersionName($item->version_id),
+                    'quantity' => $this->getStockQuantity($item->id),
+                );
+            }
         }
 
         return response()->json($data, 200);
@@ -197,74 +317,31 @@ class CustomController extends Controller
         if ($request->filled('serialNumber')) {
             $stockcardmovement = Sale::where('serial', $request->serialNumber)->first();
             if ($stockcardmovement) {
-                return response()->json(['autoredirect' => false, 'id' => $stockcardmovement->stock_card_id, 'serial' => $request->serialNumber], 200);;
+                return response()->json(['autoredirect' => false, 'id' => $stockcardmovement->stock_card_id, 'serial' => $request->serialNumber,'message' => 'Seri Numarası Bulunamadı'], 200);;
             }
             $stockcardmovementNew = StockCardMovement::where('serial_number', $request->serialNumber)->first();
             if(!$stockcardmovementNew)
             {
-                return response()->json(['autoredirect' => false, 'id' => 0, 'serial' => $request->serialNumber], 200);;
+                return response()->json(['autoredirect' => false, 'id' => 0, 'serial' => $request->serialNumber,'message' => 'Seri Numarası Bulunamadı'], 200);;
             }
             if ($stockcardmovementNew->type == 3) // Hasarlı Sorgusu
             {
-                return response()->json(['autoredirect' => false, 'id' => $stockcardmovement->stock_card_id, 'serial' => $request->serialNumber], 200);;
+                return response()->json(['autoredirect' => false, 'id' => $stockcardmovement->stock_card_id, 'serial' => $request->serialNumber,'message' => 'Seri Numarası Hasarlı'], 200);;
             }
             if ($stockcardmovementNew->type == 4) // Transfer Sorgusu
             {
-                return response()->json(['autoredirect' => false, 'id' => $stockcardmovementNew->stock_card_id, 'serial' => $request->serialNumber], 200);;
+                return response()->json(['autoredirect' => false, 'id' => $stockcardmovementNew->stock_card_id, 'serial' => $request->serialNumber,'message' => 'Seri Numarası Transfer Edilmiş'], 200);;
+            }
+            if ($stockcardmovementNew->type == 2) // Satılmış Sorgusu
+            {
+                return response()->json(['autoredirect' => false, 'id' => $stockcardmovementNew->stock_card_id, 'serial' => $request->serialNumber,'message' => 'Seri Numarası Satılmış'], 200);;
             }
             if (!Auth::user()->hasRole('super-admin') && $stockcardmovementNew->seller_id != Auth::user()->seller_id) // HAsarlı Sorgusu
             {
-                return response()->json(['autoredirect' => false, 'id' => $stockcardmovementNew->stock_card_id, 'serial' => $request->serialNumber], 200);;
+                return response()->json(['autoredirect' => false, 'id' => $stockcardmovementNew->stock_card_id, 'serial' => $request->serialNumber,'message' => 'Farklı Bayiye Ait Ürün'], 200);;
             }
-
-            return response()->json(['autoredirect' => true, 'id' => $stockcardmovementNew->stock_card_id, 'serial' => $request->serialNumber], 200);
-
-            /* Bu alan sale tablosundan kontrol edildiği için iptal edildi.
-             $in = $stockcardmovement->where('type', 1)->sum('quantity');
-             $out = $stockcardmovement->where('type', 2)->sum('quantity');
-             $response = $in - $out;
-             if ($response > 0) {
-                 $stockcardmovement = StockCardMovement::where('serial_number', $request->serialNumber)->first();
-                 if ($stockcardmovement->quantityCheckData() <= 0) {
-                     return response()->json(['autoredirect' => false, 'id' => $stockcardmovement->stock_card_id, 'serial' => $request->serialNumber], 200);;
-                 }
-             }
-            */
+            return response()->json(['autoredirect' => true, 'id' => $stockcardmovementNew->stock_card_id, 'serial' => $request->serialNumber,'message' => 'Seri Numarası Satılabilir'], 200);
         }
-
-        $data = [];
-        $stock = DB::table('stock_cards')->whereNull('deleted_at');
-        if ($request->filled('stockName')) {
-            $stock->where('name', 'like', '%' . $request->stockName . '%');
-        }
-        if ($request->filled('category')) {
-            $categorylist = Category::where('parent_id', $request->category)->pluck('id')->toArray();
-            $categorylist[] = $request->category;
-            $stock->whereIn('category_id', $categorylist);
-        }
-
-        if ($request->filled('brand')) {
-            $stock->where('brand_id', $request->brand);
-        }
-        if ($request->filled('version')) {
-            $stock = $stock->whereJsonContains('version_id', $request->version);
-        }
-
-        // $stocks =  array_merge((array)$stock->get(), (array)$stock1->get());
-        $stocks = $stock->get();
-        foreach ($stocks as $item) {
-            $data[] = array(
-                'id' => $item->id,
-                'name' => $item->name,
-                'sku' => $item->sku,
-                'barcode' => $item->barcode,
-                'category' => Category::find($item->category_id)->name ?? "Bulunamadı",
-                'quantity' => (new \App\Models\StockCard)->quantityId($item->id),
-                'brand' => Brand::find($item->brand_id)->name ?? "Bulunamadı",
-                'version' => $this->version($item->version_id)
-            );
-        }
-        return response()->json($data, 200);
     }
 
     public function version($versions)
@@ -288,7 +365,24 @@ class CustomController extends Controller
     public function serialcheck(Request $request)
     {
 
-        $stockcardmovement = StockCardMovement::where('type', 1)->where("serial_number", $request->id)->first();
+        $searchInfo = SearchHelper::determineSearchType($request->id);
+
+        if ($searchInfo) {
+            $query = StockCardMovement::where('type', 1);
+            if ($request->filled('seller_id')) {
+                $query->where('seller_id', $request->seller_id);
+            }
+            if ($searchInfo['type'] === 'barcode') {
+                if (!Auth::user()->hasRole('Depo Sorumlusu') && !Auth::user()->hasRole('super-admin')) {
+                    $query->where('seller_id', Auth::user()->seller_id);
+                }
+                $stockcardmovement = $query->where('barcode', $searchInfo['value'])->first();
+            } else {
+                $stockcardmovement = $query->where('serial_number', $searchInfo['value'])->first();
+            }
+        }
+    
+
         if ($stockcardmovement) {
             if (!Auth::user()->hasRole('Depo Sorumlusu') && !Auth::user()->hasRole('super-admin')) {
                 if ($stockcardmovement->seller_id != Auth::user()->seller_id) {
@@ -298,7 +392,6 @@ class CustomController extends Controller
                 }
             }
 
-
             $stockcardmovementCheck = Sale::where('serial', $request->id)->first();
             if ($stockcardmovementCheck) {
                 $data['status'] = false;
@@ -306,13 +399,19 @@ class CustomController extends Controller
                 return response()->json($data, 200);
             } else {
                 $data['status'] = true;
-                $data['sales_price'] = StockCardMovement::where('serial_number', $request->id)->where('type', 1)->first();
+                $data['id'] = $stockcardmovement->id; // Stock card movement ID - ÖNEMLİ!
+                $data['sales_price'] = $stockcardmovement->sale_price;
+                $data['stock_card_id'] = $stockcardmovement->stock_card_id;
+                $data['base_cost_price'] = $stockcardmovement->base_cost_price;
+                $data['serial_number'] = $stockcardmovement->serial_number;
+                $data['barcode'] = $stockcardmovement->barcode ?? '';
                 return response()->json($data, 200);
             }
 
         }
 
     }
+
 
 
     public function getStockCardCategory(Request $request)
@@ -422,6 +521,24 @@ class CustomController extends Controller
         return response()->json('Yes',200);
     }
 
+    public function getTransferBarcodeCheck(Request $request)
+    {
+        $stockcardmovement = StockCardMovement::where('type', 1)->where('seller_id',$request->seller_id)->where("barcode", $request->barcode)->get();
+        if($stockcardmovement->count() == 0)
+        {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transfer Edilemez !'
+            ], 200);
+        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Barkod doğrulandı',
+            'available_quantity' => $stockcardmovement->count()
+        ], 200);
+    }
+
+    
     public function cost_update()
     {
         $sales = Sale::all();

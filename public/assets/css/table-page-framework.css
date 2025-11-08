@@ -1,0 +1,630 @@
+/* ============================================
+   TABLE PAGE FRAMEWORK - ORTAK CSS
+   Tüm tablo sayfaları için ortak UI/UX
+   ============================================ */
+
+/* ============================================
+   1. PAGE HEADER - Sayfa Başlığı
+   ============================================ */
+.table-page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
+}
+
+.table-page-header .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.table-page-header .header-left {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+@media (min-width: 768px) {
+    .table-page-header .header-left {
+        margin-bottom: 0;
+    }
+}
+
+.table-page-header .header-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    backdrop-filter: blur(10px);
+}
+
+.table-page-header .header-icon i {
+    font-size: 2rem;
+    color: white;
+}
+
+.table-page-header .header-text h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: white;
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.table-page-header .header-text h2 i {
+    margin-right: 0.5rem;
+}
+
+.table-page-header .header-text p {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+}
+
+.table-page-header .header-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.table-page-header .header-actions .btn {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.table-page-header .header-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ============================================
+   2. FILTER SECTION - Filtre Bölümü
+   ============================================ */
+.table-page-filters {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 20px rgba(240, 147, 251, 0.15);
+}
+
+.table-page-filters .filter-header {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px 12px 0 0;
+    padding: 1rem 1.5rem;
+    backdrop-filter: blur(10px);
+}
+
+.table-page-filters .filter-header h6 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: white;
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.table-page-filters .filter-header h6 i {
+    margin-right: 0.5rem;
+}
+
+.table-page-filters .filter-header small {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.8rem;
+}
+
+.table-page-filters .filter-body {
+    background: white;
+    border-radius: 0 0 12px 12px;
+    padding: 1.5rem;
+}
+
+.table-page-filters .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.table-page-filters .filter-row:last-child {
+    margin-bottom: 0;
+}
+
+.table-page-filters .filter-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.table-page-filters .filter-group.compact {
+    min-width: 150px;
+}
+
+.table-page-filters .filter-group.small {
+    min-width: 120px;
+}
+
+.table-page-filters .filter-group.auto {
+    min-width: auto;
+    flex: 0 0 auto;
+}
+
+.table-page-filters .filter-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.table-page-filters .filter-label i {
+    margin-right: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.table-page-filters .filter-input,
+.table-page-filters .filter-select {
+    width: 100%;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+}
+
+.table-page-filters .filter-input:focus,
+.table-page-filters .filter-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    outline: none;
+}
+
+.table-page-filters .filter-button {
+    border-radius: 6px;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.table-page-filters .filter-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.table-page-filters .filter-button.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.table-page-filters .filter-button.secondary {
+    background: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #e9ecef;
+}
+
+/* ============================================
+   3. SUMMARY CARDS - Özet Kartları
+   ============================================ */
+.table-page-summary {
+    margin-bottom: 1.5rem;
+}
+
+.table-page-summary .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.table-page-summary .summary-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    border: 1px solid #f1f3f4;
+    transition: all 0.3s ease;
+}
+
+.table-page-summary .summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.table-page-summary .summary-card .card-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 1.5rem;
+}
+
+.table-page-summary .summary-card .card-icon.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.table-page-summary .summary-card .card-icon.success {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
+
+.table-page-summary .summary-card .card-icon.warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.table-page-summary .summary-card .card-icon.info {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    color: white;
+}
+
+.table-page-summary .summary-card .card-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.table-page-summary .summary-card .card-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ============================================
+   4. DETAILED TOTALS - Detaylı Toplamlar
+   ============================================ */
+.table-page-totals {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    border: 1px solid #f1f3f4;
+}
+
+.table-page-totals .totals-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.table-page-totals .totals-header h6 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #495057;
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.table-page-totals .totals-header h6 i {
+    margin-right: 0.5rem;
+    color: #667eea;
+}
+
+.table-page-totals .totals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.table-page-totals .total-item {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 8px;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.table-page-totals .total-item:hover {
+    background: #e9ecef;
+    transform: translateY(-1px);
+}
+
+.table-page-totals .total-item .total-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.table-page-totals .total-item .total-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ============================================
+   5. DATA TABLE - Veri Tablosu
+   ============================================ */
+.table-page-table {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    border: 1px solid #f1f3f4;
+    margin-bottom: 1.5rem;
+}
+
+.table-page-table .table {
+    margin: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table-page-table .table thead th {
+    background: #233446;
+    color: white;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 1rem 0.75rem;
+    border: none;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table-page-table .table thead th:first-child {
+    border-radius: 0;
+}
+
+.table-page-table .table thead th:last-child {
+    border-radius: 0;
+}
+
+.table-page-table .table tbody td {
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid #f1f3f4;
+    vertical-align: middle;
+    font-size: 0.7rem;
+}
+
+.table-page-table .table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.table-page-table .table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table-page-table .table tfoot td {
+    background: #f8f9fa;
+    font-weight: 600;
+    padding: 1rem 0.75rem;
+    border-top: 2px solid #e9ecef;
+}
+
+/* ============================================
+   6. PAGINATION - Sayfalama
+   ============================================ */
+.table-page-pagination {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    border: 1px solid #f1f3f4;
+}
+
+.table-page-pagination .pagination {
+    justify-content: center;
+    margin: 0;
+}
+
+.table-page-pagination .pagination .page-item .page-link {
+    border: 1px solid #e9ecef;
+    color: #667eea;
+    padding: 0.5rem 0.75rem;
+    margin: 0 0.125rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.table-page-pagination .pagination .page-item .page-link:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    transform: translateY(-1px);
+}
+
+.table-page-pagination .pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+    color: white;
+}
+
+.table-page-pagination .pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    background: #f8f9fa;
+    border-color: #e9ecef;
+    cursor: not-allowed;
+}
+
+.table-page-pagination .pagination-info {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.table-page-pagination .pagination-info small {
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+/* ============================================
+   7. LOADING STATES - Yükleme Durumları
+   ============================================ */
+.table-page-loading {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+}
+
+.table-page-loading .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border-width: 0.3rem;
+}
+
+.table-page-empty {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+}
+
+.table-page-empty i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* ============================================
+   8. RESPONSIVE DESIGN - Mobil Uyumluluk
+   ============================================ */
+@media (max-width: 768px) {
+    .table-page-header .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .table-page-header .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+        margin-top: 1rem;
+    }
+    
+    .table-page-filters .filter-row {
+        flex-direction: column;
+    }
+    
+    .table-page-filters .filter-group {
+        min-width: 100%;
+    }
+    
+    .table-page-summary .summary-cards {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+    
+    .table-page-totals .totals-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    }
+    
+    .table-page-table {
+        overflow-x: auto;
+    }
+    
+    .table-page-table .table {
+        min-width: 600px;
+    }
+}
+
+@media (max-width: 576px) {
+    .table-page-header {
+        padding: 1rem;
+    }
+    
+    .table-page-header .header-icon {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .table-page-header .header-icon i {
+        font-size: 1.5rem;
+    }
+    
+    .table-page-header .header-text h2 {
+        font-size: 1.25rem;
+    }
+    
+    .table-page-filters .filter-body {
+        padding: 1rem;
+    }
+    
+    .table-page-summary .summary-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .table-page-totals .totals-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================
+   9. UTILITY CLASSES - Yardımcı Sınıflar
+   ============================================ */
+.text-compact {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+.price-display {
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+}
+
+.badge-modern {
+    border-radius: 6px;
+    font-weight: 500;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.btn-modern {
+    border-radius: 6px;
+    font-weight: 500;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+}
+
+.btn-modern:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ============================================
+   10. ANIMATIONS - Animasyonlar
+   ============================================ */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.table-page-fade-in {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.table-page-fade-in-delay-1 {
+    animation: fadeInUp 0.5s ease-out 0.1s both;
+}
+
+.table-page-fade-in-delay-2 {
+    animation: fadeInUp 0.5s ease-out 0.2s both;
+}
+
+.table-page-fade-in-delay-3 {
+    animation: fadeInUp 0.5s ease-out 0.3s both;
+}

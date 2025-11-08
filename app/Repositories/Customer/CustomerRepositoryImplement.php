@@ -3,10 +3,10 @@
 namespace App\Repositories\Customer;
 
 use Illuminate\Support\Facades\Auth;
-use App\Repositories\BaseRepositoryImplement;
+use LaravelEasyRepository\Implementations\Eloquent;
 use App\Models\Customer;
 
-class CustomerRepositoryImplement extends BaseRepositoryImplement implements CustomerRepository
+class CustomerRepositoryImplement extends Eloquent implements CustomerRepository
 {
 
     /**

@@ -44,7 +44,7 @@
                                     </dt>
                                     <dd class="col-sm-6 d-flex justify-content-md-end">
                                         <div class="w-px-150">
-                                            <input type="text" class="form-control datepicker flatpickr-input" name="create_date"  @if(isset($invoices)) value="{{$invoices->create_date}}" @else  value="{{date('d-m-Y')}}" @endif />
+                                            <input type="text" class="form-control single-datepicker" name="create_date"  @if(isset($invoices)) value="{{$invoices->create_date}}" @else  value="{{date('d-m-Y')}}" @endif />
                                         </div>
                                     </dd>
                                     <dt class="col-sm-6 mb-2 mb-sm-0 text-md-end">

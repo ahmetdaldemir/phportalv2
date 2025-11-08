@@ -21,6 +21,11 @@ abstract class BaseRepositoryImplement implements BaseRepository
     {
         return $this->model->all();
     }
+    
+    public function get($columns = ['*'])
+    {
+        return $this->model->select($columns)->get();
+    }
 
     public function find($id)
     {

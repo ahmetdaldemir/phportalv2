@@ -49,7 +49,7 @@
                         <tr>
                             <td style="font-weight: bold; padding-left: 5px; width: 120px; height: 21px;"> Marka/Model </td>
                             <td style="text-align: center; width: 10px; height: 21px;">:</td>
-                            <td class="detay" style="height: 21px;">{{$technical_service->brand->name}} - {{$technical_service->version->name}}</td>
+                            <td class="detay" style="height: 21px;">{{$technical_service->brand->name ?? 'Buluanmadı'}} - {{$technical_service->version->name  ?? 'Buluanmadı'}}</td>
                             <td style="font-weight: bold; padding-left: 5px; height: 21px; width: 60px;"> IMEI </td>
                             <td style="text-align: center; width: 10px; height: 21px;">:</td>
                             <td style="height: 21px; padding-right: 5px; text-align: right; width: 120px;">{{$technical_service->imei}}</td>

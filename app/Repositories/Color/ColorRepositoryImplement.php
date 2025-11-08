@@ -3,10 +3,10 @@
 namespace App\Repositories\Color;
 
 use Illuminate\Support\Facades\Auth;
-use App\Repositories\BaseRepositoryImplement;
+use LaravelEasyRepository\Implementations\Eloquent;
 use App\Models\Color;
 
-class ColorRepositoryImplement extends BaseRepositoryImplement implements ColorRepository{
+class ColorRepositoryImplement extends Eloquent implements ColorRepository{
 
     /**
     * Model class to be used in this repository for the common methods inside Eloquent

@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="container-xxl flex-grow-1 container-p-y">
+    <div id="sale-form-app" class="container-xxl flex-grow-1 container-p-y">
         <form id="invoiceForm" method="post" class="form-repeater source-item py-sm-3">
             <input type="hidden" name="id" @if(isset($invoices)) value="{{$invoices->id}}" @endif />
             <div class="row invoice-add">
@@ -14,14 +14,16 @@
                                     <div class="row mb-4">
                                         <label for="selectCustomer" class="form-label">Cari Seçiniz</label>
                                         <div class="col-md-9">
-                                            <select id="selectCustomer" class="w-100 select2"
-                                                    data-style="btn-default" name="customer_id" ng-init="getCustomers()"
-                                                    onchange="getCustomer(this.value)">
-                                                <option value="1" data-tokens="ketchup mustard">Genel Cari</option>
-                                                <option ng-repeat="customer in customers"
-                                                        @if(isset($invoices) && '@{{customer.id}}' == $invoices->customer_id) selected
-                                                        @endif data-value="@{{customer.id}}" value="@{{customer.id}}">
-                                                    @{{customer.fullname}}
+                                            <select 
+                                                v-model="form.customer_id" 
+                                                @change="onCustomerChange"
+                                                class="form-select">
+                                                <option value="1">Genel Cari</option>
+                                                <option 
+                                                    v-for="customer in customers" 
+                                                    :key="customer.id"
+                                                    :value="customer.id">
+                                                    @{{ customer.fullname }}
                                                 </option>
                                             </select>
                                         </div>
@@ -52,7 +54,7 @@
                                         </dt>
                                         <dd class="col-sm-6 d-flex justify-content-md-end">
                                             <div class="w-px-150">
-                                                <input type="text" class="form-control datepicker flatpickr-input"
+                                                <input type="text" class="form-control single-datepicker"
                                                        name="create_date"
                                                        @if(isset($invoices)) value="{{$invoices->create_date}}"
                                                        @else  value="{{date('d-m-Y')}}" @endif />
@@ -231,8 +233,8 @@
                                 @endforeach
                             </select>
                             <p class="mb-2"><i class="bx bx-calendar bx-md me-1"></i> Ödeneceği Tarih</p>
-                            <input type="text" class="form-control flatpickr-input" placeholder="DD-MM-YYYY"
-                                   id="flatpickr-date" readonly="readonly">
+                            <input type="text" class="form-control single-datepicker" placeholder="DD-MM-YYYY"
+                                   id="payment-date" readonly="readonly">
                         </div>
                     </div>
                     <!-- /Invoice Actions -->
@@ -372,7 +374,7 @@
                 });
             }
             $scope.customerSave = function () {
-                var postUrl = window.location.origin + '/custom_customerstore';   // Returns base URL (https://example.com)
+                var postUrl = window.location.origin + '/custom_customerstore';
                 var formData = $("#customerForm").serialize();
 
                 $http({
@@ -385,21 +387,122 @@
                         'Content-Type': 'application/x-www-form-urlencoded'
                     }
                 }).then(function successCallback(response) {
-                    $scope.getCustomers();
-                    $(".customerinformation").html('<p className="mb-1">\'+data.address+\'</p>\n' + '<p className="mb-1">\'+data.phone1+\'</p>');
-                    $('#selectCustomer option:selected').val(response.data.id);
-                    var modalDiv = $("#editUser");
-                    modalDiv.modal('hide');
-                    modalDiv
-                        .find("input,textarea,select")
-                        .val('')
-                        .end()
-                        .find("input[type=checkbox], input[type=radio]")
-                        .prop("checked", "")
-                        .end();
+                    var result = response.data;
+                    
+                    // Check if it's a success response
+                    if (result.success) {
+                        $scope.getCustomers();
+                        $('#selectCustomer').val(result.id);
+                        
+                        var modalDiv = $("#editUser");
+                        modalDiv.modal('hide');
+                        modalDiv.find("input,textarea,select").val('').end()
+                            .find("input[type=checkbox], input[type=radio]").prop("checked", "").end();
+                        
+                        if (window.Swal) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Başarılı!',
+                                text: result.message,
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                        } else {
+                            alert(result.message);
+                        }
+                    }
+                }, function errorCallback(response) {
+                    // Handle duplicate or error
+                    if (response.status === 409 && response.data.warning) {
+                        var existingCustomer = response.data.existing_customer;
+                        var useExisting = confirm(
+                            '⚠️ ' + response.data.message + '\n\n' +
+                            'Mevcut Müşteri Bilgileri:\n' +
+                            'Ad Soyad: ' + existingCustomer.fullname + '\n' +
+                            'Telefon: ' + existingCustomer.phone1 + '\n' +
+                            'Tip: ' + existingCustomer.type + '\n\n' +
+                            'Bu müşteriyi kullanmak ister misiniz?'
+                        );
+                        
+                        if (useExisting) {
+                            $scope.getCustomers();
+                            $('#selectCustomer').val(existingCustomer.id);
+                            
+                            var modalDiv = $("#editUser");
+                            modalDiv.modal('hide');
+                            modalDiv.find("input,textarea,select").val('').end()
+                                .find("input[type=checkbox], input[type=radio]").prop("checked", "").end();
+                            
+                            if (window.Swal) {
+                                Swal.fire({
+                                    icon: 'info',
+                                    title: 'Mevcut Müşteri Seçildi',
+                                    text: existingCustomer.fullname + ' müşterisi seçildi.'
+                                });
+                            }
+                        }
+                    } else {
+                        if (window.Swal) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Hata!',
+                                text: response.data.message || 'Müşteri kaydedilirken hata oluştu!'
+                            });
+                        } else {
+                            alert(response.data.message || 'Müşteri kaydedilirken hata oluştu!');
+                        }
+                    }
                 });
             }
         });
+    </script>
+
+    <!-- Vue.js App for Sale Form -->
+    <script>
+    const { createApp } = Vue;
+
+    createApp({
+        data() {
+            return {
+                form: {
+                    id: @json($invoices->id ?? null),
+                    customer_id: @json($invoices->customer_id ?? '1'),
+                    number: @json($invoices->number ?? ''),
+                    create_date: @json($invoices->create_date ?? date('Y-m-d'))
+                },
+                customers: @json($customers ?? []),
+                submitting: false
+            }
+        },
+        computed: {
+            selectedCustomer() {
+                return this.customers.find(c => c.id == this.form.customer_id);
+            }
+        },
+        methods: {
+            onCustomerChange() {
+                console.log('Customer changed:', this.selectedCustomer);
+            },
+            
+            async loadCustomers() {
+                try {
+                    const response = await fetch('/api/customers');
+                    const data = await response.json();
+                    this.customers = data;
+                } catch (error) {
+                    console.error('Error loading customers:', error);
+                }
+            }
+        },
+        
+        mounted() {
+            // Listen for customer save events
+            window.addEventListener('customerSaved', (event) => {
+                this.customers.push(event.detail);
+                this.form.customer_id = event.detail.id;
+            });
+        }
+    }).mount('#sale-form-app');
     </script>
 
 @endsection

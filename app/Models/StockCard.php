@@ -84,36 +84,54 @@ class StockCard extends BaseModel
     }
 
 
-    public function seller(): HasOne
+    public function seller(): BelongsTo
     {
-        return $this->hasOne(Seller::class, 'id', 'seller_id');
+        return $this->belongsTo(Seller::class, 'seller_id');
     }
 
-    public function category(): HasOne
+    public function category(): BelongsTo
     {
-        return $this->hasOne(Category::class, 'id', 'category_id');
+        return $this->belongsTo(Category::class, 'category_id');
     }
 
-    public function warehouse(): HasOne
+    public function warehouse(): BelongsTo
     {
-        return $this->hasOne(Warehouse::class, 'id', 'warehouse_id');
+        return $this->belongsTo(Warehouse::class, 'warehouse_id');
     }
 
-    public function brand(): HasOne
+    public function brand(): BelongsTo
     {
-        return $this->hasOne(Brand::class, 'id', 'brand_id');
+        return $this->belongsTo(Brand::class, 'brand_id');
     }
 
     public function version()
     {
-
+        return $this->belongsTo(Version::class, 'version_id', 'id');
+    }
+    
+    public function versionNames()
+    {
         $array = $this->version_id;
 
         $names = collect($array)->map(function ($name, $key) {
              return Version::find($name)->name ?? "Belirtilmedi";
         });
         return $names->toJson();
-        //return $this->hasOne(Version::class, 'id', 'version_id');
+    }
+    
+    public function color(): BelongsTo
+    {
+        return $this->belongsTo(Color::class, 'color_id');
+    }
+    
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'company_id');
+    }
+    
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function quantity()

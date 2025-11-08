@@ -19,6 +19,7 @@ use App\Services\User\UserService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Helper\BarcodeHelper;
 
 class PhoneController extends Controller
 {
@@ -139,6 +140,7 @@ class PhoneController extends Controller
         $data['colors'] = Color::where('company_id', Auth::user()->company_id)->get();
         $data['sellers'] = $this->sellerService->get();
         $data['citys'] = City::all();
+        $data['customers'] = \App\Models\Customer::where('company_id', Auth::user()->company_id)->get();
 
         return view('module.phone.form', $data);
     }
@@ -152,6 +154,7 @@ class PhoneController extends Controller
         $data['colors'] = Color::all();
         $data['sellers'] = $this->sellerService->get();
         $data['citys'] = City::all();
+        $data['customers'] = \App\Models\Customer::where('company_id', Auth::user()->company_id)->get();
         return view('module.phone.edit', $data);
     }
 
@@ -162,6 +165,7 @@ class PhoneController extends Controller
         $data['colors'] = Color::all();
         $data['sellers'] = $this->sellerService->get();
         $data['citys'] = City::all();
+        $data['customers'] = \App\Models\Customer::where('company_id', Auth::user()->company_id)->get();
         return view('module.phone.show', $data);
     }
 
@@ -183,6 +187,7 @@ class PhoneController extends Controller
         $data['citys'] = City::all();
         $data['sellers'] = $this->sellerService->get();
         $data['users'] = $this->userService->get()->where('is_status', 1);
+        $data['customers'] = \App\Models\Customer::where('company_id', Auth::user()->company_id)->get();
         return view('module.phone.sale', $data);
     }
 
@@ -248,7 +253,7 @@ class PhoneController extends Controller
             $phone->altered_parts = $request->altered_parts;
             $phone->physical_condition = $request->physical_condition;
             $phone->memory = $request->memory;
-            $phone->batery = $request->batery;
+            $phone->battery = $request->battery ?? $request->batery;
             $phone->warranty = $warranty;
             $phone->save();
         }else{
@@ -262,7 +267,7 @@ class PhoneController extends Controller
             $phone->seller_id = $request->seller_id??Auth::user()->seller_id;
             $phone->quantity = $request->quantity;
             $phone->type = $request->type;
-            $phone->barcode = 'PH' . rand(1111111, 9999999);
+            $phone->barcode = BarcodeHelper::generateBarcode('PH', 7);
             $phone->description = $request->description;
             $phone->cost_price = $request->cost_price;
             $phone->sale_price = $request->sale_price;
@@ -270,7 +275,7 @@ class PhoneController extends Controller
             $phone->altered_parts = $request->altered_parts;
             $phone->physical_condition = $request->physical_condition;
             $phone->memory = $request->memory;
-            $phone->batery = $request->batery;
+            $phone->battery = $request->battery ?? $request->batery;
             $phone->warranty = $warranty;
             $phone->save();
         }
@@ -322,7 +327,7 @@ class PhoneController extends Controller
             'total_price' => $request->payment_type['credit_card'] + $request->payment_type['cash'] + $request->payment_type['installment'],
             'tax_total' => 18,
             'discount_total' => $request->discount_total,
-            'staff_id' => Auth::user()->id,
+            'staff_id' => $request->sales_person,
             'customer_id' => $request->customer_id ?? null,
             'user_id' => Auth::user()->id,
             'company_id' => Auth::user()->company_id,
@@ -381,5 +386,124 @@ class PhoneController extends Controller
 
 
         return redirect()->to('phone');
+    }
+    
+    /**
+     * AJAX endpoint for getting phones
+     */
+    public function getPhonesAjax(Request $request)
+    {
+        try {
+            $query = Phone::with(['brand', 'version', 'color', 'seller'])
+                ->where('company_id', Auth::user()->company_id);
+            
+            // Apply filters
+            if ($request->filled('brand')) {
+                $query->where('brand_id', $request->brand);
+            }
+            
+            if ($request->filled('version')) {
+                $query->where('version_id', $request->version);
+            }
+            
+            if ($request->filled('color')) {
+                $query->where('color_id', $request->color);
+            }
+            
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+            
+            if ($request->filled('type')) {
+                $query->where('type', $request->type);
+            }
+            
+            if ($request->filled('seller') && $request->seller !== 'all') {
+                $query->where('seller_id', $request->seller);
+            }
+            
+            if ($request->filled('barcode')) {
+                $query->where('barcode', 'like', '%' . $request->barcode . '%');
+            }
+            
+            if ($request->filled('imei')) {
+                $query->where('imei', 'like', '%' . $request->imei . '%');
+            }
+            
+            $phones = $query->orderBy('status', 'asc')->get();
+            
+            // Format phone data
+            $formattedPhones = $phones->map(function ($phone) {
+                return [
+                    'id' => $phone->id,
+                    'imei' => $phone->imei,
+                    'barcode' => $phone->barcode,
+                    'brand' => $phone->brand,
+                    'version' => $phone->version,
+                    'color' => $phone->color,
+                    'seller' => $phone->seller,
+                    'type' => $phone->type,
+                    'type_text' => \App\Models\Phone::TYPE[$phone->type] ?? 'Bilinmiyor',
+                    'memory' => $phone->memory,
+                    'battery' => $phone->batery,
+                    'battery_text' => $phone->batery == 0 ? 'Bilinmiyor' : '% ' . $phone->batery,
+                    'warranty' => $phone->warranty,
+                    'warranty_text' => $this->getWarrantyText($phone->warranty),
+                    'status' => $phone->status,
+                    'is_confirm' => $phone->is_confirm,
+                    'cost_price' => $phone->cost_price,
+                    'cost_price_formatted' => number_format($phone->cost_price, 2),
+                    'sale_price' => $phone->sale_price,
+                    'sale_price_formatted' => number_format($phone->sale_price, 2),
+                ];
+            });
+            
+            return response()->json([
+                'phones' => $formattedPhones,
+                'total' => $formattedPhones->count()
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Telefonlar yüklenemedi: ' . $e->getMessage()], 500);
+        }
+    }
+    
+    /**
+     * AJAX endpoint for getting versions by brand
+     */
+    public function getVersionsAjax(Request $request)
+    {
+        try {
+            $brandId = $request->brand_id;
+            
+            if (!$brandId) {
+                return response()->json(['versions' => []]);
+            }
+            
+            $versions = \App\Models\Version::where('brand_id', $brandId)->get();
+            
+            return response()->json([
+                'versions' => $versions
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Versiyonlar yüklenemedi: ' . $e->getMessage()], 500);
+        }
+    }
+    
+    /**
+     * Get warranty text
+     */
+    private function getWarrantyText($warranty)
+    {
+        if ($warranty == null) {
+            return 'Garantisiz';
+        } elseif ($warranty == '2') {
+            return \App\Models\Phone::WARRANTY[$warranty] ?? 'Garantisiz';
+        } elseif ($warranty == 1) {
+            return 'Garantili';
+        } else {
+            return \Carbon\Carbon::parse($warranty)->format('d-m-Y');
+        }
     }
 }

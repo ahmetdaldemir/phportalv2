@@ -1,761 +1,534 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="container-xxl flex-grow-1 container-p-y">
-        <form id="invoiceForm" method="post" class="form-repeater source-item py-sm-3">
-            <input type="hidden" name="id" @if(isset($invoices)) value="{{$invoices->id}}" @endif />
-            <div class="row invoice-add">
-                <!-- Invoice Add-->
-                <div class="col-lg-10 col-12 mb-lg-0 mb-4">
-                    <div class="card invoice-preview-card">
-                        <div class="card-body">
-                            <div class="row p-sm-3 p-0">
-                                <div class="col-md-6 mb-md-0 mb-4">
-                                    <div class="row mb-4">
-                                        <label for="selectCustomer" class="form-label">Cari Seçiniz</label>
-                                        <div class="col-md-9">
-                                            <select id="selectCustomer" class="w-100 select2"
-                                                    data-style="btn-default" name="customer_id" ng-init="getCustomers()"
-                                                    onchange="getCustomer(this.value)">
-                                                <option value="1" data-tokens="ketchup mustard">Genel Cari</option>
-                                                <option ng-repeat="customer in customers"
-                                                        ng-if="customer.type == 'customer'"
-                                                        @if(isset($invoices) && '@{{customer.id}}' == $invoices->customer_id) selected
-                                                        @endif data-value="@{{customer.id}}" value="@{{customer.id}}">
-                                                    @{{customer.fullname}}
-                                                </option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <button class="btn btn-secondary btn-primary" tabindex="0"
-                                                    data-bs-toggle="modal" data-bs-target="#editUser" type="button">
-                                                <span><i class="bx bx-plus me-md-1"></i></span></button>
-                                        </div>
-                                    </div>
-
-                                </div>
-                                <div class="col-md-6">
-                                    <dl class="row mb-2">
-                                        <dt class="col-sm-6 mb-2 mb-sm-0 text-md-end">
-                                            <span class="h4 text-capitalize mb-0 text-nowrap">Invoice #</span>
-                                        </dt>
-                                        <dd class="col-sm-6 d-flex justify-content-md-end">
-                                            <div class="w-px-150">
-                                                <input type="text" class="form-control"
-                                                       @if(isset($invoices)) value="{{$invoices->number}}"
-                                                       @endif name="number" id="invoiceId">
-                                            </div>
-                                        </dd>
-                                        <dt class="col-sm-6 mb-2 mb-sm-0 text-md-end">
-                                            <span class="fw-normal">Fatura Tarihi:</span>
-                                        </dt>
-                                        <dd class="col-sm-6 d-flex justify-content-md-end">
-                                            <div class="w-px-150">
-                                                <input type="text" class="form-control datepicker flatpickr-input"
-                                                       name="create_date"
-                                                       @if(isset($invoices)) value="{{$invoices->create_date}}"
-                                                       @else  value="{{date('d-m-Y')}}" @endif />
-                                            </div>
-                                        </dd>
-                                        <dt class="col-sm-6 mb-2 mb-sm-0 text-md-end">
-                                            <span class="fw-normal">Fatura Tipi:</span>
-                                        </dt>
-                                        <dd class="col-sm-6 d-flex justify-content-md-end">
-                                            <div class="w-px-150">
-                                                <select class="form-control" data-style="btn-default" name="type"
-                                                        id="type">
-                                                    <option value="2">Giden Fatura</option>
-                                                </select>
-                                            </div>
-                                        </dd>
-                                    </dl>
-                                </div>
-                            </div>
-
-
-                            <hr class="mx-n4">
-
-                            <div class="mb-3">
-                                <div class="repeater-wrapper pt-0 pt-md-4" id="myList1" data-repeater-item="">
-                                    <div id="99999999" class="d-flex border rounded position-relative pe-0 repeater-wrapper-new">
-                                        <div class="row w-100 m-0 p-3">
-                                            <div class="col-md-5 col-12 mb-md-0 mb-3 ps-md-0">
-                                                <p class="mb-2 repeater-title">Stok</p>
-                                                <select name="stock_card_id[]"
-                                                        class="form-select item-details item-details-stock select2 mb-2">
-                                                    @foreach($stocks as $stock)
-                                                        <option @if($product['stock_card']['id'] == $stock->id) selected
-                                                                @endif value="{{$stock->id}}">{{$stock->name}} -
-                                                            <small> {{$stock->brand->name ?? 'Bulunamadi'}}</small> - <b>  <?php
-                                                                                                               $datas = json_decode($stock->version(), TRUE);
-                                                                                                               foreach ($datas as $mykey => $myValue) {
-                                                                                                                   echo "$myValue,";
-                                                                                                               }
-                                                                                                               ?></b>
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                            <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                <p class="mb-2 repeater-title">Seri No</p>
-                                                <input type="text" id="serialnumber" class="form-control serialnumber"
-                                                       data-id="serialnumber0" name="serial[]"
-                                                       required placeholder="11111111"
-                                                       @if(isset($request->serial)) value="{{$request->serial}}" @endif
-                                                />
-                                                <h5 id="serialcheck" style="color: red;">
-                                                    **Seri Numarası Zorunludur
-                                                </h5>
-                                            </div>
-                                            <!--div class="col-md-4 col-12 mb-md-0 mb-3 ps-md-0">
-                                                <p class="mb-2 repeater-title">IMEI</p>
-                                                <input minlength="15" maxlength="15" placeholder="Boş Bıralabilirsiniz"
-                                                       class="form-control" name="imei[]" readonly/>
-                                            </div -->
-
-                                            @if (auth()->user()->hasRole('admin'))
-                                            <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                <p class="mb-2 repeater-title">Destekli Maliyet</p>
-                                                <input type="text"
-                                                       class="form-control invoice-item-price invoice-item-cost-price"
-                                                       name="base_cost_price[]"  data-newid="99999999"
-                                                       value="{{$product['stock_card_movement']['base_cost_price'] ?? $product['stock_card_movement']['base_cost_price']}}"
-                                                       readonly/>
-                                            </div>
-                                            @else
-                                            <input type="hidden"
-                                                   class="form-control invoice-item-price invoice-item-cost-price"
-                                                   name="base_cost_price[]"  data-newid="99999999"
-                                                   value="{{$product['stock_card_movement']['base_cost_price'] ?? $product['stock_card_movement']['base_cost_price']}}"
-                                                   readonly/>
-                                            @endif
-                                             <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                <p class="mb-2 repeater-title">Satış Fiyatı</p>
-                                                <input type="text"
-                                                       class="form-control invoice-item-price invoice-item-sales-price"
-                                                       name="sale_price[]" data-newid="99999999"
-                                                       id="serial99999999"
-                                                       data-sales="{{$product['stock_card_movement']['sale_price']?? $product['stock_card_movement']['sale_price']}}"
-                                                       data-cost="{{$product['stock_card_movement']['base_cost_price']?? $product['stock_card_movement']['base_cost_price']}}"
-                                                       value="{{$product['stock_card_movement']['sale_price']?? $product['stock_card_movement']['sale_price']}}"
-                                                       readonly/>
-                                            </div>
-
-                                              <input  name="reason_id[]" value="4" type="hidden" />
-                                            <!--div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                <p class="mb-2 repeater-title">Neden</p>
-                                                <select name="reason_id[]"
-                                                        class="form-select item-details select2 mb-2">
-                                                    @foreach($reasons as $reason)
-                                                        @if($reason->type == "3")
-                                                            <option value="{{$reason->id}}">{{$reason->name}}</option>
-                                                        @endif
-                                                    @endforeach
-                                                </select>
-                                            </div -->
-                                            <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                <label for="discountInput"
-                                                       class="form-label">İndirim (%)</label>
-                                                <input type="number" data-newid="99999999" class="form-control"
-                                                       id="discountInput"
-                                                       min="0"
-                                                       @role('admin')
-                                                max="{{setting('admin.discount_admin')}}"
-                                                @else
-                                                    max="{{setting('admin.discount')}}"
-                                                    @endrole
-                                                    name="discount[]">
-                                            </div>
-                                        </div>
-                                        <div
-                                            class="d-flex flex-column align-items-center justify-content-between border-start p-2">
-                                            <i class="bx bx-x fs-4 text-muted cursor-pointer" id="removeDiv"></i>
-                                            <div class="dropdown">
-                                                <i class="bx bx-cog bx-xs text-muted cursor-pointer more-options-dropdown"
-                                                   role="button" id="dropdownMenuButton" data-bs-toggle="dropdown"
-                                                   data-bs-auto-close="outside" aria-expanded="false">
-                                                </i>
-                                                <div class="dropdown-menu dropdown-menu-end w-px-300 p-3"
-                                                     aria-labelledby="dropdownMenuButton">
-
-                                                    <div class="row g-3">
-                                                        <div class="col-12">
-                                                            <p class="mb-2 repeater-title">Açıklama</p>
-                                                            <textarea class="form-control" rows="2"
-                                                                      name="description[]"></textarea>
-                                                        </div>
-
-                                                    </div>
-                                                    <div class="dropdown-divider my-3"></div>
-                                                    <button type="button"
-                                                            class="btn btn-label-primary btn-apply-changes">Uygulama
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <button type="button" onclick="myFunction()" class="btn btn-secondary clon">EKLE
-                                </button>
-                            </div>
-                            <!--div class="row">
-                                <div class="col-12">
-                                    <button type="button" class="btn btn-primary" data-repeater-create="">Add Item
-                                    </button>
-                                </div>
-                            </div -->
-                            <hr class="my-4 mx-n4">
-                            <div class="col-md-6 mb-md-0 mb-3">
-                                <div class="d-flex align-items-center mb-3"
-                                     style="font-size: 20px;text-align: right; font-weight: 700;    line-height: 3;">
-                                    <label for="salesperson" class="form-label me-5 fw-semibold">Genel Toplam:</label>
-                                    <div class="col-md-6 mb-md-0 mb-3 font-weight-bold" id="totalArea"></div>
-                                </div>
-                            </div>
-                            <hr class="my-4 mx-n4">
-                            <div class="col-md-6 mb-md-0 mb-3">
-                                <div class="d-flex align-items-center mb-3">
-                                    <label for="salesperson" class="form-label me-5 fw-semibold">Personel:</label>
-                                    <select required id="selectpickerLiveSearch" class="selectpicker w-100  StaffIdClass"  data-style="btn-default" name="staff_id" data-live-search="true">
-                                        <option value="">Seçiniz</option>
-
-                                    @foreach($users as $user)
-                                        @if($user->id != 1)
-                                            <option @if(isset($invoices))  {{ $invoices->hasStaff($user->id) ? 'selected' : '' }}
-                                                    @endif value="{{$user->id}}"  data-value="{{$user->id}}">{{$user->name}}</option>
-                                            @endif
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-                            <hr class="my-4 mx-n4">
-                            <div class="col-md-6 mb-md-0 mb-3" id="safeArea"></div>
-
-                            <hr class="my-4">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <label class="form-label" for="fullname">Kredi Kartı</label>
-                                    <input type="text" name="payment_type[credit_card]" value="0" id="credit_card"
-                                           class="form-control">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label" for="fullname">Nakit</label>
-                                    <input type="text" name="payment_type[cash]" id="money_order" value="0"
-                                           class="form-control">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label" for="fullname">Taksit</label>
-                                    <input type="text" name="payment_type[installment]" value="0" id="installment"
-                                           class="form-control">
-                                </div>
-
-                            </div>
-
-
-                            <hr>
-
-
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="mb-3">
-                                        <label for="note" class="form-label fw-semibold">Not:</label>
-                                        <textarea class="form-control" name="description" rows="2" id="note"> @if(isset($invoices))
-                                                {{ $invoices->description}}
-                                            @endif</textarea>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- /Invoice Add-->
-                <div class="col-lg-2 col-12 invoice-actions">
-                    <div class="card mb-4 ">
-                        <div class="card-body">
-                            <button id="saveButton" onclick="save()" type="button"
-                                    class="btn btn-primary d-grid w-100 mb-3">
-                            <span class="d-flex align-items-center justify-content-center text-nowrap"><i
-                                    class="bx bx-paper-plane bx-xs me-1"></i>Kaydet</span>
+    <div id="invoice-sales-app" class="container-xxl flex-grow-1 container-p-y">
+        <div class="row invoice-add">
+            <div class="col-12">
+                <div class="card invoice-preview-card">
+                    <!-- Card Header -->
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="bx bx-receipt me-2"></i>
+                            Satış Faturası
+                        </h4>
+                        <div class="d-flex gap-2">
+                            <button id="saveButton" @click="saveInvoice()" type="button" class="btn btn-primary">
+                                <i class="bx bx-paper-plane me-1"></i>Kaydet
                             </button>
                         </div>
                     </div>
-                    <div class="card bg-secondary text-white mb-3  mb-4 ">
+
+                    <form id="invoiceForm" method="post" class="form-repeater source-item">
+                        <input type="hidden" name="id" @if(isset($invoices)) value="{{$invoices->id}}" @endif />
+                        
                         <div class="card-body">
+                            <!-- Header Section -->
+                            <div class="row p-3">
+                                <div class="col-md-6 mb-4">
+                                    <div class="mb-4">
+                                        <label class="form-label fw-semibold">
+                                            <i class="bx bx-user me-1"></i>Cari Seçiniz
+                                        </label>
+                                        <div class="input-group">
+                                            <div class="position-relative flex-grow-1">
+                                                <input 
+                                                    v-model="customerSearch" 
+                                                    @input="filterCustomers"
+                                                    @focus="showDropdown"
+                                                    @blur="hideDropdown"
+                                                    type="text" 
+                                                    class="form-control" 
+                                                    placeholder="Müşteri ara..."
+                                                    autocomplete="off">
+                                                
+                                                <!-- Hidden input for form submission -->
+                                                <input type="hidden" name="customer_id" :value="selectedCustomerId">
+                                                
+                                                <!-- Dropdown Menu -->
+                                                <div v-show="showCustomerDropdown && customerSearch && customerSearch.length >= 1" 
+                                                     class="dropdown-menu show position-absolute w-100" 
+                                                     style="z-index: 99999 !important; max-height: 300px; overflow-y: auto; display: block !important;">
+                                                    
+                                                    <!-- Genel Cari Option -->
+                                                    <div @mousedown="selectCustomer({id: '1', fullname: 'Genel Cari'})" 
+                                                         class="dropdown-item" 
+                                                         style="cursor: pointer;">
+                                                        <strong>Genel Cari</strong>
+                                                    </div>
+                                                    
+                                                    <!-- Customer Results -->
+                                                    <div v-for="customer in filteredCustomers" 
+                                                         :key="customer.id" 
+                                                         @mousedown="selectCustomer(customer)"
+                                                         class="dropdown-item" 
+                                                         style="cursor: pointer;">
+                                                        <div>
+                                                            <strong>@{{ customer.fullname }}</strong>
+                                                            <small class="text-muted d-block" v-if="customer.phone1">
+                                                                <i class="bx bx-phone"></i> @{{ customer.phone1 }}
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- No Results -->
+                                                    <div v-if="filteredCustomers.length === 0 && customerSearch.length >= 1" 
+                                                         class="dropdown-item text-muted text-center">
+                                                        <i class="bx bx-search"></i> Müşteri bulunamadı
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <button class="btn btn-primary" tabindex="0"
+                                                    data-bs-toggle="modal" data-bs-target="#editUser" type="button">
+                                                <i class="bx bx-plus"></i>
+                                            </button>
+                                        </div>
+                                        <small class="text-muted">
+                                            <i class="bx bx-info-circle"></i> 
+                                            Seçili: <strong>@{{ selectedCustomerName }}</strong>
+                                        </small>
+                                    </div>
+                                </div>
 
-                            <p class="mb-2"><i class="bx bx-money bx-md me-1"></i> Ödeme Durumu</p>
-                            <select name="paymentStatus" id="paymentStatus" class="form-select mb-4">
-                                <option value="unpaid">Ödenecek</option>
-                                <option value="paid">Ödendi</option>
-                                <option value="paidOutOfPocket">Çalışan Cebinden Ödedi</option>
-                            </select>
-                            <p class="mb-2"><i class="bx bx-credit-card bx-md me-1"></i> Ödeme Tipi</p>
+                                <div class="col-md-6 mb-4">
+                                    <div class="row">
+                                        <div class="col-12 mb-3">
+                                            <label class="form-label fw-semibold">Fatura No</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="bx bx-hash"></i>
+                                                </span>
+                                                <input type="text" class="form-control"
+                                                       @if(isset($invoices)) value="{{$invoices->number}}"
+                                                       @endif name="number" id="invoiceId" placeholder="Otomatik oluşturulacak">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 col-12">
+                                            <label class="form-label fw-semibold">Fatura Tarihi</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="bx bx-calendar"></i>
+                                                </span>
+                                                <input type="text" class="form-control single-datepicker"
+                                                       name="create_date"
+                                                       @if(isset($invoices)) value="{{$invoices->create_date}}"
+                                                       @else value="{{date('d-m-Y')}}" @endif />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 col-12">
+                                            <label class="form-label fw-semibold">Fatura Tipi</label>
+                                            <select class="form-select" data-style="btn-default" name="type" id="type">
+                                                <option value="2">Giden Fatura</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                            <p class="mb-2"><i class="bx bx-folder-open bx-md me-1"></i> Kategori</p>
-                            <select name="accounting_category_id" class="form-select mb-4">
-                                @foreach($categories as $category)
-                                    @if($category->category == "gelir")
-                                        <option @if($category->id == '1') selected
-                                                @endif value="{{$category->id}}">{{$category->name}}</option>
-                                    @endif
-                                @endforeach
-                            </select>
-                            <p class="mb-2"><i class="bx bx-calendar bx-md me-1"></i> Ödeneceği Tarih</p>
-                            <input type="text" class="form-control flatpickr-input" placeholder="DD-MM-YYYY"
-                                   id="flatpickr-date" readonly="readonly">
+                            <hr class="mx-n4">
+
+                            <!-- Items Section -->
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="mb-0">
+                                    <i class="bx bx-list-ul me-2"></i>Fatura Kalemleri
+                                </h5>
+                                <button type="button" @click="addInvoiceItem()" class="btn btn-success">
+                                    <i class="bx bx-plus me-1"></i>Kalem Ekle
+                                </button>
+                            </div>
+
+                            <div class="table-responsive" style="overflow: visible !important;">
+                                <table class="table table-hover" style="overflow: visible !important;">
+                                    <thead class="table-header-modern">
+                                        <tr>
+                                            <th class="compact-header">
+                                                <i class="bx bx-package me-1"></i>
+                                                <span class="header-text">Stok</span>
+                                            </th>
+                                            <th class="compact-header">
+                                                <i class="bx bx-barcode me-1"></i>
+                                                <span class="header-text">Seri No</span>
+                                            </th>
+                                            <th class="compact-header">
+                                                <i class="bx bx-barcode me-1"></i>
+                                                <span class="header-text">Barkod</span>
+                                            </th>
+                                            @if (auth()->user()->hasRole('admin'))
+                                            <th class="compact-header">
+                                                <i class="bx bx-money me-1"></i>
+                                                <span class="header-text">Destekli<br><small>Maliyet</small></span>
+                                            </th>
+                                            @endif
+                                            <th class="compact-header">
+                                                <i class="bx bx-credit-card me-1"></i>
+                                                <span class="header-text">Satış<br><small>Fiyatı</small></span>
+                                            </th>
+                                            <th class="compact-header">
+                                                <i class="bx bx-purchase-tag me-1"></i>
+                                                <span class="header-text">İndirim<br><small>(%)</small></span>
+                                            </th>
+                                            <th class="compact-header">
+                                                <i class="bx bx-note me-1"></i>
+                                                <span class="header-text">Açıklama</span>
+                                            </th>
+                                            <th class="compact-header">
+                                                <i class="bx bx-trash me-1"></i>
+                                                <span class="header-text">Sil</span>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody style="overflow: visible !important;" id="myList1">
+                                        <tr v-if="!isLoaded" class="text-center">
+                                            <td colspan="7" class="py-4">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Yükleniyor...</span>
+                                                </div>
+                                                <p class="mt-2">Vue.js yükleniyor...</p>
+                                            </td>
+                                        </tr>
+                                        <tr v-for="item in (invoiceItems || [])" :key="item.id" :id="item.id" class="invoice-item-row" style="overflow: visible !important; position: relative !important;">
+                                            <!-- Stok -->
+                                            <td style="overflow: visible !important; position: relative !important;">
+                                                <div class="position-relative flex-grow-1 stock-search-container">
+                                                    <input 
+                                                        type="text" 
+                                                        class="form-control form-control-sm stock-search-input" 
+                                                        v-model="stockSearchQueries[item.id]"
+                                                        @input="filterStocks(item.id, $event.target.value)"
+                                                        @focus="stockDropdowns[item.id] = stockDropdowns[item.id] || []"
+                                                        placeholder="Stok ara..."
+                                                        autocomplete="off">
+                                                    
+                                                    <!-- Hidden input for form submission -->
+                                                    <input type="hidden" :name="`stock_card_id[${(invoiceItems || []).indexOf(item)}]`" :value="item.stockCardId">
+                                                    
+                                                    <!-- Stock Dropdown -->
+                                                    <div v-show="stockDropdowns[item.id] && stockDropdowns[item.id].length > 0" 
+                                                         class="stock-dropdown position-absolute w-100 bg-white border rounded shadow-lg" 
+                                                         style="z-index: 1000; max-height: 300px; overflow-y: auto; top: 100%; left: 0; display: block !important;">
+                                                        <div v-for="stock in stockDropdowns[item.id]" 
+                                                             :key="stock.id"
+                                                             @click="selectStock(item.id, stock)"
+                                                             class="stock-item p-2 border-bottom" 
+                                                             style="cursor: pointer;">
+                                                            <div class="fw-semibold">@{{ stock.name }}</div>
+                                                            <small class="text-muted">@{{ stock.brand?.name || 'Bilinmiyor' }} - @{{ stock.version_names || '' }}</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            <!-- Seri No -->
+                                            <td>
+                                                <input type="text" 
+                                                       class="form-control form-control-sm serialnumber"
+                                                       v-model="item.serialNumber"
+                                                       @blur="validateSerialNumber(item.id, item.serialNumber)"
+                                                       required 
+                                                       placeholder="Seri numarası" />
+                                                <small class="text-danger d-none">
+                                                    <i class="bx bx-error-circle"></i> Zorunlu
+                                                </small>
+                                            </td>
+
+
+                                            <td>
+                                                <input type="text"
+                                                       class="form-control form-control-sm serialnumber"
+                                                       v-model="item.barkod"
+                                                       @blur="validateSerialNumber(item.id, item.barkod)"
+                                                       required
+                                                       placeholder="Barkod" />
+                                                <small class="text-danger d-none">
+                                                    <i class="bx bx-error-circle"></i> Zorunlu
+                                                </small>
+                                            </td>
+
+                                            @if (auth()->user()->hasRole('admin'))
+                                            <!-- Destekli Maliyet -->
+                                            <td>
+                                                <input type="text"
+                                                       class="form-control form-control-sm invoice-item-price invoice-item-cost-price"
+                                                       v-model="item.costPrice"
+                                                       readonly/>
+                                            </td>
+                                            @else
+                                            <td style="display: none;">
+                                                <input type="hidden"
+                                                       class="form-control invoice-item-price invoice-item-cost-price"
+                                                       v-model="item.costPrice"
+                                                       readonly/>
+                                            </td>
+                                            @endif
+
+                                            <!-- Satış Fiyatı -->
+                                            <td>
+                                                <input type="text"
+                                                       class="form-control form-control-sm invoice-item-price invoice-item-sales-price"
+                                                       v-model="item.salePrice"
+                                                       readonly/>
+                                                <input :name="`reason_id[${(invoiceItems || []).indexOf(item)}]`" :value="item.reasonId" type="hidden" />
+                                            </td>
+
+                                            <!-- İndirim -->
+                                            <td>
+                                                <input type="number" 
+                                                       class="form-control form-control-sm"
+                                                       v-model="item.discount"
+                                                       @change="applyDiscount(item.id, item.discount)"
+                                                       min="0"
+                                                       @role('admin')
+                                                       max="{{setting('admin.discount_admin')}}"
+                                                       @else
+                                                       max="{{setting('admin.discount')}}"
+                                                       @endrole
+                                                       placeholder="0">
+                                            </td>
+
+                                            <!-- Açıklama -->
+                                            <td>
+                                                <input type="text" 
+                                                       class="form-control form-control-sm"
+                                                       v-model="item.description"
+                                                       placeholder="Açıklama...">
+                                            </td>
+
+                                            <!-- Sil -->
+                                            <td class="text-center">
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-icon btn-outline-danger" 
+                                                        @click="removeInvoiceItem(item.id)"
+                                                        title="Satırı Sil">
+                                                    <i class="bx bx-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <!-- Summary Section -->
+                            <div class="row">
+                                <div class="col-lg-8 col-12">
+                                    <div class="row g-3">
+                                        <!-- Staff Selection -->
+                                        <div class="col-md-6 col-12">
+                                            <label class="form-label fw-semibold">
+                                                <i class="bx bx-user-circle me-1"></i>Personel
+                                            </label>
+                                            <select required id="staff_id_select" class="w-100 StaffIdClass form-select" name="staff_id">
+                                                <option value="">Personel Seçiniz</option>
+                                            @foreach($users as $user)
+                                                @if($user->id != 1)
+                                                    <option @if(isset($invoices)) {{ $invoices->hasStaff($user->id) ? 'selected' : '' }}
+                                                            @endif value="{{$user->id}}" data-value="{{$user->id}}">{{$user->name}}</option>
+                                                @endif
+                                            @endforeach
+                                            </select>
+                                        </div>
+
+                                        <!-- Payment Status -->
+                                        <div class="col-md-6 col-12">
+                                            <label class="form-label fw-semibold">
+                                                <i class="bx bx-money me-1"></i>Ödeme Durumu
+                                            </label>
+                                            <select name="paymentStatus" id="paymentStatus" class="form-select">
+                                                <option value="unpaid">💳 Ödenecek</option>
+                                                <option value="paid">✅ Ödendi</option>
+                                                <option value="paidOutOfPocket">👤 Çalışan Cebinden</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- Safe/Bank Area -->
+                                        <div class="col-12" id="safeArea"></div>
+
+                                        <!-- Category -->
+                                        <div class="col-md-6 col-12">
+                                            <label class="form-label fw-semibold">
+                                                <i class="bx bx-folder-open me-1"></i>Kategori
+                                            </label>
+                                            <select name="accounting_category_id" class="form-select">
+                                                @foreach($categories as $category)
+                                                    @if($category->category == "gelir")
+                                                        <option @if($category->id == '1') selected @endif value="{{$category->id}}">
+                                                            {{$category->name}}
+                                                        </option>
+                                                    @endif
+                                                @endforeach
+                                            </select>
+                                        </div>
+
+                                        <!-- Payment Date -->
+                                        <div class="col-md-6 col-12">
+                                            <label class="form-label fw-semibold">
+                                                <i class="bx bx-calendar me-1"></i>Ödeme Tarihi
+                                            </label>
+                                            <input type="text" class="form-control single-datepicker" 
+                                                   placeholder="DD-MM-YYYY" id="payment-date" name="payment_date" readonly="readonly">
+                                        </div>
+
+                                        <!-- Payment Types -->
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold">
+                                                <i class="bx bx-credit-card me-1"></i>Ödeme Tipleri
+                                            </label>
+                                        </div>
+                                        <div class="col-md-3 col-12">
+                                            <label class="form-label">Kredi Kartı</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">₺</span>
+                                                <input type="text" name="payment_type[credit_card]" value="0" id="credit_card" class="form-control" placeholder="0.00">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 col-12">
+                                            <label class="form-label">Nakit</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">₺</span>
+                                                <input type="text" name="payment_type[cash]" id="money_order" value="0" class="form-control" placeholder="0.00">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 col-12">
+                                            <label class="form-label">Taksit</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">₺</span>
+                                                <input type="text" name="payment_type[installment]" value="0" id="installment" class="form-control" placeholder="0.00">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-3 col-12">
+                                            <label class="form-label">Bedelsiz Satis</label>
+                                            <div class="input-group">
+                                                <input type="checkbox" name="payment_type[free_sale]" value="0" id="free_sale" class="form-checkbox" style="width: 25px;height: 25px" />
+                                            </div>
+                                        </div>
+
+                                        <!-- Notes -->
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold">
+                                                <i class="bx bx-note me-1"></i>Not / Açıklama
+                                            </label>
+                                            <textarea class="form-control" name="description" rows="3" id="note" placeholder="Fatura ile ilgili notlarınızı buraya yazabilirsiniz...">@if(isset($invoices)){{ $invoices->description}}@endif</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Total Section -->
+                                <div class="col-lg-4 col-12">
+                                    <div class="card bg-light-subtle border">
+                                        <div class="card-body text-center">
+                                            <h6 class="text-muted mb-2">Genel Toplam</h6>
+                                            <div class="display-4 fw-bold text-success">
+                                                <span v-if="!isLoaded">0.00 ₺</span>
+                                                <span v-else>@{{ (totalAmount || 0).toFixed(2) }} ₺</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <!-- /Invoice Actions -->
-
+                    </form>
                 </div>
-
             </div>
-        </form>
+        </div>
         <div id="loader" class="lds-dual-ring display-none overlay"></div>
     </div>
+
+    <!-- Stock Movement Selection Modal -->
+    <div class="modal fade" id="stockMovementModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bx bx-package me-2"></i>Seri Numarası Seç
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="stockMovementLoader" class="text-center py-5" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                        <p class="mt-2">Stok hareketleri yükleniyor...</p>
+                    </div>
+                    
+                    <div id="stockMovementContent">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Seri No</th>
+                                        <th>Renk</th>
+                                        <th>Satış Fiyatı</th>
+                                        <th>Maliyet</th>
+                                        <th>Şube</th>
+                                        <th>İşlem</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stockMovementTableBody">
+                                    <!-- Data will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="noDataMessage" class="text-center py-5" style="display: none;">
+                            <i class="bx bx-info-circle display-1 text-muted"></i>
+                            <p class="mt-3">Bu stok için müsait seri numarası bulunamadı.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 @endsection
 @include('components.customermodal')
 
 @section('custom-css')
+    <link rel="stylesheet" href="{{asset('assets/css/sales-page.css')}}">
     <style>
-        .light-style .bootstrap-select .filter-option-inner-inner {
-            color: #000000 !important;
-            font-weight: 700 !important;
-        }
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            background: rgba(0, 0, 0, .8);
-            z-index: 999;
-            opacity: 1;
-            transition: all 0.5s;
-        }
-
-
-        .lds-dual-ring {
-            display: inline-block;
-        }
-
-        .lds-dual-ring:after {
-            content: " ";
-            display: block;
-            width: 64px;
-            height: 64px;
-            margin: 5% auto;
-            border-radius: 50%;
-            border: 6px solid #fff;
-            border-color: #fff transparent #fff transparent;
-            animation: lds-dual-ring 1.2s linear infinite;
-        }
-
-        @keyframes lds-dual-ring {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .display-none {
-            display: none !important;
-        }
+        /* Vue.js styling - müşteri arama gibi */
     </style>
 @endsection
 
 @section('custom-js')
+    <!-- Vue.js CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- jQuery UI kaldırıldı - Vue.js kullanıyoruz -->
     <script src="{{asset('assets/vendor/libs/jquery-repeater/jquery-repeater.js')}}"></script>
     <script src="{{asset('assets/js/pages-account-settings-account.js')}}"></script>
     <script src="{{asset('assets/js/forms-extras.js')}}"></script>
+    
+    <!-- Sales Page Data -->
     <script>
-
-
-
-        $("#myList1").on("change", ".serialnumber", function () {
-
-            var dataId = $(this).data('id');
-            var newVal = $(this).val();
-
-            var Arr = [];
-            $('.serialnumber').each(function () {
-                Arr.push($(this).val());
-            });
-            var totalSerial = Arr.filter(x => x==newVal).length;
-            if(totalSerial > 1)
-            {
-                Swal.fire("Aynı Seri numarası eklenemez");
-                $("#" + dataId).remove();
-                var sum = 0;
-                $('.invoice-item-sales-price').each(function () {
-                    sum += parseFloat($(this).val());  // Or this.innerHTML, this.innerText
-                });
-                $("#totalArea").html(sum + "₺");
-                return false;
-            }
-
-            var postUrl = window.location.origin + '/serialcheck?id=' + $(this).val() + '';   // Returns base URL (https://example.com)
-            $.ajax({
-                type: "GET",
-                url: postUrl,
-                success: function (data) {
-                    if(data.status == false)
-                    {
-                        Swal.fire(data.message);
-                        return false;
-                    }
-                    console.log(data);
-                    let sales_price = JSON.stringify(data);
-                    $("#myList1").find("#serialstock" + dataId).val(data.sales_price.stock_card_id).trigger('change');
-                    $("#myList1").find("#serialstock" + dataId).attr('data-test', data.sales_price.stock_card_id);
-                    $("#myList1").find("#serial" + dataId).attr('data-cost', data.sales_price.base_cost_price);
-                    $("#myList1").find("#serial" + dataId).attr('data-sales', data.sales_price.sale_price);
-                    $("#myList1").find("#serial" + dataId).val(data.sales_price.sale_price);
-                    $("#myList1").find("#serial" + dataId).attr('value',data.sales_price.sale_price);
-                    $("#myList1").find(".invoice-item-cost-price").val(data.sales_price.base_cost_price);
-                    var inputPrice = [];
-
-                    var sum = 0;
-                    $('.invoice-item-sales-price').each(function () {
-                        sum += parseFloat($(this).val());  // Or this.innerHTML, this.innerText
-                    });
-                    $("#totalArea").html(sum + "₺");
-
-                    /*
-                    *$(this).after().val(data.sales_price.sale_price);
-                    $(this).after(".invoice-item-sales-price").attr('sales',data.sales_price.sale_price);
-                    $(this).after(".invoice-item-sales-price").attr('data-sales',data.sales_price.sale_price);
-                    //$('#saveButton').prop('disabled', false);
-                    * */
-                }
-            });
-        });
-        $(document).ready(function () {
-
-            //$('#saveButton').prop('disabled', {{isset($request->serial)}});
-
-
-            $("#serialnumber").keyup(function (qualifiedName) {
-                var postUrl = window.location.origin + '/serialcheck?id=' + $(this).val() + '';   // Returns base URL (https://example.com)
-                $.ajax({
-                    type: "GET",
-                    url: postUrl,
-                    success: function (data) {
-                        if (data.status === false) {
-                            $("#saveButton").attr('disabled', true);
-                        } else {
-                            $(".invoice-item-sales-price").val(data.sales_price.sale_price);
-                            $(".invoice-item-sales-price").attr('sales', data.sales_price.sale_price);
-                            $(".invoice-item-sales-price").attr('data-sales', data.sales_price.sale_price);
-
-                            $('#saveButton').prop('disabled', false);
-                        }
-                    }
-                });
-            });
-
-
-            $("#myList1").on("change","#discountInput",function () {
-                var max = $(this).attr('max');
-                var newID = $(this).data('newid');
-                var salesprice = $("#"+newID).find('#serial'+newID).data('sales');
-                var baseCostprice = $("#"+newID).find('#serial'+newID).data('cost');
-                var discount = $(this).val();
-                if(discount > 0)
-                {
-                    var newSalesPrice = salesprice - ((discount * salesprice) / 100);
-                    console.log(discount,max);
-                    if(parseInt(discount) > parseInt(max))
-                    {
-                        Swal.fire('İndirim oranı max değerden fazla olamaz');
-                    }else{
-                        if (newSalesPrice > baseCostprice) {
-                            $("#"+newID).find('#serial'+newID).val(Math.round(newSalesPrice));
-
-                            var sum = 0;
-                            $('.invoice-item-sales-price').each(function () {
-                                sum += parseFloat($(this).val());  // Or this.innerHTML, this.innerText
-                            });
-                            $("#totalArea").html(sum + "₺");
-
-                        } else {
-                            Swal.fire('Destekli Satış Fiyatı altına satılamaz');
-                        }
-                    }
-
-
-                }else{
-                    $(this).val('');
-                    return false;
-                }
-
-
-            })
-        });
-
-        $("#serialnumber").show();
-
-        function validateSerial(array) {
-            let serialError = true;
-            let serialValue = $("#serialnumber").val();
-            if (serialValue.length == "") {
-                $("#serialcheck").show();
-                serialError = false;
-                return false;
-            } else {
-                $("#serialcheck").hide();
-            }
-
-         }
-
-        function getCustomer(id) {
-            var postUrl = window.location.origin + '/custom_customerget?id=' + id + '';   // Returns base URL (https://example.com)
-            $.ajax({
-                type: "POST",
-                url: postUrl,
-                encode: true,
-            }).done(function (data) {
-                $(".customerinformation").html('<p className="mb-1">' + data.address + '</p><p className="mb-1">' + data.phone1 + '</p><p className="mb-1">' + data.email + '</p>');
-            });
-        }
-
-        function save() {
-
-
-            if($("select.StaffIdClass").val().length <= 0)
-            {
-               alert("Personel Seçimi Yapmadınız");
-               return false;
-            }
-            if($("#serialnumber").val().length <= 0)
-            {
-                alert("Seri Seçimi Yapmadınız");
-                return false;
-            }
-
-            var arrayNew = []
-            $('input.serialnumber').each(function (index, elem) {
-                var xyz = $(elem).val();
-                arrayNew.push(xyz);
-            });
-            validateSerial(arrayNew);
-
-            $("#saveButton").prop( "disabled", true );
-
-            var postUrl = window.location.origin + '/invoice/salesstore';   // Returns base URL (https://example.com)
-            $.ajax({
-                type: "POST",
-                url: postUrl,
-                data: $("#invoiceForm").serialize(),
-                dataType: "json",
-                encode: true,
-                beforeSend: function () {
-                    $('#loader').removeClass('display-none')
-                },
-                success: function (data) {
-                    Swal.fire(data);
-                    window.location.href = "{{route('sale.index')}}";
-                },
-                error: function (xhr) { // if error occured
-                    Swal.fire(xhr.responseJSON,'',"error");
-
-                },
-                complete: function () {
-                   // window.location.href = "{{route('sale.index')}}";
-                },
-
-            });
-        }
-
-        $("#paymentStatus").change(function () {
-            var type = $(this).val();
-            if (type == 'paid') {
-                $("#safeArea").html('<div class="d-flex align-items-center mb-3">' +
-                    '<label for="salesperson" class="form-label me-5 fw-semibold">Kasa / Banka:</label>' +
-                    '<select id="selectpickerLiveSearch" class="form-select w-100" data-style="btn-default" name="staff_id" data-live-search="true">' +
+        // Global data for Vue.js and other scripts
+        window.salesPageData = {
+            customers: @json($customers ?? []),
+            stocks: @json($stocks ?? []),
+            salesIndexRoute: "{{route('sale.index')}}",
+            safeAreaHTML: `<div class="mb-3">
+                <label class="form-label fw-semibold"><i class="bx bx-wallet me-1"></i>Kasa / Banka</label>
+                <select class="form-select" name="safe_id">
                     @foreach($safes as $safe)
-                        '<option @if(isset($invoices)) {{ $invoices->hasSafe($safe->id) ? 'selected' : '' }} @endif value="{{$safe->id}}" data-value="{{$safe->id}}">{{$safe->name}}</option>' +
+                        <option @if(isset($invoices)) {{ $invoices->hasSafe($safe->id) ? 'selected' : '' }} @endif value="{{$safe->id}}">{{$safe->name}}</option>
                     @endforeach
-                        '</select>' +
-                    '</div>');
-            } else if (type == 'paidOutOfPocket') {
-                $("#safeArea").html('<div class="d-flex align-items-center mb-3">' +
-                    '<label for="salesperson" class="form-label me-5 fw-semibold">İsim Soyisim:</label>' +
-                    '<input type="text" id="pay_to" class="form-control" name="pay_to" @if(isset($invoices)) value="{{$invoices->pay_to}}" @endif />' +
-                    '</div>');
-            } else {
-                $("#safeArea").html(' ');
-            }
-        })
+                </select>
+            </div>`,
+            paidOutOfPocketHTML: `<div class="mb-3">
+                <label class="form-label fw-semibold"><i class="bx bx-user me-1"></i>İsim Soyisim</label>
+                <input type="text" id="pay_to" class="form-control" name="pay_to" placeholder="Ödeme yapan kişinin adı" @if(isset($invoices)) value="{{$invoices->pay_to}}" @endif />
+            </div>`
+        };
+        
+        // Alias for backward compatibility
+        var salesIndexRoute = window.salesPageData.salesIndexRoute;
+        var safeAreaHTML = window.salesPageData.safeAreaHTML;
+        var paidOutOfPocketHTML = window.salesPageData.paidOutOfPocketHTML;
     </script>
 
-
-    <script>
-
-        function myFunction() {
-            var rand = Math.floor(Math.random() * 100);
-            $(".repeater-wrapper-new").find(".select2").each(function (index) {
-                $("select.select2-hidden-accessible").select2('destroy');
-            });
-            const node = document.getElementById("99999999");
-            const clone = node.cloneNode(true);
-            clone.setAttribute('id', rand);
-            document.getElementById("myList1").appendChild(clone);
-            $("#" + rand).find('#removeDiv').attr('data-id', rand);
-            $("#" + rand).find('#serialnumber').attr('data-id', rand);
-            $("#" + rand).find('.invoice-item-sales-price').attr('id', "serial" + rand);
-            $("#" + rand).find('.item-details-stock').attr('id', "serialstock" + rand);
-            $("#" + rand).find('.invoice-item-sales-price').val('');
-
-            $("select.select2").select2();
-            $("#" + rand).find('input:text').val('');
-            $("#" + rand).find('input').attr('data-newId',rand);
-            window.scrollBy(0, 400)
-
-        }
-    </script>
-    <script>
-        $("#myList1").on("click", "#removeDiv", function () {
-            var Divid = $(this).data('id');
-            $("#" + Divid).remove();
-            var sum = 0;
-            $('.invoice-item-sales-price').each(function () {
-                sum += parseFloat($(this).val());  // Or this.innerHTML, this.innerText
-            });
-            $("#totalArea").html(sum + "₺");
-        })
-    </script>
-
-    <script>
-        app.controller("mainController", function ($scope, $http, $httpParamSerializerJQLike, $window) {
-            $scope.getCustomers = function () {
-                var postUrl = window.location.origin + '/customers?type=customer';   // Returns base URL (https://example.com)
-                $http({
-                    method: 'GET',
-                    //url: './comment/change_status?id=' + id + '&status='+status+'',
-                    url: postUrl,
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    }
-                }).then(function successCallback(response) {
-                    $scope.customers = response.data;
-                });
-            }
-            $scope.customerSave = function () {
-                var postUrl = window.location.origin + '/custom_customerstore';   // Returns base URL (https://example.com)
-                var formData = $("#customerForm").serialize();
-
-                $http({
-                    method: 'POST',
-                    url: postUrl,
-                    data: formData,
-                    dataType: "json",
-                    encode: true,
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    }
-                }).then(function successCallback(response) {
-                    $scope.getCustomers();
-                    $(".customerinformation").html('<p className="mb-1">\'+data.address+\'</p>\n' + '<p className="mb-1">\'+data.phone1+\'</p>');
-                    $('#selectCustomer option:selected').val(response.data.id);
-                    var modalDiv = $("#editUser");
-                    modalDiv.modal('hide');
-                    modalDiv
-                        .find("input,textarea,select")
-                        .val('')
-                        .end()
-                        .find("input[type=checkbox], input[type=radio]")
-                        .prop("checked", "")
-                        .end();
-                });
-            }
-        });
-    </script>
-
-    <script>
-        $(document).ready(function () {
-
-            const email = document.getElementById("email");
-            email.addEventListener("blur", () => {
-                let regex = /^([_\-\.0-9a-zA-Z]+)@([_\-\.0-9a-zA-Z]+)\.([a-zA-Z]){2,7}$/;
-                let s = email.value;
-                if (regex.test(s)) {
-                    email.classList.remove("is-invalid");
-                    emailError = true;
-                } else {
-                    email.classList.add("is-invalid");
-                    emailError = false;
-                }
-            });
-
-            // Validate Password
-            $("#passcheck").hide();
-            let passwordError = true;
-            $("#password").keyup(function () {
-                validatePassword();
-            });
-
-            function validatePassword() {
-                let passwordValue = $("#password").val();
-                if (passwordValue.length == "") {
-                    $("#passcheck").show();
-                    passwordError = false;
-                    return false;
-                }
-                if (passwordValue.length < 3 || passwordValue.length > 10) {
-                    $("#passcheck").show();
-                    $("#passcheck").html(
-                        "**length of your password must be between 3 and 10"
-                    );
-                    $("#passcheck").css("color", "red");
-                    passwordError = false;
-                    return false;
-                } else {
-                    $("#passcheck").hide();
-                }
-            }
-
-            // Validate Confirm Password
-            $("#conpasscheck").hide();
-            let confirmPasswordError = true;
-            $("#conpassword").keyup(function () {
-                validateConfirmPassword();
-            });
-
-            function validateConfirmPassword() {
-                let confirmPasswordValue = $("#conpassword").val();
-                let passwordValue = $("#password").val();
-                if (passwordValue != confirmPasswordValue) {
-                    $("#conpasscheck").show();
-                    $("#conpasscheck").html("**Password didn't Match");
-                    $("#conpasscheck").css("color", "red");
-                    confirmPasswordError = false;
-                    return false;
-                } else {
-                    $("#conpasscheck").hide();
-                }
-            }
-
-            // Submit button
-            $("#submitbtn").click(function () {
-                validateUsername();
-                validatePassword();
-                validateConfirmPassword();
-                validateEmail();
-                if (
-                    usernameError == true &&
-                    passwordError == true &&
-                    confirmPasswordError == true &&
-                    emailError == true
-                ) {
-                    return true;
-                } else {
-                    return false;
-                }
-            });
-        });
-    </script>
+    <!-- Sales Vue.js App -->
+    <script src="{{asset('assets/js/sales-vue.js')}}"></script>
 @endsection
-

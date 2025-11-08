@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Bank;
 
-use App\Repositories\BaseRepository;
+use LaravelEasyRepository\Repository;
 
-interface BankRepository extends BaseRepository{
+interface BankRepository extends Repository{
 
     public function get();
 

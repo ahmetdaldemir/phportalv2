@@ -48,18 +48,22 @@
     }
 </style>
 @section('custom-css')
-    <link rel="stylesheet" href="{{asset('assets/datepicker/css/bootstrap-datepicker.css')}}"/>
+    <link rel="stylesheet" href="{{asset('assets/vendor/libs/daterangepicker/daterangepicker.css')}}"/>
 
 @endsection
 @section('custom-js')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
 
-    <script src="{{asset('assets/datepicker/js/bootstrap-datepicker.js')}}"></script>
-    <script src="{{asset('assets/js/forms-pickers.js')}}"></script>
+    <script src="{{asset('assets/vendor/libs/daterangepicker/daterangepicker.js')}}"></script>
+    <script src="{{asset('assets/js/daterangepicker-init.js')}}"></script>
     <script>
         $('.input-daterange input').each(function() {
-            $(this).datepicker({
-                orientation: "bottom auto",
+            $(this).daterangepicker({
+                singleDatePicker: true,
+                showDropdowns: true,
+                locale: {
+                    format: 'DD-MM-YYYY'
+                }
             });
         });
     </script>

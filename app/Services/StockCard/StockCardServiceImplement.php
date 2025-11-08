@@ -14,17 +14,17 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use SN;
-use App\Services\BaseService;
+use LaravelEasyRepository\Service;
 use App\Repositories\StockCard\StockCardRepository;
 
-class StockCardServiceImplement extends BaseService implements StockCardService
+class StockCardServiceImplement extends Service implements StockCardService
 {
 
     /**
      * don't change $this->mainRepository variable name
      * because used in extends service class
      */
-    protected $mainRepository;
+    protected StockCardRepository $mainRepository;
 
     public function __construct(StockCardRepository $mainRepository)
     {
@@ -35,10 +35,28 @@ class StockCardServiceImplement extends BaseService implements StockCardService
     {
         try {
             if (Cache::has('stock_cards_all')) {
-                return  Cache::get('stock_cards_all');
+                $stocks = Cache::get('stock_cards_all');
             } else {
-                return $this->mainRepository->all();
+                $stocks = $this->mainRepository->all();
             }
+            $stocks = $this->mainRepository->all();
+            // Format version names for each stock
+            $stocks->each(function ($stock) {
+                if ($stock->version_id && is_array($stock->version_id)) {
+                    $versionNames = collect($stock->version_id)->map(function ($versionId) {
+                        $version = \App\Models\Version::find($versionId);
+                        return $version ? $version->name : 'Belirtilmedi';
+                    })->implode(', ');
+                    
+                    $stock->version_names = $versionNames;
+                } else {
+                    $stock->version_names = '';
+                }
+
+                $stock->brand_name = $stock->brand->name ?? 'Belirtilmedi';
+            });
+            
+            return $stocks;
         } catch (\Exception $exception) {
             Log::debug($exception->getMessage());
             return [];
@@ -267,8 +285,10 @@ class StockCardServiceImplement extends BaseService implements StockCardService
     {
         $data = [];
         $ssss = [];
-        $stock =  StockCard::whereNull('deleted_at');
-         if ($request->filled('stockName')) {
+        $stock = StockCard::with(['brand', 'category']) // Eager loading - N+1 sorununu çöz
+            ->whereNull('deleted_at');
+            
+        if ($request->filled('stockName')) {
             $stock->where('name', 'like', '%' . $request->stockName . '%');
         }
         if ($request->filled('category')) {
@@ -285,22 +305,20 @@ class StockCardServiceImplement extends BaseService implements StockCardService
             $stock = $stock->whereJsonContains('version_id', $request->version);
         }
 
-        // $stocks =  array_merge((array)$stock->get(), (array)$stock1->get());
-        $stocks = $stock->groupBy('category_id')->orderBy('id', 'desc')->paginate(20);
+        // Performans optimizasyonu - limit ekle
+        $stocks = $stock->orderBy('id', 'desc')->paginate(20);
 
         $data['stockLink'] = $stocks->links();
 
         foreach ($stocks as $stock) {
-
             $ssss[] = array(
                 'id' => $stock->id,
                 'name' => $stock->name,
-                'brand' => Brand::find($stock->brand_id)->name ?? "Bulunamadı",
+                'brand' => $stock->brand->name ?? "Bulunamadı", // Eager loading ile
                 'version' => $this->version($stock->version_id),
                 'category_sperator_name' => $this->categorySeperator($this->testParent($stock->category_id)),
-                'category' => Category::find($stock->category_id)->name ?? "Bulunamadı",
+                'category' => $stock->category->name ?? "Bulunamadı", // Eager loading ile
                 'stockData' => $this->stockData($stock->category_id)
-
             );
         }
         $data['stockList'] = $ssss;

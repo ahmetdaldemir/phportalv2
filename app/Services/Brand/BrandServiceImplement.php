@@ -5,10 +5,10 @@ namespace App\Services\Brand;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use App\Services\BaseService;
+use LaravelEasyRepository\Service;
 use App\Repositories\Brand\BrandRepository;
 
-class BrandServiceImplement extends BaseService implements BrandService{
+class BrandServiceImplement extends Service implements BrandService{
 
      /**
      * don't change $this->mainRepository variable name

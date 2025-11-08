@@ -3,17 +3,17 @@
 namespace App\Services\Version;
 
 use Illuminate\Support\Facades\Log;
-use App\Services\BaseService;
+use LaravelEasyRepository\Service;
 use App\Repositories\Version\VersionRepository;
 use Illuminate\Database\Eloquent\Collection;
 
-class VersionServiceImplement extends BaseService implements VersionService{
+class VersionServiceImplement extends Service implements VersionService{
 
     /**
      * don't change $this->mainRepository variable name
      * because used in extends service class
      */
-    protected $mainRepository;
+    protected VersionRepository $mainRepository;
 
     public function __construct(VersionRepository $mainRepository)
     {
@@ -26,7 +26,7 @@ class VersionServiceImplement extends BaseService implements VersionService{
             return $this->mainRepository->all();
         } catch (\Exception $exception) {
             Log::debug($exception->getMessage());
-            return [];
+            return new Collection([]);
         }
     }
 
@@ -36,10 +36,26 @@ class VersionServiceImplement extends BaseService implements VersionService{
             return $this->mainRepository->get();
         } catch (\Exception $exception) {
             Log::debug($exception->getMessage());
-            return [];
+            return new Collection([]);
         }
     }
 
+    public function getByBrand(int $brandId): ?Collection
+    {
+        try {
+            // Direkt Version model kullanarak filtrele
+            return \App\Models\Version::where('brand_id', $brandId)
+                ->orderBy('name', 'asc')
+                ->get();
+        } catch (\Exception $exception) {
+            Log::error('Error getting versions by brand', [
+                'brand_id' => $brandId,
+                'error' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString()
+            ]);
+            return new Collection([]);
+        }
+    }
 
     public function find($id)
     {

@@ -34,4 +34,9 @@ class Refund extends Model
     {
         return $this->belongsTo(Reason::class,'reason_id','id');
     }
+
+    public function brand(): BelongsTo
+    {
+        return $this->belongsTo(Brand::class,'brand_id','id');
+    }
 }

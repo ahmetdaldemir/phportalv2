@@ -1,9 +1,57 @@
 @extends('layouts.admin')
 
+@section('custom-css')
+    <link rel="stylesheet" href="{{ asset('assets/css/table-page-framework.css') }}">
+    <style>
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #section-to-print, #section-to-print * {
+                visibility: visible;
+            }
+
+            #section-to-print {
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+        }
+    </style>
+@endsection
+
 @section('content')
     <div class="container-xxl flex-grow-1 container-p-y">
-        <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Teknik Servis /</span> Teknik Servis listesi
-        </h4>
+        <!-- Table Page Header -->
+        <div class="table-page-header table-page-fade-in">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="header-icon">
+                        <i class="bx bx-wrench"></i>
+                    </div>
+                    <div class="header-text">
+                        <h2>
+                            <i class="bx bx-wrench me-2"></i>
+                            TEKNİK SERVİS LİSTESİ
+                        </h2>
+                        <p>Teknik servis ve kaplama işlemleri yönetimi</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    @role(['Satış Sorumlusu','super-admin','Bayi Yetkilisi'])
+                        <a href="{{route('technical_service.create')}}" class="btn btn-primary btn-sm">
+                            <i class="bx bx-plus me-1"></i>
+                            Yeni Teknik Servis
+                        </a>
+                        <a href="{{route('technical_service.covering')}}" class="btn btn-danger btn-sm">
+                            <i class="bx bx-plus me-1"></i>
+                            Yeni Kaplama
+                        </a>
+                    @endrole
+                </div>
+            </div>
+        </div>
 
         <div class="nav-align-top mb-4">
             <ul class="nav nav-tabs" role="tablist">
@@ -23,98 +71,103 @@
             </ul>
             <div class="tab-content">
                 <div class="tab-pane fade {{$_technical}} show" id="navs-top-home" role="tabpanel">
-                    <div class="card">
-                        <div class="card-header">
-                            <form action="{{route('technical_service.index')}}" id="stockSearch" method="get">
+                    <!-- Table Page Filters -->
+                    <div class="table-page-filters table-page-fade-in-delay-1">
+                        <div class="filter-header">
+                            <h6>
+                                <i class="bx bx-filter me-2"></i>
+                                Filtreler
+                            </h6>
+                            <small>Teknik servis arama ve filtreleme</small>
+                        </div>
+                        <div class="filter-body">
+                            <form action="{{route('technical_service.index')}}" method="get">
                                 <input type="hidden" name="tab_type" value="_technical">
-
                                 @csrf
-                                <div class="row g-3">
-                                    <div class="col-md-2">
-                                        <label class="form-label" for="multicol-username">Müşteri</label>
-                                        <input type="text" class="form-control" placeholder="············"
-                                               name="customer">
+                                
+                                <div class="filter-row">
+                                    <div class="filter-group">
+                                        <label class="filter-label">
+                                            <i class="bx bx-user"></i> Müşteri
+                                        </label>
+                                        <input type="text" class="filter-input" placeholder="Müşteri ara..." name="customer">
                                     </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label" for="multicol-email">Marka</label>
-                                        <div class="input-group input-group-merge">
-                                            <select type="text" name="brand" class="form-select"
-                                                    onchange="getVersion(this.value)" style="width: 100%">
-                                                <option value="">Tümü</option>
-                                                @foreach($brands as $brand)
-                                                    <option value="{{$brand->id}}">{{$brand->name}}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
+                                    
+                                    <div class="filter-group">
+                                        <label class="filter-label">
+                                            <i class="bx bx-package"></i> Marka
+                                        </label>
+                                        <select name="brand" class="filter-select" onchange="getVersion(this.value)">
+                                            <option value="">Tümü</option>
+                                            @foreach($brands as $brand)
+                                                <option value="{{$brand->id}}">{{$brand->name}}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
-                                    <div class="col-md-2">
-                                        <div class="form-password-toggle">
-                                            <label class="form-label" for="multicol-password">Model</label>
-                                            <div class="input-group input-group-merge">
-                                                <select type="text" id="version_id" name="version" class="form-select"
-                                                        style="width: 100%">
-                                                    <option value="">Tümü</option>
-                                                </select>
-                                            </div>
-                                        </div>
+                                    
+                                    <div class="filter-group">
+                                        <label class="filter-label">
+                                            <i class="bx bx-mobile-alt"></i> Model
+                                        </label>
+                                        <select id="version_id" name="version" class="filter-select">
+                                            <option value="">Tümü</option>
+                                        </select>
                                     </div>
-                                    <div class="col-md-2">
-                                        <div class="form-password-toggle">
-                                            <label class="form-label" for="multicol-password">Bayi</label>
-                                            <div class="input-group input-group-merge">
-                                                <select type="text" name="seller" class="form-select"
-                                                        style="width: 100%">
-                                                    <option value="">Tümü</option>
-                                                    @foreach($sellers as $seller)
-                                                        <option value="{{$seller->id}}">{{$seller->name}}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                        </div>
+                                    
+                                    <div class="filter-group">
+                                        <label class="filter-label">
+                                            <i class="bx bx-store"></i> Bayi
+                                        </label>
+                                        <select name="seller" class="filter-select">
+                                            <option value="">Tümü</option>
+                                            @foreach($sellers as $seller)
+                                                <option value="{{$seller->id}}">{{$seller->name}}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
-                                    <div class="col-md-2">
-                                        <div class="form-password-toggle">
-                                            <label class="form-label" for="multicol-password">İşlem Durumu</label>
-                                            <div class="input-group input-group-merge">
-                                                <select type="text" name="status" class="form-select"
-                                                        style="width: 100%">
-                                                    <option value="">Tümü</option>
-                                                    @foreach(\App\Models\TechnicalService::STATUS as $key => $value)
-                                                        <option value="{{$key}}">{{$value}}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                        </div>
+                                    
+                                    <div class="filter-group">
+                                        <label class="filter-label">
+                                            <i class="bx bx-check-circle"></i> İşlem Durumu
+                                        </label>
+                                        <select name="status" class="filter-select">
+                                            <option value="">Tümü</option>
+                                            @foreach(\App\Models\TechnicalService::STATUS as $key => $value)
+                                                <option value="{{$key}}">{{$value}}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
-                                </div>
-                                <div class="col-12 mt-4">
-                                    <button type="submit" class="btn btn-sm btn-outline-primary">Ara
-                                    </button>
+                                    
+                                    <div class="filter-group auto">
+                                        <label class="filter-label">
+                                            <i class="bx bx-search"></i> Ara
+                                        </label>
+                                        <button type="submit" class="filter-button primary">
+                                            <i class="bx bx-search me-1"></i>
+                                            Ara
+                                        </button>
+                                    </div>
                                 </div>
                             </form>
                         </div>
-                        <div class="card-header">
-                            @role(['Satış Sorumlusu','super-admin','Bayi Yetkilisi'])
-                            <a href="{{route('technical_service.create')}}" class="btn btn-primary float-end">Yeni
-                                Teknik Servis Ekle</a>
-                            @endrole
-                        </div>
-                        <div class="table-responsive text-nowrap">
-                            <table class="table" style="font-size:11px">
+                    </div>
+                    
+                    <!-- Data Table -->
+                    <div class="table-page-table table-page-fade-in-delay-2">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
                                 <thead>
                                 <tr>
-                                    <th>#</th>
-                                    <th>Şube Adı</th>
-                                    <th>Müşteri</th>
-                                    <th>Marka/Model</th>
-                                    <th>Ödeme Durumu</th>
-                                    <th>Tarih</th>
-                                    <th>Personel</th>
-                                    <!-- th>T.Per.</th>
-                                    <th>Total</th -->
-                                    <th>Fiyat</th>
-                                    <th>Durum</th>
-                                    <th>Actions</th>
+                                    <th style="width: 5%;"><i class="bx bx-hash me-1"></i>#</th>
+                                    <th style="width: 15%;"><i class="bx bx-store me-1"></i>Şube Adı</th>
+                                    <th style="width: 15%;"><i class="bx bx-user me-1"></i>Müşteri</th>
+                                    <th style="width: 15%;"><i class="bx bx-mobile me-1"></i>Marka/Model</th>
+                                    <th style="width: 10%;"><i class="bx bx-dollar me-1"></i>Ödeme</th>
+                                    <th style="width: 10%;"><i class="bx bx-calendar me-1"></i>Tarih</th>
+                                    <th style="width: 10%;"><i class="bx bx-user-check me-1"></i>Personel</th>
+                                    <th style="width: 8%;" class="text-end"><i class="bx bx-money me-1"></i>Fiyat</th>
+                                    <th style="width: 12%;"><i class="bx bx-check-circle me-1"></i>Durum</th>
+                                    <th style="width: 10%;" class="text-center"><i class="bx bx-cog me-1"></i>İşlemler</th>
                                 </tr>
                                 </thead>
                                 <tbody class="table-border-bottom-0">
@@ -181,88 +234,101 @@
                                     </tr>
                                 @endforeach
                                 </tbody>
-
                             </table>
                         </div>
-                        <div class="card mt-4">
-                            <div class="card-body mt-4 p-4 box has-text-centered" style="padding-top: 0 !important; padding-bottom: 0 !important;">
-                                {{$technical_services->links()}}
-                            </div>
-                        </div>
                     </div>
+                    
+                    <!-- Pagination -->
+                    @if($technical_services->hasPages())
+                    <div class="table-page-pagination table-page-fade-in-delay-3">
+                        {{$technical_services->links()}}
+                    </div>
+                    @endif
                 </div>
                 <div class="tab-pane fade  {{$_cover}}" id="navs-top-profile" role="tabpanel">
-                    <div class="card">
-                        <div class="card-header">
-                            <form action="{{route('technical_service.index')}}" id="stockSearch" method="get">
+                    <!-- Table Page Filters -->
+                    <div class="table-page-filters table-page-fade-in-delay-1">
+                        <div class="filter-header">
+                            <h6>
+                                <i class="bx bx-filter me-2"></i>
+                                Filtreler
+                            </h6>
+                            <small>Kaplama ve baskı arama ve filtreleme</small>
+                        </div>
+                        <div class="filter-body">
+                            <form action="{{route('technical_service.index')}}" method="get">
                                 <input type="hidden" name="tab_type" value="_cover">
                                 @csrf
-                                <div class="row g-3">
-                                    <div class="col-md-2">
-                                        <label class="form-label" for="multicol-username">Müşteri</label>
-                                        <input type="text" class="form-control" placeholder="············" name="cover_customer">
+                                
+                                <div class="filter-row">
+                                    <div class="filter-group">
+                                        <label class="filter-label">
+                                            <i class="bx bx-user"></i> Müşteri
+                                        </label>
+                                        <input type="text" class="filter-input" placeholder="Müşteri ara..." name="cover_customer">
                                     </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label" for="multicol-email">Marka</label>
-                                        <div class="input-group input-group-merge">
-                                            <select type="text" name="cover_brand" class="form-select"
-                                                    onchange="getVersion(this.value)" style="width: 100%">
-                                                <option value="">Tümü</option>
-                                                @foreach($brands as $brand)
-                                                    <option value="{{$brand->id}}">{{$brand->name}}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
+                                    
+                                    <div class="filter-group">
+                                        <label class="filter-label">
+                                            <i class="bx bx-package"></i> Marka
+                                        </label>
+                                        <select name="cover_brand" class="filter-select" onchange="getVersion(this.value)">
+                                            <option value="">Tümü</option>
+                                            @foreach($brands as $brand)
+                                                <option value="{{$brand->id}}">{{$brand->name}}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
-                                    <div class="col-md-2">
-                                        <div class="form-password-toggle">
-                                            <label class="form-label" for="multicol-password">Model</label>
-                                            <div class="input-group input-group-merge">
-                                                <select type="text" id="version_id" name="cover_version" class="form-select"
-                                                        style="width: 100%">
-                                                    <option value="">Tümü</option>
-                                                </select>
-                                            </div>
-                                        </div>
+                                    
+                                    <div class="filter-group">
+                                        <label class="filter-label">
+                                            <i class="bx bx-mobile-alt"></i> Model
+                                        </label>
+                                        <select id="version_id" name="cover_version" class="filter-select">
+                                            <option value="">Tümü</option>
+                                        </select>
                                     </div>
-                                    <div class="col-md-2">
-                                        <div class="form-password-toggle">
-                                            <label class="form-label" for="multicol-password">Bayi</label>
-                                            <div class="input-group input-group-merge">
-                                                <select type="text" name="cover_seller" class="form-select"
-                                                        style="width: 100%">
-                                                    <option value="">Tümü</option>
-                                                    @foreach($sellers as $seller)
-                                                        <option value="{{$seller->id}}">{{$seller->name}}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                        </div>
+                                    
+                                    <div class="filter-group">
+                                        <label class="filter-label">
+                                            <i class="bx bx-store"></i> Bayi
+                                        </label>
+                                        <select name="cover_seller" class="filter-select">
+                                            <option value="">Tümü</option>
+                                            @foreach($sellers as $seller)
+                                                <option value="{{$seller->id}}">{{$seller->name}}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
-                                </div>
-                                <div class="col-12 mt-4">
-                                    <button   type="submit"  class="btn btn-sm btn-outline-primary">Ara  </button>
+                                    
+                                    <div class="filter-group auto">
+                                        <label class="filter-label">
+                                            <i class="bx bx-search"></i> Ara
+                                        </label>
+                                        <button type="submit" class="filter-button primary">
+                                            <i class="bx bx-search me-1"></i>
+                                            Ara
+                                        </button>
+                                    </div>
                                 </div>
                             </form>
                         </div>
-                        <div class="card-header">
-                            @role(['Satış Sorumlusu','super-admin','Bayi Yetkilisi'])
-                            <a href="{{route('technical_service.covering')}}" class="btn btn-danger ">Yeni Kaplama
-                                Ekle</a>
-                            @endrole
-                        </div>
-                        <div class="table-responsive text-nowrap">
-                            <table class="table" style="font-size:11px">
+                    </div>
+                    
+                    <!-- Data Table -->
+                    <div class="table-page-table table-page-fade-in-delay-2">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
                                 <thead>
                                 <tr>
-                                    <th>#</th>
-                                    <th>Şube Adı</th>
-                                    <th>Müşteri</th>
-                                    <th>Marka/Model</th>
-                                    <th>Ödeme Durumu</th>
-                                    <th>Tarih</th>
-                                    <th>Personel</th>
-                                    <th>Actions</th>
+                                    <th style="width: 5%;"><i class="bx bx-hash me-1"></i>#</th>
+                                    <th style="width: 20%;"><i class="bx bx-store me-1"></i>Şube Adı</th>
+                                    <th style="width: 20%;"><i class="bx bx-user me-1"></i>Müşteri</th>
+                                    <th style="width: 20%;"><i class="bx bx-mobile me-1"></i>Marka/Model</th>
+                                    <th style="width: 12%;"><i class="bx bx-dollar me-1"></i>Ödeme Durumu</th>
+                                    <th style="width: 10%;"><i class="bx bx-calendar me-1"></i>Tarih</th>
+                                    <th style="width: 10%;"><i class="bx bx-user-check me-1"></i>Personel</th>
+                                    <th style="width: 13%;" class="text-center"><i class="bx bx-cog me-1"></i>İşlemler</th>
                                 </tr>
                                 </thead>
                                 <tbody class="table-border-bottom-0">
@@ -313,38 +379,23 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div class="card mt-4">
-                            <div class="card-body mt-4 p-4 box has-text-centered" style="padding-top: 0 !important; padding-bottom: 0 !important;">
-                                {{$technical_covering_services->links()}}
-                            </div>
-                        </div>
                     </div>
+                    
+                    <!-- Pagination -->
+                    @if($technical_covering_services->hasPages())
+                    <div class="table-page-pagination table-page-fade-in-delay-3">
+                        {{$technical_covering_services->links()}}
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>
         <hr class="my-5">
     </div>
 @endsection
+
 @include('components.smsmodal')
 
-
-<style>
-    @media print {
-        body * {
-            visibility: hidden;
-        }
-
-        #section-to-print, #section-to-print * {
-            visibility: visible;
-        }
-
-        #section-to-print {
-            position: absolute;
-            left: 0;
-            top: 0;
-        }
-    }
-</style>
 @section('custom-js')
     <script>
         function print(id) {
@@ -397,13 +448,16 @@
             if (!confirm("Durum Değişikliği yapmak istediğinizden eminmisiniz?")) {
                 return;
             }
-
             var val = $(this).val();
             var technicalservice_id = $(this).data('technicalservice_id');
-            var postUrl = window.location.origin + '/technical_service/statusCgange?id=' + technicalservice_id + '&val=' + val;   // Returns base URL (https://example.com)
+            var postUrl = window.location.origin + '/technical_service/statusCgange?id=' + technicalservice_id + '&val=' + val;
+            var csrfToken = $('meta[name="csrf-token"]').attr('content') || '{{ csrf_token() }}';
             $.ajax({
                 type: "POST",
                 url: postUrl,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                },
                 success: function (data) {
                     Swal.fire(data);
                     window.location.reload();
@@ -415,7 +469,7 @@
                 },
                 complete: function () {
                     //
-                },
+                }
 
             });
         })

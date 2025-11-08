@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Refund;
 
-use App\Repositories\BaseRepository;
+use LaravelEasyRepository\Repository;
 
-interface RefundRepository extends BaseRepository{
+interface RefundRepository extends Repository{
 
     public function get();
 }

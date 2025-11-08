@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Safe;
 
-use App\Repositories\BaseRepository;
+use LaravelEasyRepository\Repository;
 
-interface SafeRepository extends BaseRepository{
+interface SafeRepository extends Repository{
 
     public function get();
 

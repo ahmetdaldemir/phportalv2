@@ -91,4 +91,22 @@ class CustomerController extends Controller
         $data = array('is_danger' => $request->is_danger);
         return $this->customerService->update($request->id,$data);
     }
+
+    /**
+     * Get customers for API
+     */
+    public function getCustomersApi(Request $request)
+    {
+        try {
+            $query = $this->customerService->all();
+            
+            if ($request->has('type')) {
+                $query = $query->where('type', $request->type);
+            }
+            
+            return response()->json($query);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Customers not found'], 404);
+        }
+    }
 }

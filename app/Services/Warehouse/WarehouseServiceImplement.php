@@ -4,10 +4,10 @@ namespace App\Services\Warehouse;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use App\Services\BaseService;
+use LaravelEasyRepository\Service;
 use App\Repositories\Warehouse\WarehouseRepository;
 
-class WarehouseServiceImplement extends BaseService implements WarehouseService{
+class WarehouseServiceImplement extends Service implements WarehouseService{
 
      /**
      * don't change $this->mainRepository variable name

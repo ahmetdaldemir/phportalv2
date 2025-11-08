@@ -3,9 +3,9 @@
 namespace App\Services\Blog;
 
 use Illuminate\Database\Eloquent\Collection;
+use LaravelEasyRepository\BaseService;
 
-
-interface BlogService {
+interface BlogService extends BaseService{
 
 
     public function all(): ?Collection;

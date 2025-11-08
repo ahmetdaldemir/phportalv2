@@ -4,16 +4,16 @@ namespace App\Services\Invoice;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use App\Services\BaseService;
+use LaravelEasyRepository\Service;
 use App\Repositories\Invoice\InvoiceRepository;
 
-class InvoiceServiceImplement extends BaseService implements InvoiceService{
+class InvoiceServiceImplement extends Service implements InvoiceService{
 
      /**
      * don't change $this->mainRepository variable name
      * because used in extends service class
      */
-     protected $mainRepository;
+     protected InvoiceRepository $mainRepository;
 
     public function __construct(InvoiceRepository $mainRepository)
     {

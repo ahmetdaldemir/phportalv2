@@ -1,687 +1,914 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="container-xxl flex-grow-1 container-p-y">
-        <div class="row invoice-add">
-            <div class="col-lg-9 col-12 mb-lg-0 mb-4">
-                <div class="card invoice-preview-card">
+<div id="invoice-form-app" class="container-xxl flex-grow-1 container-p-y">
+    <div v-if="!invoice" class="text-center p-4">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Yükleniyor...</span>
+        </div>
+        <p class="mt-2">Fatura bilgileri yükleniyor...</p>
+    </div>
+    <div v-else class="row invoice-add">
+        <div class="col-12">
+            <div class="card invoice-preview-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bx bx-receipt me-2"></i>
+                        Fatura Düzenle - #@{{ invoice?.invoice_number || invoice?.id || 'N/A' }}
+                    </h4>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url()->previous() }}" class="btn btn-outline-secondary">
+                            <i class="bx bx-arrow-back me-1"></i>Geri Dön
+                        </a>
+                        <button @click="printInvoice" class="btn btn-outline-primary">
+                            <i class="bx bx-printer me-1"></i>Yazdır
+                        </button>
+                    </div>
+                </div>
 
-                    <!-- route('invoice.stockcardmovementstore') -->
-                     <!--form id="invoiceForm" method="post" action="#" -->
-                        @csrf
-                        <input type="hidden" name="id" @if(isset($invoice_id)) value="{{$invoice_id}}" @endif />
-                        <input type="hidden" name="type" value="1"/>
-                        <div class="card-body">
-                            <div class="row p-sm-3 p-0">
-                                <div class="col-md-6 mb-md-0 mb-4">
-                                    <div class="row mb-4">
-                                        <label for="selectCustomer" class="form-label">Cari Seçiniz</label>
-                                        <div class="col-md-9">
-                                            <select id="selectCustomer" class="w-100 select2" data-style="btn-default" name="customer_id" ng-init="getCustomers()">
-                                                <option value="0">Genel Cari</option>
-                                                <option ng-repeat="customer in customers"
-                                                        ng-if="customer.type == 'account'"
-                                                        data-value="@{{customer.id}}"
-                                                        ng-selected="customer.id == {{$invoice->customer_id}}"
-                                                        @if(isset($invoice) && '@{{customer.id}}' == $invoice->customer_id) selected
-                                                        @endif data-value="@{{customer.id}}" value="@{{customer.id}}"> @{{customer.fullname}}
+                <form @submit.prevent="submitForm" class="invoice-form">
+                    <input type="hidden" v-model="form.id" />
+
+                    <div class="card-body">
+                        <!-- Header Section -->
+                        <div class="row p-3">
+                            <div class="col-md-6 mb-4">
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">
+                                        <i class="bx bx-user me-1"></i>Cari Seçiniz
+                                    </label>
+                                    <div class="input-group">
+                                        <div class="position-relative flex-grow-1">
+                                            <select 
+                                                v-model="form.customer_id" 
+                                                @change="onCustomerChange"
+                                                class="form-select">
+                                                <option value="1">Genel Cari</option>
+                                                <option 
+                                                    v-for="customer in filteredCustomers" 
+                                                    :key="customer.id"
+                                                    :value="customer.id">
+                                                    @{{ customer.fullname }}
                                                 </option>
                                             </select>
                                         </div>
-                                        <!-- div class="col-md-3">
-                                            <button class="btn btn-secondary btn-primary" tabindex="0" data-bs-toggle="modal" data-bs-target="#editUser" type="button">
-                                                <span><i class="bx bx-plus me-md-1"></i></span>
-                                            </button>
-                                        </div -->
+                                        <button @click="openCustomerModal" class="btn btn-primary" type="button">
+                                            <i class="bx bx-plus"></i>
+                                        </button>
                                     </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <dl class="row mb-2">
-                                        <dt class="col-sm-6 mb-2 mb-sm-0 text-md-end">
-                                            <span class="h4 text-capitalize mb-0 text-nowrap">Invoice #</span>
-                                        </dt>
-                                        <dd class="col-sm-6 d-flex justify-content-md-end">
-                                            <div class="w-px-150">
-                                                <input type="text" class="form-control" name="number"  @if(isset($invoice)) value="{{$invoice->number}}" @endif  id="invoiceId">
-                                            </div>
-                                        </dd>
-                                        <dt class="col-sm-6 mb-2 mb-sm-0 text-md-end">
-                                            <span class="fw-normal">Fatura Tarihi:</span>
-                                        </dt>
-                                        <dd class="col-sm-6 d-flex justify-content-md-end">
-                                            <div class="w-px-150">
-                                                <input type="text" class="form-control datepicker flatpickr-input" name="create_date"  @if(isset($invoice)) value="{{$invoice->create_date}}"
-                                                       @else  value="{{date('d-m-Y')}}" @endif  />
-                                            </div>
-                                        </dd>
-                                    </dl>
+                                    <small class="text-muted">Müşteri bilgilerini seçin veya yeni müşteri ekleyin</small>
                                 </div>
                             </div>
-                            <hr class="mx-n4">
 
+                            <div class="col-md-6 mb-4">
+                                <div class="row">
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label fw-semibold">Fatura No</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <i class="bx bx-hash"></i>
+                                            </span>
+                                            <input v-model="form.number" type="text" class="form-control"
+                                                placeholder="Otomatik oluşturulacak">
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold">Fatura Tarihi</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <i class="bx bx-calendar"></i>
+                                            </span>
+                                            <input v-model="form.create_date" type="date" class="form-control">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+
+                        <hr class="mx-n4">
+                    </div>
+
+                        <!-- Items Section -->
                         <div class="card-body">
-                            <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="mb-0">
+                                    <i class="bx bx-list-ul me-2"></i>Fatura Kalemleri
+                                </h5>
+                                <small class="text-muted">
+                                    <i class="bx bx-info-circle me-1"></i>
+                                    Sadece Renk, Barkod ve Fiyat alanları düzenlenebilir
+                                </small>
+                            </div>
 
+                            <div class="table-responsive" style="overflow: visible !important;">
+                                <table class="table table-hover" style="overflow: visible !important;">
+                                    <thead class="table-header-modern">
+                                        <tr>
+                                            <th class="compact-header">
+                                                <i class="bx bx-package me-1"></i>
+                                                <span class="header-text">Stok</span>
+                                            </th>
+                                            <th class="compact-header">
+                                                <i class="bx bx-barcode me-1"></i>
+                                                <span class="header-text">Seri No</span>
+                                            </th>
+                                            <th class="compact-header">
+                                                <i class="bx bx-palette me-1"></i>
+                                                <span class="header-text">Renk</span>
+                                            </th>
+                                            <th class="compact-header">
+                                                <i class="bx bx-hash me-1"></i>
+                                                <span class="header-text">Adet</span>
+                                            </th>
+                                            <th class="compact-header">
+                                                <i class="bx bx-code me-1"></i>
+                                                <span class="header-text">Prefix</span>
+                                            </th>
+                                            <th class="compact-header">
+                                                <i class="bx bx-money me-1"></i>
+                                                <span class="header-text">G.Maliyet</span>
+                                            </th>
+                                            <th class="compact-header">
+                                                <i class="bx bx-calculator me-1"></i>
+                                                <span class="header-text">Maliyet</span>
+                                            </th>
+                                            <th class="compact-header">
+                                                <i class="bx bx-credit-card me-1"></i>
+                                                <span class="header-text">Satış<br><small>Fiyatı</small></span>
+                                            </th>
+                                            <th class="compact-header">
+                                                <i class="bx bx-store me-1"></i>
+                                                <span class="header-text">Şube</span>
+                                            </th>
+                                            <th class="compact-header">
+                                                <i class="bx bx-building me-1"></i>
+                                                <span class="header-text">Depo</span>
+                                            </th>
+                                            <th class="compact-header">
+                                                <i class="bx bx-qr me-1"></i>
+                                                <span class="header-text">Barkod</span>
+                                            </th>
+                                            <th class="compact-header">
+                                                <i class="bx bx-cog me-1"></i>
+                                                <span class="header-text">İşlem</span>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody style="overflow: visible !important;">
+                                        <tr v-for="(item, index) in form.items" :key="index"
+                                            class="invoice-item-row" style="overflow: visible !important; position: relative !important;">
+                                            <!-- Stok -->
+                                            <td>
+                                                <input 
+                                                    v-model="item.stock_search" 
+                                                    type="text" 
+                                                    class="form-control form-control-sm" 
+                                                    placeholder="Stok"
+                                                    disabled
+                                                    readonly>
+                                            </td>
 
-                                @if(!empty($invoice->detail))
-                                    @foreach($invoice->detail as $item)
-                                    <div id="test" class="pt-0 pt-md-4">
-                                        <div class="cloneBox"></div>
-                                        <div class="border rounded position-relative pe-0">
-                                            <div class="row w-100 m-0 p-3">
-                                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Stok</p>
-                                                    <select name="stock_card_id[]"
-                                                            class="form-select item-details select2 mb-2">
-                                                        @foreach($stocks as $stock)
-                                                            <option value="{{$stock->id}}" @if($stock->id == $item['stockcardid']) selected @endif >
-                                                                {{$stock->name}} -
-                                                                <small> {{$stock->brand->name}}</small> - <b>
-                                                                        <?php  $datas = json_decode($stock->version(), TRUE);
-                                                                        foreach ($datas as $mykey => $myValue) {
-                                                                            echo "$myValue,";
-                                                                        }
-                                                                        ?></b>
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Seri No</p>
-                                                    <input type="text" class="form-control" name="serial[]" readonly />
-                                                </div>
-                                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Renk</p>
-                                                    <select name="color_id[]"
-                                                            class="form-select item-details select2 mb-2">
-                                                        @foreach($colors as $color)
-                                                            <option @if($color->id == $item['color_id']) selected @endif  value="{{$color->id}}">{{$color->name}}</option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Stok Takibi</p>
-                                                    <input type="text" class="form-control"  value="{{$item['tracking_quantity']}}" name="tracking_quantity[]" required />
-                                                </div>
-                                                <div class="col-md-1 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Prefix</p>
-                                                    <input type="text" class="form-control" @if(isset($item['prefix'])) value="{{$item['prefix']}}"  @endif name="prefix[]" required />
-                                                </div>
-                                                <!-- div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Neden</p>
-                                                    <select name="reason_id[]"
-                                                            class="form-select item-details select2 mb-2">
-                                                        @foreach($reasons as $reason)
-                                                            @if($reason->type == 5)
-                                                                <option @if($reason->id == $item['reason_id']) selected @endif  value="{{$reason->id}}">{{$reason->name}}</option>
-                                                            @endif
-                                                        @endforeach
-                                                    </select>
-                                                </div -->
-                                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Gerçek Maliyet</p>
-                                                    <input type="text" class="form-control invoice-item-price" value="{{$item['cost_price']}}"
-                                                    name="cost_price[]" required/>
-                                                </div>
-                                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Maliyet</p>
-                                                    <input type="text" class="form-control invoice-item-price"  value="{{$item['base_cost_price']}}"
-                                                           name="base_cost_price[]" required/>
-                                                </div>
-                                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Satış Fiyatı</p>
-                                                    <input type="text" class="form-control invoice-item-price"  value="{{$item['sale_price']}}"
-                                                           name="sale_price[]" required/>
-                                                </div>
-                                                <div class="col-md-2 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Adet</p>
-                                                    <input type="number" class="form-control invoice-item-qty" value="{{$item['quantity']}}"
-                                                           name="quantity[]" min="1" max="5000" required>
-                                                </div>
+                                            <!-- Seri No -->
+                                            <td>
+                                                <input v-model="item.serial" type="text"
+                                                    class="form-control form-control-sm" placeholder="Seri No" disabled readonly>
+                                            </td>
 
-                                                <div class="col-md-2 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <label for="taxInput1" class="form-label">Şube</label>
-                                                    <select name="seller_id[]"  id="taxInput1"
-                                                            class="form-select tax-select">
-                                                        @foreach($sellers as $seller)
-                                                            <option @if($item['seller_id'] == $seller->id) selected @endif
-                                                                value="{{$seller->id}}">{{$seller->name}}</option>
-                                                        @endforeach
-                                                    </select>
+                                            <!-- Renk -->
+                                            <td>
+                                                <div class="position-relative">
+                                                    <input 
+                                                        v-model="item.color_search" 
+                                                        @input="filterColors(index)"
+                                                        @focus="showColorDropdown(index)"
+                                                        @blur="hideColorDropdown(index)"
+                                                        type="text" 
+                                                        class="form-control form-control-sm" 
+                                                        placeholder="Renk ara..."
+                                                        autocomplete="off"
+                                                        required>
+                                                    <div v-show="item.show_color_dropdown && item.color_search && item.color_search.length >= 1" 
+                                                         :id="'color-dropdown-' + index"
+                                                         class="dropdown-menu show position-absolute w-100" 
+                                                         style="z-index: 99999 !important; max-height: 200px; overflow-y: auto; display: block !important; visibility: visible !important; opacity: 1 !important;">
+                                                        <div v-for="color in item.filtered_colors" :key="color.id" 
+                                                             @click="selectColor(index, color)"
+                                                             class="dropdown-item" 
+                                                             style="cursor: pointer;"
+                                                             v-text="color.name">
+                                                        </div>
+                                                        <div v-if="item.filtered_colors.length === 0 && item.color_search.length >= 1" class="dropdown-item text-muted">
+                                                            Renk bulunamadı
+                                                        </div>
+                                            </div>
+                                            </div>
+                                            </td>
+
+                                            <!-- Adet -->
+                                            <td>
+                                                <input v-model.number="item.quantity" type="number"
+                                                    class="form-control form-control-sm" min="1" max="5000"
+                                                    @input="calculateItemTotal(index)" disabled readonly>
+                                            </td>
+
+                                            <!-- Prefix -->
+                                            <td>
+                                                <input v-model="item.prefix" type="text"
+                                                    class="form-control form-control-sm" maxlength="3"
+                                                    @input="item.prefix = item.prefix.toUpperCase()" pattern="[A-Z]+" disabled readonly>
+                                            </td>
+
+                                            <!-- Gerçek Maliyet -->
+                                            <td>
+                                                <input v-model.number="item.cost_price" type="number" step="0.01"
+                                                    class="form-control form-control-sm"
+                                                    @input="calculateItemTotal(index)" required disabled readonly>
+                                            </td>
+
+                                            <!-- Maliyet -->
+                                            <td>
+                                                <input v-model.number="item.base_cost_price" type="number"
+                                                    step="0.01" class="form-control form-control-sm"
+                                                    @input="calculateItemTotal(index)" required disabled readonly>
+                                            </td>
+
+                                            <!-- Satış Fiyatı -->
+                                            <td>
+                                                <input v-model.number="item.sale_price" type="number" step="0.01"
+                                                    class="form-control form-control-sm"
+                                                    @input="calculateItemTotal(index)" required>
+                                            </td>
+
+                                            <!-- Şube -->
+                                            <td>
+                                                <select v-model="item.seller_id" class="form-select form-select-sm"
+                                                        required disabled>
+                                                    <option value="">Şube</option>
+                                                    <option v-for="seller in sellers" :key="seller.id" :value="seller.id" v-text="seller.name"></option>
+                                                </select>
+                                            </td>
+
+                                            <!-- Depo -->
+                                            <td>
+                                                <select v-model="item.warehouse_id" class="form-select form-select-sm" disabled>
+                                                    <option value="">Depo</option>
+                                                    <option v-for="warehouse in warehouses" :key="warehouse.id"
+                                                        :value="warehouse.id" v-text="warehouse.name">
+                                                    </option>
+                                                </select>
+                                            </td>
+
+                                            <!-- Barkod -->
+                                            <td>
+                                                <input v-model="item.barcode" type="text"
+                                                    class="form-control form-control-sm" placeholder="Barkod">
+                                            </td>
+
+                                            <!-- İşlem -->
+                                            <td>
+                                                <!-- Remove button disabled for existing items -->
+                                                <span class="text-muted">
+                                                    <i class="bx bx-lock"></i>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Summary -->
+                            <div class="row mt-4">
+                                <div class="col-md-8">
+                                    <!-- Payment Type Selection -->
+                                    <div class="card mb-4">
+                                        <div class="card-header">
+                                            <h5 class="card-title mb-0">
+                                                <i class="bx bx-money me-2"></i>Ödeme Türü
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Ödeme Şekli</label>
+                                                    <div class="form-check">
+                                                        <input 
+                                                            v-model="form.payment_type" 
+                                                            class="form-check-input" 
+                                                            type="radio" 
+                                                            value="cash" 
+                                                            id="paymentCash">
+                                                        <label class="form-check-label" for="paymentCash">
+                                                            <i class="bx bx-money me-1"></i>Nakit
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input 
+                                                            v-model="form.payment_type" 
+                                                            class="form-check-input" 
+                                                            type="radio" 
+                                                            value="credit_card" 
+                                                            id="paymentCard">
+                                                        <label class="form-check-label" for="paymentCard">
+                                                            <i class="bx bx-credit-card me-1"></i>Kredi Kartı
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input 
+                                                            v-model="form.payment_type" 
+                                                            class="form-check-input" 
+                                                            type="radio" 
+                                                            value="installment" 
+                                                            id="paymentInstallment">
+                                                        <label class="form-check-label" for="paymentInstallment">
+                                                            <i class="bx bx-calendar me-1"></i>Taksit
+                                                        </label>
+                                                    </div>
                                                 </div>
-                                                <div class="col-md-2 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <label for="taxInput2" class="form-label">Depo</label>
-                                                    <select name="warehouse_id[]" id="taxInput2"
-                                                            class="form-select tax-select">
-                                                        @foreach($warehouses as $warehouse)
-                                                            <option @if($item['warehouse_id'] == $warehouse->id) selected @endif
-                                                                value="{{$warehouse->id}}">{{$warehouse->name}}</option>
-                                                        @endforeach
-                                                    </select>
+                                                <div class="col-md-4">
+                                                    <div v-if="form.payment_type === 'cash'">
+                                                        <label class="form-label">Nakit Tutar</label>
+                                                        <input 
+                                                            v-model.number="form.cash" 
+                                                            type="number" 
+                                                            step="0.01"
+                                                            class="form-control">
+                                                    </div>
+                                                    <div v-if="form.payment_type === 'credit_card'">
+                                                        <label class="form-label">Kredi Kartı Tutar</label>
+                                                        <input 
+                                                            v-model.number="form.credit_card" 
+                                                            type="number" 
+                                                            step="0.01"
+                                                            class="form-control">
+                                                    </div>
+                                                    <div v-if="form.payment_type === 'installment'">
+                                                        <label class="form-label">Taksit Tutar</label>
+                                                        <input 
+                                                            v-model.number="form.installment" 
+                                                            type="number" 
+                                                            step="0.01"
+                                                            class="form-control">
+                                                    </div>
                                                 </div>
-                                                <!-- div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <label for="taxInput1" class="form-label">KDV</label>
-                                                    <select name="tax[]" id="taxInput1"
-                                                            class="form-select tax-select">
-                                                        <option @if($item['tax'] == 0) selected @endif value="0">0%</option>
-                                                        <option @if($item['tax'] == 1) selected @endif value="1">1%</option>
-                                                        <option @if($item['tax'] == 8) selected @endif value="8">10%</option>
-                                                        <option @if($item['tax'] == 18) selected @endif value="18" selected>18%</option>
-                                                    </select>
-                                                </div -->
-                                                <!-- div class="col-md-12 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Açıklama</p>
-                                                    <textarea class="form-control" rows="2" name="description[]" id="description">{{$item['description']}}</textarea>
-                                                </div -->
-                                                <input type="hidden" name="reason_id[]" value="9" />
-                                                <input type="hidden" name="description[]" value="" />
-                                                <input type="hidden" name="tax[]" value="20" />
-                                                <input type="hidden" name="discount[]" value="0" />
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Açıklama</label>
+                                                    <textarea 
+                                                        v-model="form.description" 
+                                                        class="form-control" 
+                                                        rows="3"
+                                                        placeholder="Fatura açıklaması">
+                                                    </textarea>
+                                                </div>
                                             </div>
                                         </div>
-                                        <hr class="mx-n4">
                                     </div>
-                                    @endforeach
-                                @else
-                                    <div id="test" class="pt-0 pt-md-4">
-                                        <div class="cloneBox"></div>
-                                        <div class="border rounded position-relative pe-0">
-                                            <div class="row w-100 m-0 p-3">
-                                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Stok</p>
-                                                    <select name="stock_card_id[]"
-                                                            class="form-select item-details select2 mb-2">
-                                                        @foreach($stocks as $stock)
-                                                            <option value="{{$stock->id}}">
-                                                                {{$stock->name}} -
-                                                                <small> {{$stock->brand->name}}</small> - <b>
-                                                                        <?php  $datas = json_decode($stock->version(), TRUE);
-                                                                        foreach ($datas as $mykey => $myValue) {
-                                                                            echo "$myValue,";
-                                                                        }
-                                                                        ?></b>
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Seri No</p>
-                                                    <input type="text" class="form-control" name="serial[]" readonly />
-                                                </div>
-                                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Renk</p>
-                                                    <select name="color_id[]"
-                                                            class="form-select item-details select2 mb-2">
-                                                        @foreach($colors as $color)
-                                                            <option value="{{$color->id}}">{{$color->name}}</option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                                <!-- div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Neden</p>
-                                                    <select name="reason_id[]"
-                                                            class="form-select item-details select2 mb-2">
-                                                        @foreach($reasons as $reason)
-                                                            @if($reason->type == 5)
-                                                                <option value="{{$reason->id}}">{{$reason->name}}</option>
-                                                            @endif
-                                                        @endforeach
-                                                    </select>
-                                                </div -->
-                                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Gerçek Maliyet</p>
-                                                    <input type="text" class="form-control invoice-item-price" name="cost_price[]" required/>
-                                                </div>
-                                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Maliyet</p>
-                                                    <input type="text" class="form-control invoice-item-price" name="base_cost_price[]" required/>
-                                                </div>
-                                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Satış Fiyatı</p>
-                                                    <input type="text" class="form-control invoice-item-price" name="sale_price[]" required/>
-                                                </div>
-                                                <div class="col-md-2 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Adet</p>
-                                                    <input type="number" class="form-control invoice-item-qty" name="quantity[]" min="1" max="5000" required>
-                                                </div>
-                                                <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Stok Takibi</p>
-                                                    <input type="text" class="form-control"  value="0" name="tracking_quantity[]" />
-                                                </div>
-                                                <!-- div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <label for="discountInput"
-                                                           class="form-label">İndirim (%)</label>
-                                                    <input type="number" class="form-control"
-                                                           id="discountInput"
-                                                           min="0" max="100" name="discount[]" -->
-                                                </div>
-                                                <div class="col-md-2 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <label for="taxInput1" class="form-label">Şube</label>
-                                                    <select name="seller_id[]"  id="taxInput1"
-                                                            class="form-select tax-select">
-                                                        @foreach($sellers as $seller)
-                                                            <option value="{{$seller->id}}">{{$seller->name}}</option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-2 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <label for="taxInput2" class="form-label">Depo</label>
-                                                    <select name="warehouse_id[]" id="taxInput2"
-                                                            class="form-select tax-select">
-                                                        @foreach($warehouses as $warehouse)
-                                                            <option value="{{$warehouse->id}}">{{$warehouse->name}}</option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                                <!-- div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <label for="taxInput1" class="form-label">KDV</label>
-                                                    <select name="tax[]" id="taxInput1"
-                                                            class="form-select tax-select">
-                                                        <option value="0">0%</option>
-                                                        <option value="1">1%</option>
-                                                        <option value="8">10%</option>
-                                                        <option value="18" selected>18%</option>
-                                                    </select>
-                                                </div -->
-                                                <!-- div class="col-md-12 col-12 mb-md-0 mb-3 ps-md-0">
-                                                    <p class="mb-2 repeater-title">Açıklama</p>
-                                                    <textarea class="form-control" rows="2" name="description[]" id="description"></textarea>
-                                                </div -->
-
-                                                <input type="hidden" name="reason_id[]" value="9" />
-                                                <input type="hidden" name="description[]" value="" />
-                                                <input type="hidden" name="tax[]" value="20" />
-                                                <input type="hidden" name="discount[]" value="0" />
-
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card bg-light">
+                                        <div class="card-header">
+                                            <h5 class="card-title mb-0">
+                                                <i class="bx bx-calculator me-2"></i>Özet
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Toplam Maliyet:</span>
+                                                <strong v-text="formatCurrency(totals.cost)"></strong>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Toplam Base Maliyet:</span>
+                                                <strong v-text="formatCurrency(totals.baseCost)"></strong>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Toplam Satış:</span>
+                                                <strong class="text-primary" v-text="formatCurrency(totals.sale)"></strong>
+                                            </div>
+                                            <hr>
+                                            <div class="d-flex justify-content-between">
+                                                <span class="fw-bold">Kar:</span>
+                                                <strong class="text-success" v-text="formatCurrency(totals.profit)"></strong>
                                             </div>
                                         </div>
-                                        <hr class="mx-n4">
                                     </div>
-                                @endif
-                                <div id="myList1">
-
-                                </div>
-                                <!-- button type="button" onclick="myFunction()" class="btn btn-secondary clon">EKLE</button -->
-
-                            </div>
-                            <!-- div class="col-md-12">
-                                <button style="width: 100%;" type="submit" class="btn btn-danger">Kaydet</button>
-                            </div -->
-
-                        </div>
-                    </form>
-
-
-
-                </div>
-            </div>
-            <div class="col-lg-3">
-                <div class="card">
-                    <div class="card-body">
-                        <table class="table table-bordered">
-                            <tr>
-                                <td style="font-size: 13px">Toplam Maliyet</td>
-                                <td style="font-size: 13px;text-align: center">{{$invoice->totalCost()}} TL</td>
-                            </tr>
-                            <tr>
-                                <td style="font-size: 13px">Toplam Dest. Sat. Tutarı</td>
-                                <td style="font-size: 13px;text-align: center">{{$invoice->totalBaseCost()}} TL</td>
-                            </tr>
-                            <tr>
-                                <td style="font-size: 13px">Toplam Satış Tutarı</td>
-                                <td style="font-size: 13px;text-align: center">{{$invoice->totalSale()}} TL</td>
-                            </tr>
-                        </table>
-                    </div>
-                    <div class="card-body" style="display: none">
-                        <div>
-                            <label class="form-label" for="fullname">Kredi Kartı</label>
-                            <input type="text" name="payment_type[credit_card]" value="{{$invoice->credit_card}}" id="credit_card"
-                                   class="form-control">
-                        </div>
-                        <div>
-                            <label class="form-label" for="fullname">Nakit</label>
-                            <input type="text" name="payment_type[cash]" id="money_order" value="{{$invoice->cash}}"
-                                   class="form-control">
-                        </div>
-                        <div>
-                            <label class="form-label" for="fullname">Taksit</label>
-                            <input type="text" name="payment_type[installment]" value="{{$invoice->installment}}" id="installment"
-                                   class="form-control">
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div>
-                            <label class="form-label" for="fullname">Kredi Kartı</label>
-                            <input type="text" name="payment_type[credit_card]" value="0" id="credit_card"
-                                   class="form-control">
-                        </div>
-                        <div>
-                            <label class="form-label" for="fullname">Nakit</label>
-                            <input type="text" name="payment_type[cash]" id="money_order" value="0"
-                                   class="form-control">
-                        </div>
-                        <div>
-                            <label class="form-label" for="fullname">Taksit</label>
-                            <input type="text" name="payment_type[installment]" value="0" id="installment"
-                                   class="form-control">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="row mt-3">
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-body">
-                        <table class="table table-bordered">
-                            <tr>
-                                <td>Stok Adı</td>
-                                <td>Adet</td>
-                                <td>Renk</td>
-                                <td>Maliyet</td>
-                                <td>Destekli Satış Fiyatı</td>
-                                <td>Satış Fiyatı</td>
-                                <td>İşlemler</td>
-                            </tr>
-
-                            @if(isset($invoice) and !is_null($invoice->detail))
-                                @foreach($invoice->detail as $key => $item)
-                                    <tr>
-                                        <td>{{\App\Models\StockCard::find($item['stockcardid'])->name}}</td>
-                                        <td>{{$item['quantity']}}</td>
-                                        <td>{{\App\Models\Color::find($item['color_id'])->name}}</td>
-                                        <td>@if($item['cost_price'] != "") {{number_format($item['cost_price'],2)}} @else Fiyat Yok @endif </td>
-                                        <td>@if($item['cost_price'] != "") {{number_format($item['base_cost_price'],2)}} @else  Fiyat Yok @endif </td>
-                                        <td>@if($item['cost_price'] != "") {{number_format($item['sale_price'],2)}} @else  Fiyat Yok @endif </td>
-                                        <!-- td>
-                                             <a href="{{route('invoice.stockmovementdelete',['id' => $item['stockcardid']])}}" class="btn btn-danger">Sil</a>
-                                        </td -->
-                                    </tr>
-                                @endforeach
-                            @endif
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-        @endsection
-        @include('components.customermodal')
-
-
-        <div class="modal fade" id="editItem" tabindex="-1" style="display: none;" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-simple modal-edit-user">
-                <div class="modal-content p-3 p-md-5">
-                    <div class="modal-body">
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        <div class="text-center mb-4">
-                            <h3>Fatura Maddesi</h3>
-                        </div>
-                        <form ng-submit="editItemSave()"   method="post" id="smsForm" enctype="multipart/form-data">
-                            @csrf
-                            <input type="hidden" value="@{{itemData.invoice_id}}" name="id"/>
-                            <input type="hidden" value="@{{key}}" name="key"/>
-                            <div class="card-body">
-                                <div class="row w-100 m-0 p-3">
-                                    <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                        <p class="mb-2 repeater-title">Stok</p>
-                                        <select name="stock_card_id"  class="form-select item-details select2 mb-2">
-                                            @foreach($stocks as $stock)
-                                                <option value="{{$stock->id}}" ng-selected="{{$stock->id}} == itemData.stock_card_id">
-                                                    {{$stock->name}} -
-                                                    <small> {{$stock->brand->name}}</small> - <b>
-                                                            <?php  $datas = json_decode($stock->version(), TRUE);
-                                                            foreach ($datas as $mykey => $myValue) {
-                                                                echo "$myValue,";
-                                                            }
-                                                            ?></b>
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                        <p class="mb-2 repeater-title">Seri No</p>
-                                        <input type="text" class="form-control" name="serial"  placeholder="11111111"/>
-                                    </div>
-                                    <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                        <p class="mb-2 repeater-title">Renk</p>
-                                        <select name="color_id"
-                                                class="form-select item-details select2 mb-2">
-                                            @foreach($colors as $color)
-                                                <option  ng-selected="itemData.color_id == {{$color->id}}"  value="{{$color->id}}">{{$color->name}}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <!-- div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                        <p class="mb-2 repeater-title">Neden</p>
-                                        <select name="reason_id"
-                                                class="form-select item-details select2 mb-2">
-                                            @foreach($reasons as $reason)
-                                                @if($reason->type == 5)
-                                                    <option    ng-selected="itemData.reason_id == {{$reason->id}}" value="{{$reason->id}}">{{$reason->name}}</option>
-                                                @endif
-                                            @endforeach
-                                        </select>
-                                    </div -->
-                                    <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                        <p class="mb-2 repeater-title">Gerçek Maliyet</p>
-                                        <input type="text" class="form-control invoice-item-price" value="@{{itemData.cost_price}}"
-                                               name="cost_price"  />
-                                    </div>
-
-                                    <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                        <p class="mb-2 repeater-title">Maliyet</p>
-                                        <input type="text" class="form-control invoice-item-price" value="@{{itemData.base_cost_price}}"
-                                               name="base_cost_price" />
-                                    </div>
-                                    <div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                        <p class="mb-2 repeater-title">Satış Fiyatı</p>
-                                        <input type="text" class="form-control invoice-item-price"
-                                               name="sale_price" value="@{{itemData.quantity}}"/>
-                                    </div>
-                                    <div class="col-md-2 col-12 mb-md-0 mb-3 ps-md-0">
-                                        <p class="mb-2 repeater-title">Adet</p>
-                                        <input type="number" class="form-control invoice-item-qty"
-                                               name="quantity" value="@{{itemData.quantity}}" min="1" max="5000">
-                                    </div>
-                                    <input type="hidden" name="tax[]" value="20" />
-                                    <input type="hidden" name="description[]" value="" />
-                                    <input type="hidden" name="discount[]" value="" />
-                                    <input type="hidden" name="reason_id[]" value="9" />
-
-                                    <!-- div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                        <label for="discountInput"
-                                               class="form-label">İndirim (%)</label>
-                                        <input type="number" class="form-control"
-                                               id="discountInput"
-                                               min="0" max="100" value="@{{itemData.discount}}" name="discount">
-                                    </div -->
-                                    <div class="col-md-2 col-12 mb-md-0 mb-3 ps-md-0">
-                                        <label for="taxInput1" class="form-label">Şube</label>
-                                        <select name="seller_id" id="taxInput1"
-                                                class="form-select tax-select">
-                                            @foreach($sellers as $seller)
-                                                <option  ng-selected="itemData.seller_id == {{$seller->id}}"
-                                                         value="{{$seller->id}}">{{$seller->name}}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-2 col-12 mb-md-0 mb-3 ps-md-0">
-                                        <label for="taxInput2" class="form-label">Depo</label>
-                                        <select name="warehouse_id" id="taxInput2"
-                                                class="form-select tax-select">
-                                            @foreach($warehouses as $warehouse)
-                                                <option  ng-selected="itemData.warehouse_id == {{$warehouse->id}}" value="{{$warehouse->id}}">{{$warehouse->name}}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <!-- div class="col-md-3 col-12 mb-md-0 mb-3 ps-md-0">
-                                        <label for="taxInput1" class="form-label">KDV - @{{itemData.tax}}</label>
-                                        <select name="tax]" id="taxInput1" class="form-select tax-select">
-                                            <option ng-selected="itemData.tax == 0" value="0">0%</option>
-                                            <option ng-selected="itemData.tax == 1" value="1">1%</option>
-                                            <option ng-selected="itemData.tax == 8" value="8">10%</option>
-                                            <option ng-selected="itemData.tax == 18" value="18">18%</option>
-                                        </select>
-                                    </div -->
-                                    <!-- div class="col-md-12 col-12 mb-md-0 mb-3 ps-md-0">
-                                        <p class="mb-2 repeater-title">Açıklama</p>
-                                        <textarea class="form-control" rows="2" name="description"  id="description">@{{itemData.description}}</textarea>
-                                    </div -->
-                                </div>
-                                <div class="w-100 m-0 p-3">
-                                    <button type="submit" class="btn btn-danger btn-buy-now w-100">Kaydet</button>
                                 </div>
                             </div>
-                        </form>
+                        </div>
+
+                    <!-- Submit Button -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <button :disabled="loading" type="submit" class="btn btn-primary btn-lg w-100">
+                                <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                <i v-else class="bx bx-save me-2"></i>
+                                <span v-text="loading ? 'Kaydediliyor...' : 'Faturayı Güncelle'"></span>
+                            </button>
+                        </div>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
+    </div>
+</div>
 
-        @section('custom-js')
-
-            <script>
-
-
-                function save() {
-                    var postUrl = window.location.origin + '/invoice/store';   // Returns base URL (https://example.com)
-                    $.ajax({
-                        type: "POST",
-                        url: postUrl,
-                        data: $("#invoiceForm").serialize(),
-                        dataType: "json",
-                        encode: true,
-                        beforeSend: function () {
-                            $('#loader').removeClass('display-none')
-                        },
-                        success: function (data) {
-                            window.location.href = "{{route('invoice.stockcardmovementform')}}?id=" + data + "";
-                        },
-                        error: function (xhr) { // if error occured
-                            alert("Error occured.please try again");
-                            $(placeholder).append(xhr.statusText + xhr.responseText);
-                            $(placeholder).removeClass('loading');
-                        }
-
-                    });
-                }
-
-
-            </script>
-
-            <script>
-                app.controller("mainController", function ($scope, $http, $httpParamSerializerJQLike, $window) {
-                    $scope.getCustomers = function () {
-                        var postUrl = window.location.origin + '/customers?type=account';   // Returns base URL (https://example.com)
-                        $http({
-                            method: 'GET',
-                            //url: './comment/change_status?id=' + id + '&status='+status+'',
-                            url: postUrl,
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            }
-                        }).then(function successCallback(response) {
-                            $scope.customers = response.data;
-                        });
-                    }
-                    $scope.customerSave = function () {
-                        var postUrl = window.location.origin + '/custom_customerstore';   // Returns base URL (https://example.com)
-                        var formData = $("#customerForm").serialize();
-
-                        $http({
-                            method: 'POST',
-                            url: postUrl,
-                            data: formData,
-                            dataType: "json",
-                            encode: true,
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            }
-                        }).then(function successCallback(response) {
-                            $scope.getCustomers();
-                            $(".customerinformation").html('<p className="mb-1">\'+data.address+\'</p>\n' + '<p className="mb-1">\'+data.phone1+\'</p>');
-                            $('#selectCustomer option:selected').val(response.data.id);
-                            var modalDiv = $("#editUser");
-                            modalDiv.modal('hide');
-                            modalDiv
-                                .find("input,textarea,select")
-                                .val('')
-                                .end()
-                                .find("input[type=checkbox], input[type=radio]")
-                                .prop("checked", "")
-                                .end();
-                        });
-                    }
-
-                    $scope.editItem = function (id,key) {
-                        var postUrl = window.location.origin + '/custom_editItem?id='+id+'&key='+key;   // Returns base URL (https://example.com)
-                        $http({
-                            method: 'POST',
-                            url: postUrl,
-                            dataType: "json",
-                            encode: true,
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            }
-                        }).then(function successCallback(response) {
-                            $("#editItem").modal('show');
-                            console.log(response);
-                            $scope.key = key;
-                            $scope.itemData = response.data;
-                        });
-                    }
-
-                    $scope.editItemSave = function () {
-                        var postUrl = window.location.origin + '/invoice/itemSave';   // Returns base URL (https://example.com)
-                        var formData = $("#smsForm").serialize();
-
-                        $http({
-                            method: 'POST',
-                            url: postUrl,
-                            data: formData,
-                            dataType: "json",
-                            encode: true,
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            }
-                        }).then(function successCallback(response) {
-                            window.location.reload();
-                        });
-                    }
-
-                });
-            </script>
-
-
-            <script>
-
-                function myFunction() {
-                    $("#test").find(".select2").each(function (index) {
-                        $("select.select2-hidden-accessible").select2('destroy');
-                    });
-                    const node = document.getElementById("test");
-                    const clone = node.cloneNode(true);
-                    document.getElementById("myList1").appendChild(clone);
-                    $("select.select2").select2();
-
-                }
-            </script>
-            <script>
-                $('#invoiceForm').on('keyup', '#description', function (e) {
-                    var key = e.which;
-                    switch (key) {
-                        case 9: // enter
-                            alert('Enter key pressed.');
-                            break;
-                        default:
-                            break;
-                    }
-                });
-            </script>
-
+@include('components.customermodal')
 @endsection
 
+@section('custom-js')
+<script>
+const { createApp } = Vue;
+
+const app = createApp({
+    data() {
+        const invoice = @json($invoice ?? null);
+        return {
+            invoice: invoice,
+            stockCardMovements: @json($stock_card_movements ?? []),
+            customers: Array.isArray(@json($customers ?? [])) ? @json($customers ?? []) : [],
+            stocks: @json($stocks ?? []),
+            sellers: @json($sellers ?? []),
+            colors: @json($colors ?? []),
+            warehouses: @json($warehouses ?? []),
+            loading: false,
+            form: {
+                id: invoice ? invoice.id : null,
+                customer_id: invoice ? invoice.customer_id : 1,
+                number: invoice ? invoice.invoice_number : '',
+                create_date: invoice ? invoice.create_date : '',
+                payment_type: 'cash',
+                cash: 0,
+                credit_card: 0,
+                installment: 0,
+                description: invoice ? invoice.description : '',
+                is_status: invoice ? invoice.is_status : 1,
+                items: []
+            }
+        }
+    },
+    computed: {
+        filteredCustomers() {
+            if (!this.customers || !Array.isArray(this.customers)) {
+                return [];
+            }
+            return this.customers.filter(customer => 
+                customer && customer.type === 'account'
+            );
+        },
+        totals() {
+            try {
+                // Use form.items instead of stockCardMovements
+                if (!this.form.items || !Array.isArray(this.form.items)) {
+                    return {
+                        cost: 0,
+                        baseCost: 0,
+                        sale: 0,
+                        profit: 0
+                    };
+                }
+                
+                const totals = this.form.items.reduce((acc, item) => {
+                    const qty = item.quantity || 0;
+                    acc.cost += (item.cost_price || 0) * qty;
+                    acc.baseCost += (item.base_cost_price || 0) * qty;
+                    acc.sale += (item.sale_price || 0) * qty;
+                    return acc;
+                }, {
+                    cost: 0,
+                    baseCost: 0,
+                    sale: 0,
+                    profit: 0
+                });
+                
+                totals.profit = totals.sale - totals.cost;
+                
+                return totals;
+            } catch (error) {
+                console.error('Error calculating totals:', error);
+                return {
+                    cost: 0,
+                    baseCost: 0,
+                    sale: 0,
+                    profit: 0
+                };
+            }
+        }
+    },
+    methods: {
+        initializeItems() {
+            // Eğer stockCardMovements varsa, onları items olarak kullan
+            if (this.stockCardMovements && this.stockCardMovements.length > 0) {
+                return this.stockCardMovements.map(movement => ({
+                    id: movement.id,
+                    stock_card_id: movement.stock_card_id || '',
+                    stock_search: movement.stock_name || '',
+                    show_stock_dropdown: false,
+                    filtered_stocks: [],
+                    color_id: movement.color_id || '',
+                    color_search: movement.color_name || '',
+                    show_color_dropdown: false,
+                    filtered_colors: [],
+                    serial: movement.serial || '',
+                    quantity: movement.quant || 1,
+                    prefix: movement.prefix || '',
+                    cost_price: movement.cost_price || 0,
+                    base_cost_price: movement.base_cost_price || 0,
+                    sale_price: movement.sale_price || 0,
+                    seller_id: movement.seller_id || 1,
+                    warehouse_id: movement.warehouse_id || '',
+                    barcode: movement.barcode || '',
+                    reason_id: movement.reason_id || 9,
+                    tracking_quantity: movement.tracking_quantity || 0,
+                    discount: movement.discount || 0,
+                    tax: movement.tax || 20,
+                    description: movement.description || ''
+                }));
+            }
+            
+            // Yoksa boş bir item oluştur
+            return [{
+                stock_card_id: '',
+                stock_search: '',
+                show_stock_dropdown: false,
+                filtered_stocks: [],
+                color_id: '',
+                color_search: '',
+                show_color_dropdown: false,
+                filtered_colors: [],
+                serial: '',
+                quantity: 1,
+                prefix: '',
+                cost_price: 0,
+                base_cost_price: 0,
+                sale_price: 0,
+                seller_id: 1,
+                warehouse_id: '',
+                barcode: '',
+                reason_id: 9,
+                tracking_quantity: 0,
+                discount: 0,
+                tax: 20,
+                description: ''
+            }];
+        },
+        
+        addItem() {
+            this.form.items.push({
+                stock_card_id: '',
+                stock_search: '',
+                show_stock_dropdown: false,
+                filtered_stocks: [],
+                color_id: '',
+                color_search: '',
+                show_color_dropdown: false,
+                filtered_colors: [],
+                serial: '',
+                quantity: 1,
+                prefix: '',
+                cost_price: 0,
+                base_cost_price: 0,
+                sale_price: 0,
+                seller_id: 1,
+                warehouse_id: '',
+                barcode: '',
+                reason_id: 9,
+                tracking_quantity: 0,
+                discount: 0,
+                tax: 20,
+                description: ''
+            });
+        },
+        
+        removeItem(index) {
+            if (this.form.items.length > 1) {
+                this.form.items.splice(index, 1);
+            }
+        },
+        
+        calculateItemTotal(index) {
+            // Real-time calculation if needed
+        },
+        
+        // Stock Autocomplete Methods
+        filterStocks(index) {
+            try {
+                const item = this.form.items[index];
+                const searchTerm = item.stock_search ? item.stock_search.trim().toLowerCase() : '';
+                
+                // Clear previous results
+                item.filtered_stocks = [];
+                item.show_stock_dropdown = false;
+                
+                // Minimum search length
+                if (searchTerm.length < 2) {
+                    return;
+                }
+                
+                // Ensure stocks is an array
+                if (!Array.isArray(this.stocks) || this.stocks.length === 0) {
+                    console.warn('Stocks data not available or empty');
+                    return;
+                }
+                
+                // Advanced filtering with multiple criteria
+                const filtered = this.stocks.filter(stock => {
+                    if (!stock || !stock.name) return false;
+                    
+                    const stockName = stock.name.toLowerCase();
+                    const brandName = stock.brand_name?.toLowerCase() || '';
+                    const sku = stock.sku?.toLowerCase() || '';
+                    const barcode = stock.barcode?.toLowerCase() || '';
+            
+                    // Multiple search criteria
+                    return stockName.includes(searchTerm) ||
+                           brandName.includes(searchTerm) ||
+                           sku.includes(searchTerm) ||
+                           barcode.includes(searchTerm);
+                })
+                .sort((a, b) => {
+                    // Prioritize exact matches
+                    const aName = a.name.toLowerCase();
+                    const bName = b.name.toLowerCase();
+                    
+                    if (aName.startsWith(searchTerm) && !bName.startsWith(searchTerm)) return -1;
+                    if (!aName.startsWith(searchTerm) && bName.startsWith(searchTerm)) return 1;
+                    
+                    // Then by name similarity
+                    return aName.localeCompare(bName);
+                })
+                .slice(0, 15); // Increased limit for better UX
+                
+                // Update results
+                item.filtered_stocks = filtered;
+                item.show_stock_dropdown = filtered.length > 0;
+                
+            } catch (error) {
+                console.error('Error filtering stocks:', error);
+                this.form.items[index].filtered_stocks = [];
+                this.form.items[index].show_stock_dropdown = false;
+            }
+        },
+        
+        showStockDropdown(index) {
+            try {
+                const item = this.form.items[index];
+                
+                // Only show if there's a search term
+                if (item.stock_search && item.stock_search.trim().length >= 2) {
+                    item.show_stock_dropdown = true;
+                    this.filterStocks(index);
+                } else {
+                    item.show_stock_dropdown = false;
+                }
+                
+            } catch (error) {
+                console.error('Error showing stock dropdown:', error);
+            }
+        },
+        
+        hideStockDropdown(index) {
+            // Use a more reliable delay mechanism
+            this.hideTimeout = setTimeout(() => {
+                if (this.form.items[index]) {
+                    this.form.items[index].show_stock_dropdown = false;
+                }
+            }, 300);
+        },
+        
+        cancelHideDropdown() {
+            if (this.hideTimeout) {
+                clearTimeout(this.hideTimeout);
+                this.hideTimeout = null;
+            }
+        },
+        
+        selectStock(index, stock) {
+            try {
+                // Cancel any pending hide operations
+                this.cancelHideDropdown();
+                
+                const item = this.form.items[index];
+                
+                // Validate stock data
+                if (!stock || !stock.id) {
+                    console.error('Invalid stock data:', stock);
+                    return;
+                }
+                
+                // Update item with selected stock
+                item.stock_card_id = stock.id;
+                item.stock_search = `${stock.name}${stock.brand?.name ? ' - ' + stock.brand.name : ''}${stock.version_names ? ' - ' + stock.version_names : ''}`;
+                item.show_stock_dropdown = false;
+                item.filtered_stocks = [];
+                
+                // Clear any previous error states
+                item.stock_error = null;
+                
+                // Force Vue.js to update
+                this.$forceUpdate();
+                
+            } catch (error) {
+                console.error('Error selecting stock:', error);
+                // Show error to user
+                this.form.items[index].stock_error = 'Stok seçimi sırasında hata oluştu';
+            }
+        },
+        
+        // Color Autocomplete Methods
+        filterColors(index) {
+            const item = this.form.items[index];
+            const searchTerm = item.color_search.toLowerCase();
+            
+            if (searchTerm.length < 1) {
+                item.filtered_colors = [];
+                return;
+            }
+            
+            item.filtered_colors = this.colors.filter(color => 
+                color.name.toLowerCase().includes(searchTerm)
+            ).slice(0, 10); // Limit to 10 results
+        },
+        
+        showColorDropdown(index) {
+            try {
+                const item = this.form.items[index];
+                item.show_color_dropdown = true;
+                
+                // If there's already a search term, filter immediately
+                if (item.color_search && item.color_search.length >= 1) {
+                    this.filterColors(index);
+                }
+                
+            } catch (error) {
+                console.error('Error showing color dropdown:', error);
+            }
+        },
+        
+        hideColorDropdown(index) {
+            // Delay to allow click events
+            setTimeout(() => {
+                this.form.items[index].show_color_dropdown = false;
+            }, 200);
+        },
+        
+        selectColor(index, color) {
+            try {
+                const item = this.form.items[index];
+                item.color_id = color.id;
+                item.color_search = color.name;
+                item.show_color_dropdown = false;
+                item.filtered_colors = [];
+                
+                // Force Vue.js to update
+                this.$forceUpdate();
+                
+            } catch (error) {
+                console.error('Error selecting color:', error);
+            }
+        },
+        
+        formatCurrency(amount) {
+            if (!amount) return '0,00 ₺';
+            return new Intl.NumberFormat('tr-TR', {
+                style: 'currency',
+                currency: 'TRY'
+            }).format(amount);
+        },
+        
+        onCustomerChange() {
+            // Customer değiştiğinde yapılacak işlemler
+            console.log('Customer changed:', this.form.customer_id);
+        },
+        
+        openCustomerModal() {
+            // Müşteri modal'ını aç
+            console.log('Open customer modal');
+        },
+        
+        printInvoice() {
+            window.print();
+        },
+        
+        async submitForm() {
+            this.loading = true;
+            
+            try {
+                const response = await fetch('/invoice/update-movements', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+                    },
+                    body: JSON.stringify({
+                        invoice_id: this.invoice ? this.invoice.id : null,
+                        invoice_data: {
+                            customer_id: this.form.customer_id,
+                            number: this.form.number,
+                            create_date: this.form.create_date,
+                            description: this.form.description,
+                            payment_type: this.form.payment_type,
+                            cash: this.form.cash,
+                            credit_card: this.form.credit_card,
+                            installment: this.form.installment
+                        },
+                        items: this.form.items.map(item => ({
+                            stock_card_id: item.stock_card_id,
+                            color_id: item.color_id,
+                            sale_price: item.sale_price,
+                            barcode: item.barcode
+                        }))
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Show success message
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Başarılı',
+                            text: 'Fatura başarıyla güncellendi',
+                            customClass: {
+                                confirmButton: "btn btn-success"
+                            }
+                        });
+                    } else {
+                        alert('Fatura başarıyla güncellendi');
+                    }
+                } else {
+                    throw new Error(data.message || 'Güncelleme başarısız');
+                }
+            } catch (error) {
+                console.error('Update error:', error);
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata',
+                        text: 'Güncelleme sırasında bir hata oluştu',
+                        customClass: {
+                            confirmButton: "btn btn-danger"
+                        }
+                    });
+                } else {
+                    alert('Güncelleme sırasında bir hata oluştu');
+                }
+            } finally {
+                this.loading = false;
+            }
+        }
+    },
+    mounted() {
+        try {
+            console.log('Invoice form loaded:', this.invoice);
+            console.log('Stock movements:', this.stockCardMovements);
+            console.log('Customers:', this.customers);
+            console.log('Filtered customers:', this.filteredCustomers);
+            
+            // Initialize items
+            this.form.items = this.initializeItems();
+            
+            // Set default date if not provided
+            if (!this.form.create_date) {
+                this.form.create_date = new Date().toISOString().split('T')[0];
+            }
+            
+            // Listen for customerSaved event from modal component
+            window.addEventListener('customerSaved', (event) => {
+                const customer = event.detail;
+                if (customer && customer.id) {
+                    // Add to customers list if not exists
+                    const exists = this.customers.find(c => c.id === customer.id);
+                    if (!exists) {
+                        this.customers.push(customer);
+                    }
+                    
+                    // Set as selected customer
+                    this.form.customer_id = customer.id;
+                    
+                    console.log('New customer added and selected:', customer);
+                }
+            });
+        } catch (error) {
+            console.error('Error in mounted:', error);
+        }
+    }
+});
+
+// Set error handler for the app
+app.config.errorHandler = function (err, vm, info) {
+    console.error('Vue Error:', err);
+    console.error('Component:', vm);
+    console.error('Info:', info);
+};
+
+// Mount the app
+app.mount('#invoice-form-app');
+</script>
+
+<style>
+@media print {
+    .btn, .card-header .d-flex {
+        display: none !important;
+    }
+}
+</style>
+@endsection

@@ -3,10 +3,10 @@
 namespace App\Repositories\Refund;
 
 use Illuminate\Support\Facades\Auth;
-use App\Repositories\BaseRepositoryImplement;
+use LaravelEasyRepository\Implementations\Eloquent;
 use App\Models\Refund;
 
-class RefundRepositoryImplement extends BaseRepositoryImplement implements RefundRepository{
+class RefundRepositoryImplement extends Eloquent implements RefundRepository{
     /**
      * Model class to be used in this repository for the common methods inside Eloquent
      * Don't remove or change $this->model variable name

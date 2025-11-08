@@ -132,50 +132,59 @@
         })
     </script>
 
+    <!-- Vue.js App for Phone Sale Edit -->
     <script>
-        app.controller("mainController", function ($scope, $http, $httpParamSerializerJQLike, $window) {
-            $scope.getCustomers = function () {
-                var postUrl = window.location.origin + '/customers?type=customer';   // Returns base URL (https://example.com)
-                $http({
-                    method: 'GET',
-                    //url: './comment/change_status?id=' + id + '&status='+status+'',
-                    url: postUrl,
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    }
-                }).then(function successCallback(response) {
-                    $scope.customers = response.data;
-                });
-            }
-            $scope.customerSave = function () {
-                var postUrl = window.location.origin + '/custom_customerstore';   // Returns base URL (https://example.com)
-                var formData = $("#customerForm").serialize();
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof Vue === 'undefined') {
+            console.error('Vue.js is not loaded.');
+            return;
+        }
 
-                $http({
-                    method: 'POST',
-                    url: postUrl,
-                    data: formData,
-                    dataType: "json",
-                    encode: true,
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    customers: @json($customers ?? []),
+                    globalStore: window.globalStore || { cache: { brands: [], colors: [], versions: [], customers: [] } }
+                }
+            },
+            methods: {
+                updateSelectOptions() {
+                    // Update select2 if needed
+                    if (jQuery && jQuery.fn.select2) {
+                        setTimeout(() => {
+                            jQuery('#selectCustomer').trigger('change');
+                        }, 100);
                     }
-                }).then(function successCallback(response) {
-                    $scope.getCustomers();
-                    $(".customerinformation").html('<p className="mb-1">\'+data.address+\'</p>\n' + '<p className="mb-1">\'+data.phone1+\'</p>');
-                    $('#selectCustomer option:selected').val(response.data.id);
-                    var modalDiv = $("#editUser");
-                    modalDiv.modal('hide');
-                    modalDiv
-                        .find("input,textarea,select")
-                        .val('')
-                        .end()
-                        .find("input[type=checkbox], input[type=radio]")
-                        .prop("checked", "")
-                        .end();
+                }
+            },
+            mounted() {
+                // Listen for customer save events
+                window.addEventListener('customerSaved', (event) => {
+                    const customer = event.detail;
+                    if (customer && customer.id) {
+                        // Check if customer already exists
+                        const exists = this.customers.find(c => c.id === customer.id);
+                        if (!exists) {
+                            this.customers.push(customer);
+                        }
+                        
+                        // Update select option
+                        setTimeout(() => {
+                            const selectCustomer = document.getElementById('selectCustomer');
+                            if (selectCustomer) {
+                                selectCustomer.value = customer.id;
+                                jQuery('#selectCustomer').trigger('change');
+                            }
+                        }, 100);
+                        
+                        console.log('New customer selected:', customer);
+                    }
                 });
             }
-        });
+        }).mount('body');
+    });
     </script>
 
 @endsection

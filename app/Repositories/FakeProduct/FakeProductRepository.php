@@ -2,9 +2,9 @@
 
 namespace App\Repositories\FakeProduct;
 
-use App\Repositories\BaseRepository;
+use LaravelEasyRepository\Repository;
 
-interface FakeProductRepository extends BaseRepository{
+interface FakeProductRepository extends Repository{
 
     public function get();
 }

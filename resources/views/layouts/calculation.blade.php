@@ -42,7 +42,7 @@
     <link rel="stylesheet" href="{{asset('assets/vendor/libs/sweetalert2/sweetalert2.css')}}"/>
     <link rel="stylesheet" href="{{asset('assets/vendor/libs/select2/select2.css')}}"/>
     <link rel="stylesheet" href="{{asset('assets/vendor/libs/bootstrap-select/bootstrap-select.css')}}"/>
-    <link rel="stylesheet" href="{{asset('assets/vendor/libs/flatpickr/flatpickr.css')}}"/>
+    <link rel="stylesheet" href="{{asset('assets/vendor/libs/daterangepicker/daterangepicker.css')}}"/>
     <link rel="stylesheet" href="{{asset('assets/vendor/libs/tagify/tagify.css')}}"/>
 
     <link rel="stylesheet" href="{{asset('assets/vendor/libs/datatables-bs5/buttons.bootstrap5.css')}}"/>
@@ -206,7 +206,8 @@
 
 <script src="{{asset('assets/vendor/libs/bootstrap-select/bootstrap-select.js')}}"></script>
 <script src="{{asset('assets/vendor/libs/moment/moment.js')}}"></script>
-<script src="{{asset('assets/vendor/libs/flatpickr/flatpickr.js')}}"></script>
+<script src="{{asset('assets/vendor/libs/daterangepicker/daterangepicker.js')}}"></script>
+<script src="{{asset('assets/js/daterangepicker-init.js')}}"></script>
 <script src="{{asset('assets/vendor/libs/tagify/tagify.js')}}"></script>
 <script src="https://cdn.jsdelivr.net/npm/gasparesganga-jquery-message-box@3.2.2/dist/messagebox.min.js"></script>
 <script>

@@ -1,152 +1,208 @@
-"use strict";
-!function () {
-    var e = document.querySelector("#flatpickr-date"),
-        id = document.querySelector("#invoice-date"),
-        t = document.querySelector("#flatpickr-time"),
-        a = document.querySelector("#flatpickr-datetime"), i = document.querySelector("#flatpickr-multi"),
-        r = document.querySelector("#flatpickr-range"),
-        o = document.querySelector("#flatpickr-human-friendly"),
-        l = document.querySelector("#flatpickr-disabled-range");
-    e && e.flatpickr({
-        monthSelectorType: "static",
-        altFormat: "F j, Y",
-        dateFormat: "d-m-Y",
-        defaultDate: new Date(Date.now()),
-    }), id && id.flatpickr({
-        monthSelectorType: "static",
-        altFormat: "F j, Y",
-        dateFormat: "d-m-Y",
-        defaultDate: new Date(Date.now()),
+/**
+ * Modern Date Range Picker Initialization
+ * Replaces old Flatpickr and Bootstrap Datepicker
+ */
 
-    }), t && t.flatpickr({
-        enableTime: !0,
-        noCalendar: !0
-    }), a && a.flatpickr({enableTime: !0, dateFormat: "d-m-Y H:i"}), i && i.flatpickr({
-        weekNumbers: !0,
-        enableTime: !0,
-        mode: "multiple",
-        minDate: "today"
-    }), null != typeof r && r.flatpickr({mode: "range"}), n && n.flatpickr({
-        inline: !0,
-        allowInput: !1,
-        monthSelectorType: "static"
-    }), o && o.flatpickr({
-        altInput: !0,
-        altFormat: "F j, Y",
-        dateFormat: "d-m-Y"
-    }), l && (e = new Date(Date.now() - 1728e5), t = new Date(Date.now() + 1728e5), l.flatpickr({
-        dateFormat: "d-m-Y",
-        disable: [{from: e.toISOString().split("T")[0], to: t.toISOString().split("T")[0]}]
-    }))
-}(), $(function () {
-    var e = $("#bs-datepicker-basic"), t = $("#bs-datepicker-format"), a = $("#bs-datepicker-daterange"),
-        i = $("#bs-datepicker-disabled-days"), r = $("#bs-datepicker-multidate"), n = $("#bs-datepicker-options"),
-        o = $("#bs-datepicker-autoclose"), l = $("#bs-datepicker-inline"), e = (e.length && e.datepicker({
-            todayHighlight: !0,
-            orientation: isRtl ? "auto right" : "auto left"
-        }), t.length && t.datepicker({
-            todayHighlight: !0,
-            format: "dd-mm-yyyy",
-            orientation: isRtl ? "auto right" : "auto left"
-        }), a.length && a.datepicker({
-            todayHighlight: !0,
-            orientation: isRtl ? "auto right" : "auto left"
-        }), i.length && i.datepicker({
-            todayHighlight: !0,
-            daysOfWeekDisabled: [0, 6],
-            orientation: isRtl ? "auto right" : "auto left"
-        }), r.length && r.datepicker({
-            multidate: !0,
-            todayHighlight: !0,
-            orientation: isRtl ? "auto right" : "auto left"
-        }), n.length && n.datepicker({
-            calendarWeeks: !0,
-            clearBtn: !0,
-            todayHighlight: !0,
-            orientation: isRtl ? "auto left" : "auto right"
-        }), o.length && o.datepicker({
-            todayHighlight: !0,
-            autoclose: !0,
-            orientation: isRtl ? "auto right" : "auto left"
-        }), l.length && l.datepicker({todayHighlight: !0}), $("#bs-rangepicker-basic")), t = $("#bs-rangepicker-single"),
-        a = $("#bs-rangepicker-time"), i = $("#bs-rangepicker-range"), r = $("#bs-rangepicker-week-num"),
-        n = $("#bs-rangepicker-dropdown"),
-        o = (e.length && e.daterangepicker({opens: isRtl ? "left" : "right"}), t.length && t.daterangepicker({
-            singleDatePicker: !0,
-            opens: isRtl ? "left" : "right"
-        }), a.length && a.daterangepicker({
-            timePicker: !0,
-            timePickerIncrement: 30,
-            locale: {format: "MM/DD/YYYY h:mm A"},
-            opens: isRtl ? "left" : "right"
-        }), i.length && i.daterangepicker({
-            ranges: {
-                Today: [moment(), moment()],
-                Yesterday: [moment().subtract(1, "days"), moment().subtract(1, "days")],
-                "Last 7 Days": [moment().subtract(6, "days"), moment()],
-                "Last 30 Days": [moment().subtract(29, "days"), moment()],
-                "This Month": [moment().startOf("month"), moment().endOf("month")],
-                "Last Month": [moment().subtract(1, "month").startOf("month"), moment().subtract(1, "month").endOf("month")]
-            }, opens: isRtl ? "left" : "right"
-        }), r.length && r.daterangepicker({
-            showWeekNumbers: !0,
-            opens: isRtl ? "left" : "right"
-        }), n.length && n.daterangepicker({
-            showDropdowns: !0,
-            opens: isRtl ? "left" : "right"
-        }), $("#timepicker-basic")), l = $("#timepicker-min-max"), e = $("#timepicker-disabled-times"),
-        t = $("#timepicker-format"), a = $("#timepicker-step"), i = $("#timepicker-24hours");
-    o.length && o.timepicker({orientation: isRtl ? "r" : "l"}), l.length && l.timepicker({
-        minTime: "2:00pm",
-        maxTime: "7:00pm",
-        showDuration: !0,
-        orientation: isRtl ? "r" : "l"
-    }), e.length && e.timepicker({
-        disableTimeRanges: [["12am", "3am"], ["4am", "4:30am"]],
-        orientation: isRtl ? "r" : "l"
-    }), t.length && t.timepicker({
-        timeFormat: "H:i:s",
-        orientation: isRtl ? "r" : "l"
-    }), a.length && a.timepicker({step: 15, orientation: isRtl ? "r" : "l"}), i.length && i.timepicker({
-        show: "24:00",
-        timeFormat: "H:i:s",
-        orientation: isRtl ? "r" : "l"
-    })
-}), function () {
-    var e = document.querySelector("#color-picker-classic"), t = document.querySelector("#color-picker-monolith"),
-        a = document.querySelector("#color-picker-nano");
-    e && pickr.create({
-        el: e,
-        theme: "classic",
-        default: "rgba(102, 108, 232, 1)",
-        swatches: ["rgba(102, 108, 232, 1)", "rgba(40, 208, 148, 1)", "rgba(255, 73, 97, 1)", "rgba(255, 145, 73, 1)", "rgba(30, 159, 242, 1)"],
-        components: {
-            preview: !0,
-            opacity: !0,
-            hue: !0,
-            interaction: {hex: !0, rgba: !0, hsla: !0, hsva: !0, cmyk: !0, input: !0, clear: !0, save: !0}
+"use strict";
+
+$(document).ready(function() {
+    'use strict';
+
+    // Initialize all date pickers
+    function initDatePickers() {
+        // Single date pickers
+        $('.single-datepicker').each(function() {
+            if (!$(this).data('daterangepicker')) {
+                $(this).daterangepicker({
+                    singleDatePicker: true,
+                    showDropdowns: true,
+                    opens: 'left',
+                    drops: 'down',
+                    locale: {
+                        direction: 'ltr',
+                        format: 'DD-MM-YYYY',
+                        separator: ' - ',
+                        applyLabel: 'Uygula',
+                        cancelLabel: 'İptal',
+                        weekLabel: 'H',
+                        customRangeLabel: 'Özel Aralık',
+                        daysOfWeek: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
+                        monthNames: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
+                        firstDay: 1
+                    }
+                });
+            }
+        });
+
+        // Date range pickers
+        $('.daterangepicker-input').each(function() {
+            if (!$(this).data('daterangepicker')) {
+                $(this).daterangepicker({
+                    opens: 'left',
+                    drops: 'down',
+                    locale: {
+                        direction: 'ltr',
+                        format: 'DD-MM-YYYY',
+                        separator: ' - ',
+                        applyLabel: 'Uygula',
+                        cancelLabel: 'İptal',
+                        weekLabel: 'H',
+                        customRangeLabel: 'Özel Aralık',
+                        daysOfWeek: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
+                        monthNames: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
+                        firstDay: 1
+                    },
+                    ranges: {
+                        'Bugün': [moment(), moment()],
+                        'Dün': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                        'Son 7 Gün': [moment().subtract(6, 'days'), moment()],
+                        'Son 30 Gün': [moment().subtract(29, 'days'), moment()],
+                        'Bu Ay': [moment().startOf('month'), moment().endOf('month')],
+                        'Geçen Ay': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+                    },
+                    startDate: moment().subtract(29, 'days'),
+                    endDate: moment()
+                });
+            }
+        });
+
+        // DateTime range pickers
+        $('.datetime-range-picker').each(function() {
+            if (!$(this).data('daterangepicker')) {
+                $(this).daterangepicker({
+                    timePicker: true,
+                    timePicker24Hour: true,
+                    timePickerIncrement: 30,
+                    locale: {
+                        direction: 'ltr',
+                        format: 'DD-MM-YYYY HH:mm',
+                        separator: ' - ',
+                        applyLabel: 'Uygula',
+                        cancelLabel: 'İptal',
+                        weekLabel: 'H',
+                        customRangeLabel: 'Özel Aralık',
+                        daysOfWeek: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
+                        monthNames: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
+                        firstDay: 1
+                    },
+                    startDate: moment().subtract(29, 'days'),
+                    endDate: moment()
+                });
+            }
+        });
+
+        // Auto-apply date range pickers
+        $('.auto-apply-daterangepicker').each(function() {
+            if (!$(this).data('daterangepicker')) {
+                $(this).daterangepicker({
+                    autoApply: true,
+                    opens: 'left',
+                    drops: 'down',
+                    locale: {
+                        direction: 'ltr',
+                        format: 'DD-MM-YYYY',
+                        separator: ' - ',
+                        applyLabel: 'Uygula',
+                        cancelLabel: 'İptal',
+                        weekLabel: 'H',
+                        customRangeLabel: 'Özel Aralık',
+                        daysOfWeek: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
+                        monthNames: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
+                        firstDay: 1
+                    },
+                    ranges: {
+                        'Bugün': [moment(), moment()],
+                        'Dün': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                        'Son 7 Gün': [moment().subtract(6, 'days'), moment()],
+                        'Son 30 Gün': [moment().subtract(29, 'days'), moment()],
+                        'Bu Ay': [moment().startOf('month'), moment().endOf('month')],
+                        'Geçen Ay': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+                    },
+                    startDate: moment().subtract(29, 'days'),
+                    endDate: moment()
+                });
+            }
+        });
+    }
+
+    // Initialize on page load
+    initDatePickers();
+
+    // Re-initialize on AJAX content load
+    $(document).on('DOMNodeInserted', function() {
+        setTimeout(function() {
+            initDatePickers();
+        }, 100);
+    });
+
+    // Legacy support for old selectors
+    $('#flatpickr-date, #invoice-date').each(function() {
+        if (!$(this).data('daterangepicker')) {
+            $(this).addClass('single-datepicker');
+            $(this).daterangepicker({
+                singleDatePicker: true,
+                showDropdowns: true,
+                locale: {
+                    format: 'DD-MM-YYYY'
+                }
+            });
         }
-    }), t && pickr.create({
-        el: t,
-        theme: "monolith",
-        default: "rgba(40, 208, 148, 1)",
-        swatches: ["rgba(102, 108, 232, 1)", "rgba(40, 208, 148, 1)", "rgba(255, 73, 97, 1)", "rgba(255, 145, 73, 1)", "rgba(30, 159, 242, 1)"],
-        components: {
-            preview: !0,
-            opacity: !0,
-            hue: !0,
-            interaction: {hex: !0, rgba: !0, hsla: !0, hsva: !0, cmyk: !0, input: !0, clear: !0, save: !0}
+    });
+
+    $('#flatpickr-range, #date-range').each(function() {
+        if (!$(this).data('daterangepicker')) {
+            $(this).addClass('daterangepicker-input');
+            $(this).daterangepicker({
+                opens: 'left',
+                drops: 'down',
+                locale: {
+                    format: 'DD-MM-YYYY'
+                },
+                ranges: {
+                    'Bugün': [moment(), moment()],
+                    'Dün': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                    'Son 7 Gün': [moment().subtract(6, 'days'), moment()],
+                    'Son 30 Gün': [moment().subtract(29, 'days'), moment()],
+                    'Bu Ay': [moment().startOf('month'), moment().endOf('month')],
+                    'Geçen Ay': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+                },
+                startDate: moment().subtract(29, 'days'),
+                endDate: moment()
+            });
         }
-    }), a && pickr.create({
-        el: a,
-        theme: "nano",
-        default: "rgba(255, 73, 97, 1)",
-        swatches: ["rgba(102, 108, 232, 1)", "rgba(40, 208, 148, 1)", "rgba(255, 73, 97, 1)", "rgba(255, 145, 73, 1)", "rgba(30, 159, 242, 1)"],
-        components: {
-            preview: !0,
-            opacity: !0,
-            hue: !0,
-            interaction: {hex: !0, rgba: !0, hsla: !0, hsva: !0, cmyk: !0, input: !0, clear: !0, save: !0}
+    });
+
+    // Bootstrap datepicker legacy support
+    $('.input-daterange input').each(function() {
+        if (!$(this).data('daterangepicker')) {
+            $(this).daterangepicker({
+                singleDatePicker: true,
+                showDropdowns: true,
+                locale: {
+                    format: 'DD-MM-YYYY'
+                }
+            });
         }
-    })
-}();
+    });
+
+    // Event handlers
+    $(document).on('apply.daterangepicker', function(ev, picker) {
+        console.log('Date range applied:', picker.startDate.format('DD-MM-YYYY'), 'to', picker.endDate.format('DD-MM-YYYY'));
+        
+        // Trigger custom event for other components
+        $(document).trigger('daterangepicker:applied', {
+            startDate: picker.startDate,
+            endDate: picker.endDate,
+            element: picker.element
+        });
+    });
+
+    $(document).on('cancel.daterangepicker', function(ev, picker) {
+        console.log('Date range picker cancelled');
+        
+        // Trigger custom event for other components
+        $(document).trigger('daterangepicker:cancelled', {
+            element: picker.element
+        });
+    });
+});

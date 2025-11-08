@@ -36,6 +36,7 @@ return new class extends Migration
             $table->decimal('credit_card', 10, 2)->default(0);
             $table->decimal('cash', 10, 2)->default(0);
             $table->decimal('installment', 10, 2)->default(0);
+            $table->boolean('free_sale')->default(0);
             $table->text('detail')->nullable();
             $table->timestamps();
             $table->softDeletes();

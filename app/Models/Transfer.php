@@ -42,7 +42,9 @@ class Transfer extends BaseModel
         'description',
         'serial_list',
         'type',
-        'detail'
+        'detail',
+        'is_barcode_transfer'
+
     ];
 
     protected $casts = ['stocks' => 'array','serial_list' => 'array','detail' => 'array'];
@@ -63,14 +65,6 @@ class Transfer extends BaseModel
         return null;
     }
 
-    public function user($id)
-    {
-        $user = User::find($id);
-        if($user){
-            return $user;
-        }
-        return null;
-    }
 
     public function hasStaff($id): string
     {
@@ -82,7 +76,43 @@ class Transfer extends BaseModel
         return $this->color_id == $id ? 'true':'false';
     }
 
+    /**
+     * Main seller relationship
+     */
+    public function main_seller()
+    {
+        return $this->belongsTo(Seller::class, 'main_seller_id');
+    }
 
+    /**
+     * Delivery seller relationship
+     */
+    public function delivery_seller()
+    {
+        return $this->belongsTo(Seller::class, 'delivery_seller_id');
+    }
 
+    /**
+     * User relationship
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
+    /**
+     * Confirm user relationship
+     */
+    public function confirm_user()
+    {
+        return $this->belongsTo(User::class, 'comfirm_id');
+    }
+
+    /**
+     * Company relationship
+     */
+    public function company()
+    {
+        return $this->belongsTo(Company::class, 'company_id');
+    }
 }

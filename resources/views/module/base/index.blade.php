@@ -1,6 +1,10 @@
 
 @extends('layouts.admin')
 
+@section('custom-css')
+    <link rel="stylesheet" href="{{asset('assets/css/list-page-base.css')}}">
+@endsection
+
 @section('content')
     <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Tables /</span> Basic Tables</h4>

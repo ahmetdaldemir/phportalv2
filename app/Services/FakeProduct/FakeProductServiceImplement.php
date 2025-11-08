@@ -5,16 +5,16 @@ namespace App\Services\FakeProduct;
 use App\Repositories\Safe\SafeRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use App\Services\BaseService;
+use LaravelEasyRepository\Service;
 use App\Repositories\FakeProduct\FakeProductRepository;
 
-class FakeProductServiceImplement extends BaseService implements FakeProductService{
+class FakeProductServiceImplement extends Service implements FakeProductService{
 
     /**
      * don't change $this->mainRepository variable name
      * because used in extends service class
      */
-    protected $mainRepository;
+    protected FakeProductRepository $mainRepository;
 
     public function __construct(FakeProductRepository $mainRepository)
     {

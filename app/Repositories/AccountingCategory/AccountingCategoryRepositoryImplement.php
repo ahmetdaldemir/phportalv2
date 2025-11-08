@@ -4,9 +4,9 @@ namespace App\Repositories\AccountingCategory;
 
 use App\Models\AccountingCategory;
 use Illuminate\Support\Facades\Auth;
-use App\Repositories\BaseRepositoryImplement;
+use LaravelEasyRepository\Implementations\Eloquent;
 
-class AccountingCategoryRepositoryImplement extends BaseRepositoryImplement implements AccountingCategoryRepository{
+class AccountingCategoryRepositoryImplement extends Eloquent implements AccountingCategoryRepository{
 
     /**
     * Model class to be used in this repository for the common methods inside Eloquent

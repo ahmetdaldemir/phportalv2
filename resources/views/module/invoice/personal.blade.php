@@ -46,7 +46,7 @@
                                         </dt>
                                         <dd class="col-sm-6 d-flex justify-content-md-end">
                                             <div class="w-px-150">
-                                                <input type="text" id="invoice-date" class="form-control flatpickr-input"
+                                                <input type="text" id="invoice-date" class="form-control single-datepicker"
                                                        name="create_date"
                                                        @if(isset($invoices)) value="{{$invoices->create_date}}"
                                                        @else  value="{{date('d-m-Y')}}" @endif />
@@ -156,7 +156,7 @@
                                 @endforeach
                             </select>
                             <p class="mb-2"><i class="bx bx-calendar bx-md me-1"></i> Ödeneceği Tarih</p>
-                            <input type="text" class="form-control flatpickr-input" placeholder="DD-MM-YYYY" id="flatpickr-date" readonly="readonly">
+                            <input type="text" class="form-control single-datepicker" placeholder="DD-MM-YYYY" id="payment-date" readonly="readonly">
                         </div>
                     </div>
                     <!-- /Invoice Actions -->

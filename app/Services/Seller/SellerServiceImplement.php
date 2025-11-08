@@ -4,10 +4,10 @@ namespace App\Services\Seller;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use App\Services\BaseService;
+use LaravelEasyRepository\Service;
 use App\Repositories\Seller\SellerRepository;
 
-class SellerServiceImplement extends BaseService implements SellerService{
+class SellerServiceImplement extends Service implements SellerService{
 
      /**
      * don't change $this->mainRepository variable name

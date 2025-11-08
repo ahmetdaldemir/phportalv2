@@ -3,10 +3,10 @@
 namespace App\Repositories\Safe;
 
 use Illuminate\Support\Facades\Auth;
-use App\Repositories\BaseRepositoryImplement;
+use LaravelEasyRepository\Implementations\Eloquent;
 use App\Models\Safe;
 
-class SafeRepositoryImplement extends BaseRepositoryImplement implements SafeRepository{
+class SafeRepositoryImplement extends Eloquent implements SafeRepository{
 
     /**
     * Model class to be used in this repository for the common methods inside Eloquent

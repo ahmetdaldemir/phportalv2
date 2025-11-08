@@ -135,6 +135,10 @@
     </div>
 @endsection
 
+@section('custom-css')
+    <link rel="stylesheet" href="{{asset('assets/css/list-page-base.css')}}">
+@endsection
+
 @section('custom-js')
     <script>
 

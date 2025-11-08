@@ -21,14 +21,92 @@ Route::get('/', [App\Http\Controllers\HomeController::class, 'index']);
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+// logout route is already included in Auth::routes()
+// Custom logout route (overrides Auth::routes logout if needed)
 Route::get('/logout', [App\Http\Controllers\Auth\LogoutController::class, 'logout'])->name('logout');
 
+// AJAX endpoints - performans optimizasyonu
+Route::get('/api/stocks', [App\Http\Controllers\HomeController::class, 'getStocksAjax'])->name('stocks.ajax');
+Route::get('/api/colors', [App\Http\Controllers\HomeController::class, 'getColorsAjax'])->name('colors.ajax');
+Route::get('/api/reasons', [App\Http\Controllers\HomeController::class, 'getReasonsAjax'])->name('reasons.ajax');
 
-Auth::routes();
+// Common Data API - Web routes for Vue.js (with session auth)
+Route::middleware(['auth', 'companies'])->prefix('api/common')->group(function () {
+    Route::get('/sellers', function() {
+        return response()->json(app(\App\Services\Seller\SellerService::class)->get());
+    });
+    Route::get('/categories', function() {
+        return response()->json(app(\App\Services\Category\CategoryService::class)->get());
+    });
+    Route::get('/warehouses', function() {
+        return response()->json(app(\App\Services\Warehouse\WarehouseService::class)->get());
+    });
+    Route::get('/colors', function() {
+        return response()->json(app(\App\Services\Color\ColorService::class)->get());
+    });
+    Route::get('/brands', function() {
+        return response()->json(app(\App\Services\Brand\BrandService::class)->get());
+    });
+    Route::get('/versions', function() {
+        $brandId = request('brand_id');
+        $versions = app(\App\Services\Version\VersionService::class)->get();
+        if ($brandId) {
+            $versions = $versions->filter(function($version) use ($brandId) {
+                return $version->brand_id == $brandId;
+            });
+        }
+        return response()->json($versions->values());
+    });
+    Route::get('/reasons', function() {
+        return response()->json(app(\App\Services\Reason\ReasonService::class)->get());
+    });
+    Route::get('/customers', function() {
+        $type = request('type');
+        $customers = app(\App\Services\Customer\CustomerService::class)->all();
+        if ($type) {
+            $customers = $customers->filter(function($customer) use ($type) {
+                return $customer->type === $type;
+            });
+        }
+        return response()->json($customers->values());
+    });
+    Route::get('/cities', function() {
+        return response()->json(\App\Models\City::all());
+    });
+    Route::get('/towns', function() {
+        $cityId = request('city_id');
+        return response()->json(\App\Models\Town::where('city_id', $cityId)->get());
+    });
+    Route::get('/currencies', function() {
+        return response()->json(\App\Models\Currency::all());
+    });
+    Route::get('/safes', function() {
+        return response()->json(app(\App\Services\Safe\SafeService::class)->all());
+    });
+    Route::get('/users', function() {
+        return response()->json(app(\App\Services\User\UserService::class)->get());
+    });
+});
 
-Route::middleware(['companies', 'activity'])->group(function () {
+// Sale AJAX endpoints - middleware dışında
+Route::get('/sale/ajax', [App\Http\Controllers\SaleController::class, 'getSalesAjax'])->name('sale.ajax');
+Route::get('/sale/versions-ajax', [App\Http\Controllers\SaleController::class, 'getVersionsAjax'])->name('sale.versions.ajax');
 
-    Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+// Phone AJAX endpoints - middleware dışında
+Route::get('/phone/ajax', [App\Http\Controllers\PhoneController::class, 'getPhonesAjax'])->name('phone.ajax');
+Route::get('/phone/versions-ajax', [App\Http\Controllers\PhoneController::class, 'getVersionsAjax'])->name('phone.versions.ajax');
+
+// StockCard AJAX endpoints - middleware dışında
+Route::get('/stockcard/movements-ajax', [App\Http\Controllers\StockCardController::class, 'getMovementsAjax'])->name('stockcard.movements.ajax');
+
+
+// Auth routes already defined above (line 21)
+// Removed duplicate Auth::routes()
+
+Route::middleware(['companies'])->group(function () {
+
+    // /home route already defined above (line 23)
+    // Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
     Route::get('/dashboardReport', [App\Http\Controllers\HomeController::class, 'dashboardReport'])->name('dashboardReport');
     Route::get('/dashboardNewReport', [App\Http\Controllers\HomeController::class, 'dashboardNewReport'])->name('dashboardNewReport');
     Route::get('/dashboardMounthNewReport', [App\Http\Controllers\HomeController::class, 'dashboardMounthNewReport'])->name('dashboardMounthNewReport');
@@ -79,6 +157,7 @@ Route::middleware(['companies', 'activity'])->group(function () {
         Route::post('store', [App\Http\Controllers\UserController::class, 'store'])->name('store');
         Route::post('update', [App\Http\Controllers\UserController::class, 'update'])->name('update');
         Route::post('fieldUpdate', [App\Http\Controllers\UserController::class, 'fieldUpdate'])->name('fieldUpdate');
+        Route::post('change-password', [App\Http\Controllers\UserController::class, 'changePassword'])->name('changePassword');
     });
 
     Route::prefix('category')->name('category.')->middleware([])->group(function () {
@@ -170,6 +249,12 @@ Route::middleware(['companies', 'activity'])->group(function () {
 
     Route::prefix('stockcard')->name('stockcard.')->middleware([])->group(function () {
         Route::get('/', [App\Http\Controllers\StockCardController::class, 'index'])->name('index');
+        Route::get('export', [App\Http\Controllers\StockCardController::class, 'exportToExcel'])->name('export');
+        Route::post('/search-ajax', [App\Http\Controllers\StockCardController::class, 'searchAjax'])->name('search.ajax');
+        Route::get('/brands-ajax', [App\Http\Controllers\StockCardController::class, 'getBrandsAjax'])->name('brands.ajax');
+        Route::get('/versions-ajax', [App\Http\Controllers\StockCardController::class, 'getVersionsAjax'])->name('versions.ajax');
+        Route::get('/categories-ajax', [App\Http\Controllers\StockCardController::class, 'getCategoriesAjax'])->name('categories.ajax');
+        Route::get('/stock-names-ajax', [App\Http\Controllers\StockCardController::class, 'getStockNamesAjax'])->name('stock.names.ajax');
         Route::get('edit', [App\Http\Controllers\StockCardController::class, 'edit'])->name('edit');
         Route::get('delete', [App\Http\Controllers\StockCardController::class, 'delete'])->name('delete');
         Route::get('create', [App\Http\Controllers\StockCardController::class, 'create'])->name('create');
@@ -184,6 +269,7 @@ Route::middleware(['companies', 'activity'])->group(function () {
         Route::get('show', [App\Http\Controllers\StockCardController::class, 'show'])->name('show');
         Route::post('sevk', [App\Http\Controllers\StockCardController::class, 'sevk'])->name('sevk');
         Route::get('list', [App\Http\Controllers\StockCardController::class, 'list'])->name('list');
+        Route::get('/getListData', [App\Http\Controllers\StockCardController::class, 'getListData'])->name('getListData');
         Route::post('priceupdate', [App\Http\Controllers\StockCardController::class, 'priceupdate'])->name('priceupdate');
         Route::post('singlepriceupdate', [App\Http\Controllers\StockCardController::class, 'singlepriceupdate'])->name('singlepriceupdate');
         Route::post('multiplepriceupdate', [App\Http\Controllers\StockCardController::class, 'multiplepriceupdate'])->name('multiplepriceupdate');
@@ -192,6 +278,7 @@ Route::middleware(['companies', 'activity'])->group(function () {
         Route::post('refund', [App\Http\Controllers\StockCardController::class, 'refund'])->name('refund');
         Route::get('refunddetail', [App\Http\Controllers\StockCardController::class, 'refunddetail'])->name('refunddetail');
         Route::post('refunddetailStore', [App\Http\Controllers\StockCardController::class, 'refunddetailStore'])->name('refunddetailStore');
+        Route::get('refunds/data', [App\Http\Controllers\StockCardController::class, 'getRefundsData'])->name('refunds.data');
         Route::get('refundlist', [App\Http\Controllers\StockCardController::class, 'refundlist'])->name('refundlist');
         Route::get('refundcomfirm', [App\Http\Controllers\StockCardController::class, 'refundcomfirm'])->name('refundcomfirm');
         Route::get('refundreturn', [App\Http\Controllers\StockCardController::class, 'refundreturn'])->name('refundreturn');
@@ -199,8 +286,19 @@ Route::middleware(['companies', 'activity'])->group(function () {
         Route::post('newSaleStore', [App\Http\Controllers\StockCardController::class, 'newSaleStore'])->name('newSaleStore');
         Route::post('category_id', [App\Http\Controllers\StockCardController::class, 'category_id'])->name('category_id');
         Route::get('deleted', [App\Http\Controllers\StockCardController::class, 'deleted'])->name('deleted');
+        Route::get('deleted-data', [App\Http\Controllers\StockCardController::class, 'getDeletedData'])->name('deleted.data');
+        Route::post('restore', [App\Http\Controllers\StockCardController::class, 'restore'])->name('restore');
         Route::get('serialList', [App\Http\Controllers\StockCardController::class, 'serialList'])->name('serialList');
         Route::get('stockforserial', [App\Http\Controllers\StockCardController::class, 'stockforserial'])->name('stockforserial');
+        Route::get('getStockCardsData', [App\Http\Controllers\StockCardController::class, 'getStockCardsData'])->name('getStockCardsData');
+        Route::get('stocks-search', [App\Http\Controllers\StockCardController::class, 'searchStocksAjax'])->name('stocks.search');
+        // AJAX endpoints - performans optimizasyonu (StockCardController)
+        Route::get('/stockcard/sellers-ajax', [App\Http\Controllers\StockCardController::class, 'getSellersAjax'])->name('stockcard.sellers.ajax');
+        Route::get('/stockcard/colors-ajax', [App\Http\Controllers\StockCardController::class, 'getColorsAjax'])->name('stockcard.colors.ajax');
+        Route::get('/stockcard/brands-ajax', [App\Http\Controllers\StockCardController::class, 'getBrandsAjax'])->name('stockcard.brands.ajax');
+        Route::get('/stockcard/categories-ajax', [App\Http\Controllers\StockCardController::class, 'getCategoriesAjax'])->name('stockcard.categories.ajax');
+        Route::get('/stockcard/versions-ajax', [App\Http\Controllers\StockCardController::class, 'getVersionsAjax'])->name('stockcard.versions.ajax');
+        Route::get('/stockcard/stock-names-ajax', [App\Http\Controllers\StockCardController::class, 'getStockNamesAjax'])->name('stockcard.stock.names.ajax');
     });
 
     Route::prefix('transfer')->name('transfer.')->middleware([])->group(function () {
@@ -209,8 +307,18 @@ Route::middleware(['companies', 'activity'])->group(function () {
         Route::get('delete', [App\Http\Controllers\TransferController::class, 'delete'])->name('delete');
         Route::get('create', [App\Http\Controllers\TransferController::class, 'create'])->name('create');
         Route::post('store', [App\Http\Controllers\TransferController::class, 'store'])->name('store');
-        Route::get('update', [App\Http\Controllers\TransferController::class, 'update'])->name('update');
+        Route::post('update', [App\Http\Controllers\TransferController::class, 'update'])->name('update');
+        
+        // AJAX endpoints - Vue.js için (these should come before the {id} route)
+        Route::get('/incoming-ajax', [App\Http\Controllers\TransferController::class, 'getIncomingTransfersAjax'])->name('incoming.ajax');
+        Route::get('/outgoing-ajax', [App\Http\Controllers\TransferController::class, 'getOutgoingTransfersAjax'])->name('outgoing.ajax');
+        Route::get('/versions-ajax', [App\Http\Controllers\TransferController::class, 'getVersionsAjax'])->name('versions.ajax');
+
+
+        // Specific routes before the catch-all {id} route
         Route::get('show', [App\Http\Controllers\TransferController::class, 'show'])->name('show');
+        Route::get('updateTransfer', [App\Http\Controllers\TransferController::class, 'updateTransfer'])->name('updateTransfer');
+        Route::get('{id}', [App\Http\Controllers\TransferController::class, 'getTransferJson'])->where('id', '[0-9]+')->name('json');
     });
 
     Route::prefix('reason')->name('reason.')->middleware([])->group(function () {
@@ -224,10 +332,11 @@ Route::middleware(['companies', 'activity'])->group(function () {
 
     Route::prefix('invoice')->name('invoice.')->middleware([])->group(function () {
         Route::get('/', [App\Http\Controllers\InvoiceController::class, 'index'])->name('index');
+        Route::get('invoices-data', [App\Http\Controllers\InvoiceController::class, 'getInvoicesData'])->name('invoices.data');
+        Route::get('create', [App\Http\Controllers\InvoiceController::class, 'create'])->name('create');
         Route::get('edit', [App\Http\Controllers\InvoiceController::class, 'edit'])->name('edit');
         Route::get('show', [App\Http\Controllers\InvoiceController::class, 'show'])->name('show');
         Route::get('delete', [App\Http\Controllers\InvoiceController::class, 'delete'])->name('delete');
-        Route::get('create', [App\Http\Controllers\InvoiceController::class, 'create'])->name('create');
         Route::post('store', [App\Http\Controllers\InvoiceController::class, 'store'])->name('store');
         Route::post('update', [App\Http\Controllers\InvoiceController::class, 'update'])->name('update');
         Route::get('einvoice', [App\Http\Controllers\InvoiceController::class, 'einvoice'])->name('einvoice');
@@ -237,11 +346,13 @@ Route::middleware(['companies', 'activity'])->group(function () {
         Route::get('bank', [App\Http\Controllers\InvoiceController::class, 'bank'])->name('create.bank');
         Route::get('tax', [App\Http\Controllers\InvoiceController::class, 'tax'])->name('create.tax');
         Route::get('serialprint', [App\Http\Controllers\InvoiceController::class, 'serialprint'])->name('serialprint');
+        Route::get('qrprint', [App\Http\Controllers\InvoiceController::class, 'qrPrint'])->name('qrprint');
         Route::get('sales', [App\Http\Controllers\InvoiceController::class, 'sales'])->name('sales');
         Route::get('salesedit', [App\Http\Controllers\InvoiceController::class, 'salesedit'])->name('salesedit');
         Route::post('salesstore', [App\Http\Controllers\InvoiceController::class, 'salesstore'])->name('salesstore');
         Route::post('salesupdate', [App\Http\Controllers\InvoiceController::class, 'salesupdate'])->name('salesupdate');
         Route::get('stockcardmovementform', [App\Http\Controllers\InvoiceController::class, 'stockcardmovementform'])->name('stockcardmovementform');
+        Route::post('update-movements', [App\Http\Controllers\InvoiceController::class, 'updateMovements'])->name('update-movements');
         Route::get('stockcardmovementformrefund', [App\Http\Controllers\InvoiceController::class, 'stockcardmovementformrefund'])->name('stockcardmovementformrefund');
         Route::post('stockcardmovementstore', [App\Http\Controllers\InvoiceController::class, 'stockcardmovementstore'])->name('stockcardmovementstore');
         Route::get('stockmovementdelete', [App\Http\Controllers\InvoiceController::class, 'stockmovementdelete'])->name('stockmovementdelete');
@@ -296,7 +407,7 @@ Route::middleware(['companies', 'activity'])->group(function () {
         Route::post('statusCgange', [App\Http\Controllers\TechnicalServiceController::class, 'statusCgange'])->name('statusCgange');
 
         Route::get('print', [App\Http\Controllers\TechnicalServiceController::class, 'print'])->name('print');
-        Route::post('payment', [App\Http\Controllers\TechnicalServiceController::class, 'payment'])->name('payment');
+        Route::post('paymentstore', [App\Http\Controllers\TechnicalServiceController::class, 'payment'])->name('paymentstore');
         Route::post('sms', [App\Http\Controllers\TechnicalServiceController::class, 'sms'])->name('sms');
         Route::get('show', [App\Http\Controllers\TechnicalServiceController::class, 'show'])->name('show');
         Route::get('category', [App\Http\Controllers\TechnicalServiceController::class, 'category'])->name('category');
@@ -320,12 +431,19 @@ Route::middleware(['companies', 'activity'])->group(function () {
 
     Route::prefix('sale')->name('sale.')->middleware([])->group(function () {
         Route::get('/', [App\Http\Controllers\SaleController::class, 'index'])->name('index');
+        Route::get('export', [App\Http\Controllers\SaleController::class, 'exportToExcel'])->name('export');
         Route::get('edit', [App\Http\Controllers\SaleController::class, 'edit'])->name('edit');
         Route::get('delete', [App\Http\Controllers\SaleController::class, 'delete'])->name('delete');
         Route::get('create', [App\Http\Controllers\SaleController::class, 'create'])->name('create');
         Route::post('store', [App\Http\Controllers\SaleController::class, 'store'])->name('store');
         Route::post('update', [App\Http\Controllers\SaleController::class, 'update'])->name('update');
         Route::get('show', [App\Http\Controllers\SaleController::class, 'show'])->name('show');
+        
+        // AJAX endpoints - Vue.js için
+        Route::get('/ajax', [App\Http\Controllers\SaleController::class, 'getSalesAjax'])->name('ajax');
+        Route::get('/invoice-details/{id}', [App\Http\Controllers\SaleController::class, 'getInvoiceSalesDetails'])->name('invoice.details');
+        Route::get('/totals-async', [App\Http\Controllers\SaleController::class, 'calculateTotalsAsync'])->name('totals.async');
+        Route::get('/versions-ajax', [App\Http\Controllers\SaleController::class, 'getVersionsAjax'])->name('versions.ajax');
     });
 
     Route::prefix('demand')->name('demand.')->middleware([])->group(function () {
@@ -437,6 +555,7 @@ Route::get('/customers', [App\Http\Controllers\CustomController::class, 'custome
 Route::get('/transferList', [App\Http\Controllers\CustomController::class, 'transferList'])->name('transferList');
 Route::post('/stockSearch', [App\Http\Controllers\CustomController::class, 'stockSearch'])->name('stockSearch');
 Route::get('/serialcheck', [App\Http\Controllers\CustomController::class, 'serialcheck'])->name('serialcheck');
+Route::get('/barcodecheck', [App\Http\Controllers\CustomController::class, 'barcodecheck'])->name('barcodecheck');
 Route::get('/getStockCardCategory', [App\Http\Controllers\CustomController::class, 'getStockCardCategory'])->name('getStockCardCategory');
 Route::get('/getStockSeller', [App\Http\Controllers\CustomController::class, 'getStockSeller'])->name('getStockSeller');
 Route::post('/custom_editItem', [App\Http\Controllers\CustomController::class, 'custom_editItem'])->name('custom_editItem');
@@ -449,13 +568,15 @@ Route::get('/personelsellernewreport', [App\Http\Controllers\ReportController::c
 Route::post('/stocktakingcheck', [App\Http\Controllers\StocktakingController::class, 'stocktakingcheck'])->name('stocktakingcheck');
 Route::get('/stocktakingserialcheck', [App\Http\Controllers\StocktakingController::class, 'stocktakingserialcheck'])->name('stocktakingserialcheck');
 Route::get('/getTransferSerialCheck', [App\Http\Controllers\CustomController::class, 'getTransferSerialCheck'])->name('getTransferSerialCheck');
+Route::get('/getTransferBarcodeCheck', [App\Http\Controllers\CustomController::class, 'getTransferBarcodeCheck'])->name('getTransferBarcodeCheck');
+
 
 
 Route::get('/getStockMovementList', [App\Http\Controllers\StockCardController::class, 'getStockMovementList'])->name('getStockMovementList');
 Route::get('/getStockquantity', [App\Http\Controllers\StockCardController::class, 'getStockquantity'])->name('getStockquantity');
 
 
-// Logger routes removed as package was uninstalled
+// Laravel Logger routes removed - controller not available
 Route::get('/clear-cache', function () {
     Artisan::call('config:cache');
     Artisan::call('cache:clear');
@@ -464,3 +585,61 @@ Route::get('/clear-cache', function () {
     Artisan::call('route:clear');
     return "Cache is cleared";
 })->name('clear.cache');
+
+// StockCard movements route
+Route::get('/stockcard/movements', [App\Http\Controllers\StockCardController::class, 'getMovements'])
+    ->middleware(['auth', 'companies'])
+    ->name('stockcard.movements');
+
+// API routes that need session-based authentication (moved from routes/api.php)
+Route::middleware(['auth', 'companies'])->prefix('api')->group(function () {
+    
+    // Stock Check API - Quick sale
+    Route::get('/stock/check', [App\Http\Controllers\HomeController::class, 'checkStock'])->name('api.stock.check');
+    
+    // Stock Price API
+    Route::get('/stock-price/{id}', [App\Http\Controllers\StockCardController::class, 'getStockPriceApi'])->name('api.stock.price');
+    
+    // Customers API
+    Route::get('/customers', [App\Http\Controllers\CustomerController::class, 'getCustomersApi'])->name('api.customers');
+    
+    // Dashboard API routes
+    Route::prefix('dashboard')->group(function () {
+        Route::get('sales-by-staff', [App\Http\Controllers\HomeController::class, 'getSalesByStaff'])->name('api.dashboard.sales-by-staff');
+        Route::get('stock-turnover', [App\Http\Controllers\HomeController::class, 'getStockTurnover'])->name('api.dashboard.stock-turnover');
+        Route::get('stock-turnover-ai', [App\Http\Controllers\HomeController::class, 'getStockTurnoverAI'])->name('api.dashboard.stock-turnover-ai');
+        
+        // AI Report Export routes
+        Route::get('ai-analysis-export-pdf', [App\Http\Controllers\HomeController::class, 'exportAIAnalysisPDF'])->name('api.dashboard.ai-export-pdf');
+        Route::get('ai-analysis-export-excel', [App\Http\Controllers\HomeController::class, 'exportAIAnalysisExcel'])->name('api.dashboard.ai-export-excel');
+        Route::get('ai-analysis-export-json', [App\Http\Controllers\HomeController::class, 'exportAIAnalysisJSON'])->name('api.dashboard.ai-export-json');
+    });
+    
+    // Common Data API - Cached and optimized
+    Route::prefix('common')->group(function () {
+        Route::get('/sellers', [App\Http\Controllers\Api\CommonDataController::class, 'getSellers'])->name('api.common.sellers');
+        Route::get('/categories', [App\Http\Controllers\Api\CommonDataController::class, 'getCategories'])->name('api.common.categories');
+        Route::get('/warehouses', [App\Http\Controllers\Api\CommonDataController::class, 'getWarehouses'])->name('api.common.warehouses');
+        Route::get('/colors', [App\Http\Controllers\Api\CommonDataController::class, 'getColors'])->name('api.common.colors');
+        Route::get('/brands', [App\Http\Controllers\Api\CommonDataController::class, 'getBrands'])->name('api.common.brands');
+        Route::get('/versions', [App\Http\Controllers\Api\CommonDataController::class, 'getVersions'])->name('api.common.versions');
+        Route::get('/reasons', [App\Http\Controllers\Api\CommonDataController::class, 'getReasons'])->name('api.common.reasons');
+        Route::get('/customers', [App\Http\Controllers\Api\CommonDataController::class, 'getCustomers'])->name('api.common.customers');
+        Route::get('/cities', [App\Http\Controllers\Api\CommonDataController::class, 'getCities'])->name('api.common.cities');
+        Route::get('/towns', [App\Http\Controllers\Api\CommonDataController::class, 'getTowns'])->name('api.common.towns');
+        Route::get('/currencies', [App\Http\Controllers\Api\CommonDataController::class, 'getCurrencies'])->name('api.common.currencies');
+        Route::get('/safes', [App\Http\Controllers\Api\CommonDataController::class, 'getSafes'])->name('api.common.safes');
+        Route::get('/users', [App\Http\Controllers\Api\CommonDataController::class, 'getUsers'])->name('api.common.users');
+        
+        // Bulk data endpoint
+        Route::get('/all', [App\Http\Controllers\Api\CommonDataController::class, 'getAllCommonData'])->name('api.common.all');
+        
+        // Cache management
+        Route::post('/clear-cache', [App\Http\Controllers\Api\CommonDataController::class, 'clearCache'])->name('api.common.clear-cache');
+    });
+});
+
+// Demo routes
+Route::get('/demo/daterangepicker', function () {
+    return view('demo.daterangepicker');
+})->name('demo.daterangepicker');

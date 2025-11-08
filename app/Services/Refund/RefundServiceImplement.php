@@ -5,14 +5,14 @@ namespace App\Services\Refund;
 use App\Repositories\Refund\RefundRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use App\Services\BaseService;
+use LaravelEasyRepository\Service;
 
-class RefundServiceImplement extends BaseService implements RefundService{
+class RefundServiceImplement extends Service implements RefundService{
     /**
      * don't change $this->mainRepository variable name
      * because used in extends service class
      */
-    protected $mainRepository;
+    protected RefundRepository $mainRepository;
 
     public function __construct(RefundRepository $mainRepository)
     {

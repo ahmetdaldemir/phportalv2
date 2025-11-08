@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="container-xxl flex-grow-1 container-p-y" onload="getTownLoad(34)">
+    <div id="technical-service-app" class="container-xxl flex-grow-1 container-p-y">
         <h4 class="fw-bold py-3 mb-4"><span
                 class="text-muted fw-light">Teknik Servis Formu /</span> @if(isset($technical_services))
                 {{$technical_services->name}}
@@ -17,12 +17,17 @@
                             <div class="row mb-4">
                                 <label for="selectpickerLiveSearch" class="form-label">Müşteri Seçiniz</label>
                                 <div class="col-md-9">
-                                    <select id="selectCustomer" class="w-100 select2"
-                                            data-style="btn-default" name="customer_id" ng-init="getCustomers()">
-                                        <option value="1" data-tokens="ketchup mustard">Genel Cari</option>
-                                        <option ng-repeat="customer in customers" ng-selected="customer.id == idNew"
-                                                value="@{{customer.id}}">
-                                            @{{customer.fullname}}
+                                    <select 
+                                        v-model="form.customer_id" 
+                                        @change="onCustomerChange"
+                                        class="form-select" 
+                                        name="customer_id">
+                                        <option value="1">Genel Cari</option>
+                                        <option 
+                                            v-for="customer in customers" 
+                                            :key="customer.id"
+                                            :value="customer.id">
+                                            @{{ customer.fullname }}
                                         </option>
                                     </select>
                                 </div>
@@ -99,11 +104,9 @@
                             <div>
                                 <label for="defaultFormControlInput" class="form-label">Şube Adı</label>
                                 <select id="seller_id" name="seller_id" class="select2 form-select"
-                                        @role('super-admin')
-                                ""
-                                @else
-                                    disabled
-                                    @endrole  >
+                                        @if(!\Illuminate\Support\Facades\Auth::user()->hasRole('super-admin'))
+                                        disabled
+                                        @endif>
                                     @foreach($sellers as $seller)
                                         <option  @if(\Illuminate\Support\Facades\Auth::user()->seller_id == $seller->id) selected  @endif  value="{{$seller->id}}">{{$seller->name}}</option>
                                     @endforeach
@@ -170,7 +173,7 @@
         <hr class="my-5">
     </div>
 @endsection
-@include('components.customermodaltechnicservice')
+@include('components.customermodal')
 @section('custom-js')
     <script src="{{asset('assets/vendor/libs/jquery-repeater/jquery-repeater.js')}}"></script>
     <script src="{{asset('assets/js/pages-account-settings-account.js')}}"></script>
@@ -241,64 +244,117 @@
 
     </script>
 
+    <!-- Vue.js App for Technical Service Form -->
     <script>
-        app.controller("mainController", function ($scope, $http, $httpParamSerializerJQLike, $window) {
-            $scope.getCustomers = function () {
-                var postUrl = window.location.origin + '/customers?type=technical';   // Returns base URL (https://example.com)
-                $http({
-                    method: 'GET',
-                    //url: './comment/change_status?id=' + id + '&status='+status+'',
-                    url: postUrl,
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    }
-                }).then(function successCallback(response) {
-                    $scope.customers = response.data;
-                   if($scope.idNew == undefined)
-                   {
-                       $scope.idNew = 1;
-                   }
-                 });
-            }
-            $scope.customerSave = function () {
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof Vue === 'undefined') {
+            console.error('Vue.js is not loaded.');
+            return;
+        }
 
-                if ($("input[name='phone1']").val() == "") {
-                    alert('Telefon numarası boş olamaz');
-                } else if ($("input[name='firstname']").val() == "") {
-                    alert('İsim Alanı boş olamaz');
-                } else if ($("input[name='lastname']").val() == "") {
-                    alert('Soyisim alanı boş olamaz');
-                } else {
+        const { createApp } = Vue;
 
-                    var postUrl = window.location.origin + '/custom_customerstore';   // Returns base URL (https://example.com)
-                    var formData = $("#customerForm").serialize();
-
-                    $http({
-                        method: 'POST',
-                        url: postUrl,
-                        data: formData,
-                        dataType: "json",
-                        encode: true,
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        }
-                    }).then(function successCallback(response) {
-                        $scope.getCustomers();
-                        $('#selectCustomer option:selected').val(response.data.id);
-                        $scope.idNew = response.data.id;
-                        var modalDiv = $("#editUser");
-                        modalDiv.modal('hide');
-                        modalDiv
-                            .find("input,textarea,select")
-                            .val('')
-                            .end()
-                            .find("input[type=checkbox], input[type=radio]")
-                            .prop("checked", "")
-                            .end();
-                    });
+        createApp({
+            data() {
+                return {
+                    form: {
+                        customer_id: '1'
+                    },
+                    customers: @json($customers ?? []),
+                    globalStore: window.globalStore || { cache: { brands: [], colors: [], versions: [], customers: [] } }
                 }
-
+            },
+            computed: {
+                brands() {
+                    return this.globalStore.cache.brands.length > 0 
+                        ? this.globalStore.cache.brands 
+                        : @json($brands ?? []);
+                }
+            },
+            methods: {
+                onCustomerChange() {
+                    console.log('Customer changed:', this.form.customer_id);
+                }
+            },
+            mounted() {
+                // Listen for customer save events
+                window.addEventListener('customerSaved', (event) => {
+                    const customer = event.detail;
+                    if (customer && customer.id) {
+                        // Check if customer already exists
+                        const exists = this.customers.find(c => c.id === customer.id);
+                        if (!exists) {
+                            this.customers.push(customer);
+                        }
+                        this.form.customer_id = customer.id;
+                        
+                        console.log('New customer selected:', customer);
+                    }
+                });
             }
-        });
+        }).mount('#technical-service-app');
+    });
+
+    // Global function for getting versions by brand
+    function getVersion(brandId) {
+        if (!brandId || brandId === '') {
+            // Clear version select if no brand selected
+            const versionSelect = document.getElementById('version_id');
+            if (versionSelect) {
+                versionSelect.innerHTML = '<option value="">Seçiniz</option>';
+            }
+            return;
+        }
+
+        // Show loading state
+        const versionSelect = document.getElementById('version_id');
+        if (versionSelect) {
+            versionSelect.innerHTML = '<option value="">Yükleniyor...</option>';
+            versionSelect.disabled = true;
+        }
+
+        // Make AJAX request to get versions using existing API
+        fetch(`/api/common/versions?brand_id=${brandId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (versionSelect) {
+                    versionSelect.innerHTML = '<option value="">Seçiniz</option>';
+                    
+                    if (data && data.length > 0) {
+                        data.forEach(version => {
+                            const option = document.createElement('option');
+                            option.value = version.id;
+                            option.textContent = version.name;
+                            
+                            // Check if this version should be selected (for edit mode)
+                            @if(isset($technical_services) && $technical_services->version_id)
+                                if (version.id == {{$technical_services->version_id}}) {
+                                    option.selected = true;
+                                }
+                            @endif
+                            
+                            versionSelect.appendChild(option);
+                        });
+                    }
+                    
+                    versionSelect.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading versions:', error);
+                if (versionSelect) {
+                    versionSelect.innerHTML = '<option value="">Hata oluştu</option>';
+                    versionSelect.disabled = false;
+                }
+            });
+    }
+
+    // Load versions on page load if brand is already selected
+    document.addEventListener('DOMContentLoaded', function() {
+        const brandSelect = document.getElementById('brand_id');
+        if (brandSelect && brandSelect.value) {
+            getVersion(brandSelect.value);
+        }
+    });
     </script>
 @endsection

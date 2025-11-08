@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SaleController extends Controller
 {
@@ -80,115 +81,6 @@ class SaleController extends Controller
 
     }
 
-    protected function index(Request $request)
-    {
-        $query = Sale::where('company_id', Auth::user()->company_id);
-        if ($request->filled('daterange')) {
-            $daterange = explode("to", $request->daterange);
-            if (isset($daterange[1])) {
-                 $query->whereDate('created_at','>=',trim($daterange[0]) .' 00:00:00')->where('created_at', '<=', trim($daterange[1]). ' 23:59:59');
-            } else {
-                $query->whereDate('created_at', trim($daterange[0]));
-            }
-        } else {
-            $query->whereDate('created_at', Carbon::today());
-        }
-
-        if($request->filled('seller'))
-        {
-            if (\Illuminate\Support\Facades\Auth::user()->hasRole('super-admin')) {
-                $query->where('seller_id', $request->seller);
-            }else{
-                $query->where('seller_id', Auth::user()->seller_id);
-            }
-        }else{
-            if (!\Illuminate\Support\Facades\Auth::user()->hasRole('super-admin')) {
-                $query->where('seller_id', Auth::user()->seller_id);
-            }
-        }
-        if($request->filled('brand'))
-        {
-            $query->whereHas('stock_card',function (Builder $query) use ($request) {
-                $query->where('brand_id',$request->brand);
-            });
-        }
-
-        if($request->filled('category'))
-        {
-            $query->whereHas('stock_card',function (Builder $query) use ($request) {
-                $query->where('category_id',$request->category);
-            });
-        }
-
-        if($request->filled('version'))
-        {
-            $query->whereHas('stock_card',function (Builder $query) use ($request) {
-                $query->whereJsonContains('version_id',$request->version);
-            });
-        }
-
-
-        if($request->filled('serialNumber'))
-        {
-            $query->whereHas('stock_card_movement',function (Builder $query) use ($request) {
-                $query->where('serial_number',$request->serialNumber);
-            });
-        }
-
-
-        if ($request->filled('stockName')) {
-            $query->where('name', 'like', '%' . $request->stockName . '%');
-        }
-
-
-                    $invoices = $query->get()->groupBy('invoice_id');
-                    $profits = 0;
-                    $x = 0;
-                    $totalPriceInvoices = 0;
-                    foreach($invoices as $key => $value)
-                    {
-                        $invoice = \App\Models\Invoice::find($key);
-                        if($invoice)
-                        {
-                            $totalPriceInvoices += $invoice->total_price;
-
-                            $sale = Sale::where('invoice_id', $invoice->id)->get();
-                            foreach ($sale as $item) {
-                                if($item->type == 1)
-                                {
-                                    $x += Phone::where('id', $item->stock_card_movement_id)->first()->cost_price??0;
-                                }else{
-                                    $x += StockCardMovement::where('id', $item->stock_card_movement_id)->first()->base_cost_price??0;
-                                }
-                            }
-                         }
-                    }
-            $profits +=  $totalPriceInvoices -$x;
-
-
-
-
-        $data['profits'] = $profits;
-        $data['invoices'] = $invoices;
-        $data['brands'] = $this->brandService->get();
-        $categories =
-            DB::select("WITH RECURSIVE category_path (id, name, parent_id, path) AS
-(
-  SELECT id, name, parent_id, name as path
-  FROM categories
-  WHERE parent_id = 0 and deleted_at is null
-  UNION ALL
-  SELECT k.id, k.name, k.parent_id, CONCAT(cp.path, ' -> ', k.name)
-  FROM category_path cp JOIN categories k
-  ON cp.id = k.parent_id Where deleted_at is null
-)
-SELECT * FROM category_path ORDER BY path;");
-        //dd($categories);
-        //  $a = $this->categoryService->getList($request->category);
-        $data['categories'] = $categories;//$this->listenke($categories, $request->category);
-        $data['sellers'] = $this->sellerService->get();
-        return view('module.sale.index', $data);
-    }
 
     protected function create()
     {
@@ -228,7 +120,8 @@ SELECT * FROM category_path ORDER BY path;");
     {
         $this->invoiceService->delete($request->id);
         $collection = StockCardMovement::where('invoice_id', $request->id)->get(['id']);
-        StockCardMovement::destroy($collection->toArray());
+        Sale::where('invoice_id', $request->id)->delete();
+        StockCardMovement::whereIn('invoice_id', $collection->toArray())->update(['type' =>1]);
         return redirect()->back();
     }
 
@@ -297,5 +190,408 @@ SELECT * FROM category_path ORDER BY path;");
     {
         $data = array('is_status' => $request->is_status);
         return $this->invoiceService->update($request->id, $data);
+    }
+    
+    /**
+     * AJAX endpoint for sales - Vue.js için
+     */
+    public function getSalesAjax(Request $request)
+    {
+        try {
+            set_time_limit(30);
+            
+            // Debug logs removed to prevent class not found error
+            
+            if (!Auth::check()) {
+                // User not authenticated
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+            
+            $user = Auth::user();
+            // User authenticated
+            
+            // Step 1: Get invoices directly with filters (much faster)
+            $invoiceQuery = Invoice::where('company_id', $user->company_id)
+                ->with(['account:id,fullname', 'staff:id,name']);
+
+            // Invoice query initialized
+
+            // Date filter on invoices
+            if ($request->filled('daterange')) {
+                $daterange = explode(" to ", $request->daterange);
+                if (isset($daterange[1])) {
+                    $startDate = Carbon::createFromFormat('Y-m-d', trim($daterange[0]))->startOfDay();
+                    $endDate = Carbon::createFromFormat('Y-m-d', trim($daterange[1]))->endOfDay();
+                    $invoiceQuery->whereBetween('created_at', [$startDate, $endDate]);
+                } else {
+                    $date = Carbon::createFromFormat('Y-m-d', trim($daterange[0]));
+                    $invoiceQuery->whereDate('created_at', $date);
+                }
+            } else {
+                $invoiceQuery->whereDate('created_at', Carbon::today());
+            }
+
+            // Only get invoices that have sales
+            $invoiceQuery->whereHas('sales');
+
+            // Pagination on invoice level
+            $invoices = $invoiceQuery->paginate(50);
+            
+            // Step 2: Get sales count for each invoice (single query)
+            $invoiceIds = $invoices->pluck('id')->toArray();
+            $salesCounts = DB::table('sales')
+                ->select('invoice_id', DB::raw('COUNT(*) as sales_count'))
+                ->whereIn('invoice_id', $invoiceIds)
+                ->groupBy('invoice_id')
+                ->pluck('sales_count', 'invoice_id');
+
+            // Step 3: Format invoice data for display
+            $formattedInvoices = $invoices->map(function ($invoice) use ($salesCounts) {
+                return [
+                    'id' => $invoice->id,
+                    'number' => $invoice->number ?? $invoice->id,
+                    'created_at' => $invoice->created_at->format('d.m.Y H:i'),
+                    'customer_name' => $invoice->account->fullname ?? 'Genel Cari',
+                    'staff_name' => $invoice->staff->name ?? 'Sistem',
+                    'credit_card' => $invoice->credit_card ?? 0,
+                    'cash' => $invoice->cash ?? 0,
+                    'installment' => $invoice->installment ?? 0,
+                    'total_price' => $invoice->total_price ?? 0,
+                    'tax_total' => $invoice->tax_total ?? 0,
+                    'discount_total' => $invoice->discount_total ?? 0,
+                    'sales_count' => $salesCounts[$invoice->id] ?? 0,
+                    'payment_status' => $invoice->paymentStatus ?? 'paid',
+                    'type' => $invoice->type,
+                    'type_name' => $invoice->type == 1 ? 'Gelen Fatura' : 'Giden Fatura'
+                ];
+            });
+
+            return response()->json([
+                'invoices' => $formattedInvoices,
+                'pagination' => [
+                    'current_page' => $invoices->currentPage(),
+                    'last_page' => $invoices->lastPage(),
+                    'total' => $invoices->total(),
+                    'per_page' => $invoices->perPage(),
+                    'from' => $invoices->firstItem(),
+                    'to' => $invoices->lastItem()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Data loading failed: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get sales details for a specific invoice (for modal)
+     */
+    public function getInvoiceSalesDetails($invoiceId)
+    {
+        try {
+            $sales = Sale::where('invoice_id', $invoiceId)
+                ->with([
+                    'stockCard:id,name,barcode',
+                    'stockCard.brand:id,name',
+                    'stockCard.category:id,name', 
+                    'stockCardMovement:id,serial_number,cost_price,base_cost_price',
+                    'seller:id,name',
+                    'user:id,name'
+                ])
+                ->get();
+
+            $formattedSales = $sales->map(function ($sale) {
+                return [
+                    'id' => $sale->id,
+                    'stock_name' => $sale->stockCard->name ?? $sale->name ?? 'N/A',
+                    'brand_name' => $sale->stockCard->brand->name ?? 'N/A',
+                    'category_name' => $sale->stockCard->category->name ?? 'N/A',
+                    'serial_number' => $sale->stockCardMovement->serial_number ?? $sale->serial ?? 'N/A',
+                    'type' => $sale->type,
+                    'type_name' => Sale::STATUS[$sale->type] ?? 'Bilinmiyor',
+                    'sale_price' => $sale->sale_price ?? 0,
+                    'cost_price' => $sale->stockCardMovement->cost_price ?? 0,
+                    'base_cost_price' => $sale->stockCardMovement->base_cost_price ?? $sale->base_cost_price ?? 0,
+                    'profit' => ($sale->sale_price ?? 0) - ($sale->stockCardMovement->base_cost_price ?? $sale->base_cost_price ?? 0),
+                    'seller_name' => $sale->seller->name ?? 'N/A',
+                    'user_name' => $sale->user->name ?? 'N/A',
+                    'created_at' => $sale->created_at->format('d.m.Y H:i')
+                ];
+            });
+
+            // Calculate totals for this invoice
+            $totals = [
+                'total_sale_price' => $sales->sum('sale_price'),
+                'total_cost_price' => $sales->sum('base_cost_price'),
+                'total_profit' => $sales->sum('sale_price') - $sales->sum('base_cost_price'),
+                'items_count' => $sales->count()
+            ];
+
+            return response()->json([
+                'sales' => $formattedSales,
+                'totals' => $totals
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Sales details not found: ' . $e->getMessage()], 404);
+        }
+    }
+
+    /**
+     * Get async totals calculation
+     */
+    public function calculateTotalsAsync(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            
+            // Build same query as main listing
+            $invoiceQuery = Invoice::where('company_id', $user->company_id);
+
+            // Apply same filters
+            if ($request->filled('daterange')) {
+                $daterange = explode(" to ", $request->daterange);
+                if (isset($daterange[1])) {
+                    $startDate = Carbon::createFromFormat('Y-m-d', trim($daterange[0]))->startOfDay();
+                    $endDate = Carbon::createFromFormat('Y-m-d', trim($daterange[1]))->endOfDay();
+                    $invoiceQuery->whereBetween('created_at', [$startDate, $endDate]);
+                } else {
+                    $date = Carbon::createFromFormat('Y-m-d', trim($daterange[0]));
+                    $invoiceQuery->whereDate('created_at', $date);
+                }
+            } else {
+                $invoiceQuery->whereDate('created_at', Carbon::today());
+            }
+
+            // Calculate totals using single aggregation query
+            $totals = $invoiceQuery->selectRaw('
+                COUNT(*) as total_invoices,
+                SUM(credit_card) as total_credit_card,
+                SUM(cash) as total_cash,
+                SUM(installment) as total_installment,
+                SUM(total_price) as total_revenue,
+                SUM(tax_total) as total_tax,
+                SUM(discount_total) as total_discount
+            ')->first();
+
+            // Calculate profit using efficient join
+            $profitData = DB::table('invoices as i')
+                ->join('sales as s', 'i.id', '=', 's.invoice_id')
+                ->where('i.company_id', $user->company_id);
+
+            // Apply same date filter
+            if ($request->filled('daterange')) {
+                $daterange = explode(" to ", $request->daterange);
+                if (isset($daterange[1])) {
+                    $startDate = Carbon::createFromFormat('Y-m-d', trim($daterange[0]))->startOfDay();
+                    $endDate = Carbon::createFromFormat('Y-m-d', trim($daterange[1]))->endOfDay();
+                    $profitData->whereBetween('i.created_at', [$startDate, $endDate]);
+                } else {
+                    $date = Carbon::createFromFormat('Y-m-d', trim($daterange[0]));
+                    $profitData->whereDate('i.created_at', $date);
+                }
+            } else {
+                $profitData->whereDate('i.created_at', Carbon::today());
+            }
+
+            $profitCalc = $profitData->selectRaw('
+                SUM(i.total_price) as total_revenue,
+                SUM(s.base_cost_price) as total_cost
+            ')->first();
+
+            $totalProfit = ($profitCalc->total_revenue ?? 0) - ($profitCalc->total_cost ?? 0);
+
+            return response()->json([
+                'totals' => [
+                    'total_invoices' => $totals->total_invoices ?? 0,
+                    'credit_card' => $totals->total_credit_card ?? 0,
+                    'cash' => $totals->total_cash ?? 0,
+                    'installment' => $totals->total_installment ?? 0,
+                    'gross_total' => $totals->total_revenue ?? 0,
+                    'tax_total' => $totals->total_tax ?? 0,
+                    'discount_total' => $totals->total_discount ?? 0,
+                    'profit' => $totalProfit
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Totals calculation failed: ' . $e->getMessage()], 500);
+        }
+    }
+    
+    /**
+     * AJAX endpoint for versions - Vue.js için
+     */
+    public function getVersionsAjax(Request $request)
+    {
+        try {
+            $brandId = $request->get('brand_id');
+            if (!$brandId) {
+                return response()->json([]);
+            }
+            
+            $versions = \App\Models\Version::where('brand_id', $brandId)->get();
+            return response()->json($versions);
+            
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Versiyonlar yüklenemedi'], 500);
+        }
+    }
+
+    /**
+     * Sale index page
+     */
+    public function index()
+    {
+        try {
+            // Load filter data
+            $brands = $this->brandService->get();
+            $categories = $this->categoryService->get();
+            $sellers = $this->sellerService->get();
+
+            return view('module.sale.index', compact('brands', 'categories', 'sellers'));
+        } catch (\Exception $e) {
+            Log::error('Sale index error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Sayfa yüklenirken bir hata oluştu.');
+        }
+    }
+
+    /**
+     * Export sales data to Excel
+     */
+    public function exportToExcel(Request $request)
+    {
+        try {
+            Log::info('Excel export started', ['request_params' => $request->all()]);
+            
+            // Check if user is authenticated
+            if (!Auth::check()) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+            
+            // Get filtered sales data using the same logic as index
+            $query = Invoice::with(['account', 'staff', 'detail.stockCard.brand', 'detail.stockCard.category'])
+                ->where('company_id', Auth::user()->company_id);
+
+            // Apply filters
+            if ($request->filled('startDate')) {
+                $query->whereDate('create_date', '>=', Carbon::createFromFormat('Y-m-d', $request->startDate));
+            }
+            if ($request->filled('endDate')) {
+                $query->whereDate('create_date', '<=', Carbon::createFromFormat('Y-m-d', $request->endDate));
+            }
+            if ($request->filled('brand')) {
+                $query->whereHas('detail.stockCard', function (Builder $q) use ($request) {
+                    $q->where('brand_id', $request->brand);
+                });
+            }
+            if ($request->filled('category')) {
+                $query->whereHas('detail.stockCard', function (Builder $q) use ($request) {
+                    $q->where('category_id', $request->category);
+                });
+            }
+            if ($request->filled('seller')) {
+                $query->whereHas('detail', function (Builder $q) use ($request) {
+                    $q->where('seller_id', $request->seller);
+                });
+            }
+            if ($request->filled('staff')) {
+                $query->where('staff_id', $request->staff);
+            }
+            if ($request->filled('customer')) {
+                $query->where('customer_id', $request->customer);
+            }
+            if ($request->filled('search')) {
+                $searchTerm = $request->search;
+                $query->where(function (Builder $q) use ($searchTerm) {
+                    $q->where('number', 'like', "%{$searchTerm}%")
+                        ->orWhereHas('account', function (Builder $customerQuery) use ($searchTerm) {
+                            $customerQuery->where('fullname', 'like', "%{$searchTerm}%");
+                        })
+                        ->orWhereHas('detail', function (Builder $movementQuery) use ($searchTerm) {
+                            $movementQuery->where('serial_number', 'like', "%{$searchTerm}%")
+                                ->orWhereHas('stockCard', function (Builder $stockQuery) use ($searchTerm) {
+                                    $stockQuery->where('name', 'like', "%{$searchTerm}%");
+                                });
+                        });
+                });
+            }
+
+            // Get all data (no pagination for export)
+            $invoices = $query->orderBy('id', 'desc')->get();
+            
+            Log::info('Excel export - Found invoices: ' . $invoices->count());
+
+            // Prepare Excel data
+            $excelData = [];
+            $excelData[] = [
+                'Fatura No',
+                'Tarih',
+                'Müşteri',
+                'Personel',
+                'Ürün',
+                'Marka',
+                'Kategori',
+                'Seri No',
+                'Satış Fiyatı',
+                'Maliyet',
+                'Kar',
+                'Satışçı',
+                'Ödeme Durumu'
+            ];
+
+            foreach ($invoices as $invoice) {
+                $detailCount = is_array($invoice->detail) ? count($invoice->detail) : ($invoice->detail ? $invoice->detail->count() : 0);
+                Log::info('Invoice ' . $invoice->id . ' - Detail count: ' . $detailCount);
+                if ($invoice->detail && $detailCount > 0) {
+                    foreach ($invoice->detail as $movement) {
+                    $excelData[] = [
+                        $invoice->number,
+                        $invoice->create_date ? Carbon::parse($invoice->create_date)->format('d.m.Y') : '',
+                        $invoice->account ? $invoice->account->fullname : 'Genel Cari',
+                        $invoice->staff ? $invoice->staff->name : '',
+                        isset($movement['stockCard']) ? $movement['stockCard']['name'] : '',
+                        isset($movement['stockCard']['brand']) ? $movement['stockCard']['brand']['name'] : '',
+                        isset($movement['stockCard']['category']) ? $movement['stockCard']['category']['name'] : '',
+                        $movement['serial_number'] ?? '',
+                        number_format($movement['sale_price'] ?? 0, 2, ',', '.'),
+                        number_format($movement['base_cost_price'] ?? 0, 2, ',', '.'),
+                        number_format(($movement['sale_price'] ?? 0) - ($movement['base_cost_price'] ?? 0), 2, ',', '.'),
+                        isset($movement['seller']) ? $movement['seller']['name'] : '',
+                        $invoice->paymentStatus == 'paid' ? 'Ödendi' : 'Ödenecek'
+                    ];
+                    }
+                }
+            }
+
+            // Generate Excel file
+            $filename = 'satislar_' . date('Y-m-d_H-i-s') . '.csv';
+            
+            $headers = [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0'
+            ];
+
+            $callback = function() use ($excelData) {
+                $file = fopen('php://output', 'w');
+                
+                // Add BOM for UTF-8
+                fwrite($file, "\xEF\xBB\xBF");
+                
+                foreach ($excelData as $row) {
+                    fputcsv($file, $row, ';');
+                }
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            Log::error('Excel export error: ' . $e->getMessage());
+            return response()->json(['error' => 'Excel dosyası oluşturulurken hata oluştu.'], 500);
+        }
     }
 }

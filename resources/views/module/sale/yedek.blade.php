@@ -10,8 +10,8 @@
                     @csrf
                     <div class="col-md-6 fv-plugins-icon-container">
                         <label class="form-label" for="formValidationName">Başlangıç - Bitiş Tarihi</label>
-                        <input type="text" class="form-control flatpickr-input" name="daterange"
-                               placeholder="YYYY-MM-DD to YYYY-MM-DD" id="flatpickr-range" readonly="readonly">
+                        <input type="text" class="form-control daterangepicker-input" name="daterange"
+                               placeholder="YYYY-MM-DD to YYYY-MM-DD" id="date-range" readonly="readonly">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label" for="multicol-username">Stok</label>

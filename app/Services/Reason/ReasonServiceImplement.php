@@ -4,10 +4,10 @@ namespace App\Services\Reason;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
-use App\Services\BaseService;
+use LaravelEasyRepository\Service;
 use App\Repositories\Reason\ReasonRepository;
 
-class ReasonServiceImplement extends BaseService implements ReasonService{
+class ReasonServiceImplement extends Service implements ReasonService{
 
      /**
      * don't change $this->mainRepository variable name

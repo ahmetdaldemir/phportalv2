@@ -41,7 +41,7 @@
     <link rel="stylesheet" href="{{asset('assets/vendor/libs/sweetalert2/sweetalert2.css')}}"/>
     <link rel="stylesheet" href="{{asset('assets/vendor/libs/select2/select2.css')}}"/>
     <link rel="stylesheet" href="{{asset('assets/vendor/libs/bootstrap-select/bootstrap-select.css')}}"/>
-    <link rel="stylesheet" href="{{asset('assets/vendor/libs/flatpickr/flatpickr.css')}}"/>
+    <link rel="stylesheet" href="{{asset('assets/vendor/libs/daterangepicker/daterangepicker.css')}}"/>
     <link rel="stylesheet" href="{{asset('assets/vendor/libs/tagify/tagify.css')}}"/>
 
     <link rel="stylesheet" href="{{asset('assets/vendor/libs/datatables-bs5/buttons.bootstrap5.css')}}"/>
@@ -50,15 +50,219 @@
     <link rel="stylesheet" href="{{asset('assets/vendor/libs/datatables-bs5/responsive.bootstrap5.css')}}"/>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gasparesganga-jquery-message-box@3.2.2/dist/messagebox.min.css"/>
+    
+    <!-- PROJECT BASE CSS - UNIFIED STYLING -->
+    <link rel="stylesheet" href="{{asset('assets/css/project-base.css')}}?v={{time()}}"/>
      <script src="{{asset('assets/vendor/js/helpers.js')}}"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-sanitize.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-utils/0.1.1/angular-ui-utils.min.js" class=""></script>
-    <script data-require="angular-ui-bootstrap@0.13.3" data-semver="0.13.3" src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.13.3/ui-bootstrap-tpls.js"></script>
-    <script> var app = angular.module("app", ['ngSanitize','ui.bootstrap']);
-        app.filter('unsafe', function ($sce) {
-            return $sce.trustAsHtml;
-        });
+    
+    <!-- Vue.js 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- Axios CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <!-- Global Vue.js Setup -->
+    <script>
+        // Global Store for Common Modules
+        window.GlobalStore = {
+            // Data cache
+            cache: {
+                sellers: [],
+                categories: [],
+                warehouses: [],
+                colors: [],
+                brands: [],
+                versions: [],
+                reasons: [],
+                customers: [],
+                cities: [],
+                towns: [],
+                currencies: [],
+                safes: [],
+                users: []
+            },
+            
+            // Loading states
+            loading: {
+                sellers: false,
+                categories: false,
+                warehouses: false,
+                colors: false,
+                brands: false,
+                versions: false,
+                reasons: false,
+                customers: false,
+                cities: false,
+                towns: false,
+                currencies: false,
+                safes: false,
+                users: false
+            },
+            
+            // Cache timestamps
+            cacheTimestamps: {},
+            cacheDuration: 5 * 60 * 1000, // 5 minutes
+            
+            // Check cache validity
+            isCacheValid(key) {
+                const timestamp = this.cacheTimestamps[key];
+                if (!timestamp) return false;
+                return (Date.now() - timestamp) < this.cacheDuration;
+            },
+            
+            // Generic fetch method
+            async fetchData(endpoint, cacheKey) {
+                if (this.cache[cacheKey] && this.cache[cacheKey].length > 0 && this.isCacheValid(cacheKey)) {
+                    return this.cache[cacheKey];
+                }
+                
+                this.loading[cacheKey] = true;
+                try {
+                    const response = await fetch(endpoint, {
+                        credentials: 'same-origin',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    this.cache[cacheKey] = data;
+                    this.cacheTimestamps[cacheKey] = Date.now();
+                    return data;
+                } catch (error) {
+                    console.error(`Error loading ${cacheKey}:`, error);
+                    return [];
+                } finally {
+                    this.loading[cacheKey] = false;
+                }
+            },
+            
+            // Specific data loaders
+            async getSellers() { return await this.fetchData('/api/common/sellers', 'sellers'); },
+            async getCategories() { return await this.fetchData('/api/common/categories', 'categories'); },
+            async getWarehouses() { return await this.fetchData('/api/common/warehouses', 'warehouses'); },
+            async getColors() { return await this.fetchData('/api/common/colors', 'colors'); },
+            async getBrands() { return await this.fetchData('/api/common/brands', 'brands'); },
+            async getReasons() { return await this.fetchData('/api/common/reasons', 'reasons'); },
+            async getCustomers(type = null) { 
+                const endpoint = type ? `/api/common/customers?type=${type}` : '/api/common/customers';
+                const cacheKey = type ? `customers_${type}` : 'customers';
+                return await this.fetchData(endpoint, cacheKey);
+            },
+            async getCities() { return await this.fetchData('/api/common/cities', 'cities'); },
+            async getCurrencies() { return await this.fetchData('/api/common/currencies', 'currencies'); },
+            async getSafes() { return await this.fetchData('/api/common/safes', 'safes'); },
+            async getUsers() { return await this.fetchData('/api/common/users', 'users'); },
+            
+            // Get versions by brand
+            async getVersions(brandId = null) {
+                const endpoint = brandId ? `/api/common/versions?brand_id=${brandId}` : '/api/common/versions';
+                const cacheKey = brandId ? `versions_brand_${brandId}` : 'versions';
+                return await this.fetchData(endpoint, cacheKey);
+            },
+            
+            // Get towns by city
+            async getTowns(cityId) {
+                const endpoint = `/api/common/towns?city_id=${cityId}`;
+                const cacheKey = `towns_city_${cityId}`;
+                return await this.fetchData(endpoint, cacheKey);
+            }
+        };
+
+        // Global Vue mixins and utilities
+        window.VueGlobalMixin = {
+            data() {
+                return {
+                    globalStore: window.GlobalStore
+                };
+            },
+            computed: {
+                globalSellers() { return this.globalStore.cache.sellers; },
+                globalCategories() { return this.globalStore.cache.categories; },
+                globalParentCategories() { return this.globalCategories.filter(c => c.parent_id == 0 || !c.parent_id); },
+                globalWarehouses() { return this.globalStore.cache.warehouses; },
+                globalColors() { return this.globalStore.cache.colors; },
+                globalBrands() { return this.globalStore.cache.brands; },
+                globalVersions() { return this.globalStore.cache.versions; },
+                globalReasons() { return this.globalStore.cache.reasons; },
+                globalCustomers() { return this.globalStore.cache.customers; },
+                globalAccountCustomers() { return this.globalCustomers.filter(c => c.type === 'account'); },
+                globalRegularCustomers() { return this.globalCustomers.filter(c => c.type === 'customer'); },
+                globalCities() { return this.globalStore.cache.cities; },
+                globalTowns() { return this.globalStore.cache.towns; },
+                globalCurrencies() { return this.globalStore.cache.currencies; },
+                globalSafes() { return this.globalStore.cache.safes; },
+                globalUsers() { return this.globalStore.cache.users; }
+            },
+            methods: {
+                // Load common data modules
+                async loadCommonData(modules = ['sellers', 'categories', 'warehouses', 'colors', 'brands', 'reasons']) {
+                    const promises = modules.map(module => {
+                        switch(module) {
+                            case 'sellers': return this.globalStore.getSellers();
+                            case 'categories': return this.globalStore.getCategories();
+                            case 'warehouses': return this.globalStore.getWarehouses();
+                            case 'colors': return this.globalStore.getColors();
+                            case 'brands': return this.globalStore.getBrands();
+                            case 'versions': return this.globalStore.getVersions();
+                            case 'reasons': return this.globalStore.getReasons();
+                            case 'customers': return this.globalStore.getCustomers();
+                            case 'cities': return this.globalStore.getCities();
+                            case 'currencies': return this.globalStore.getCurrencies();
+                            case 'safes': return this.globalStore.getSafes();
+                            case 'users': return this.globalStore.getUsers();
+                        }
+                    });
+                    
+                    await Promise.all(promises.filter(p => p));
+                },
+                
+                // Utility methods
+                formatCurrency(amount) {
+                    return new Intl.NumberFormat('tr-TR', {
+                        style: 'currency',
+                        currency: 'TRY'
+                    }).format(amount || 0);
+                },
+                formatDate(date) {
+                    return new Date(date).toLocaleDateString('tr-TR');
+                },
+                async apiCall(url, options = {}) {
+                    try {
+                        const response = await fetch(url, {
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                                ...options.headers
+                            },
+                            ...options
+                        });
+                        return await response.json();
+                    } catch (error) {
+                        console.error('API Call Error:', error);
+                        throw error;
+                    }
+                },
+                
+                // Helper methods
+                getVersionsByBrand(brandId) {
+                    return this.globalVersions.filter(v => v.brand_id == brandId);
+                },
+                getTownsByCity(cityId) {
+                    return this.globalTowns.filter(t => t.city_id == cityId);
+                },
+                findFromCache(type, id) {
+                    const cache = this.globalStore.cache[type];
+                    return cache ? cache.find(item => item.id == id) : null;
+                }
+            }
+        };
     </script>
     <script src="{{asset('assets/js/config.js')}}"></script>
 
@@ -96,7 +300,7 @@
 
 </head>
 
-<body ng-app="app" ng-controller="mainController">
+<body>
 
 <div id="internet-check"></div>
 
@@ -242,7 +446,8 @@
 
 <script src="{{asset('assets/vendor/libs/bootstrap-select/bootstrap-select.js')}}"></script>
 <script src="{{asset('assets/vendor/libs/moment/moment.js')}}"></script>
-<script src="{{asset('assets/vendor/libs/flatpickr/flatpickr.js')}}"></script>
+<script src="{{asset('assets/vendor/libs/daterangepicker/daterangepicker.js')}}"></script>
+<script src="{{asset('assets/js/daterangepicker-init.js')}}"></script>
 <script src="{{asset('assets/vendor/libs/tagify/tagify.js')}}"></script>
 <script src="https://cdn.jsdelivr.net/npm/gasparesganga-jquery-message-box@3.2.2/dist/messagebox.min.js"></script>
 <script>
@@ -255,16 +460,20 @@
 @yield('custom-js')
 
 <script src="{{asset('assets/js/main.js')}}"></script>
+@if(request()->routeIs('dashboard'))
 <script src="{{asset('assets/js/custom.js')}}?rand=<?=rand(9,9999999)?>"></script>
+@endif
 <script src="{{asset('assets/js/forms-selects.js')}}"></script>
 
 
 <link rel="stylesheet" href="{{asset('assets/vendor/libs/apex-charts/apex-charts.css')}}"/>
 
+@if(request()->routeIs('dashboard'))
 <script src="{{asset('assets/vendor/libs/apex-charts/apexcharts.js')}}"></script>
 <script src="{{asset('assets/vendor/js/docs.js')}}"></script>
 <script src="{{asset('assets/vendor/js/charts-apex.js')}}"></script>
 <script src="{{asset('assets/js/dashboard.js')}}"></script>
+@endif
 
 
 <script async defer src="https://buttons.github.io/buttons.js"></script>

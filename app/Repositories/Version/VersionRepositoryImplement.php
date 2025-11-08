@@ -3,10 +3,10 @@
 namespace App\Repositories\Version;
 
 use Illuminate\Support\Facades\Auth;
-use App\Repositories\BaseRepositoryImplement;
+use LaravelEasyRepository\Implementations\Eloquent;
 use App\Models\Version;
 
-class VersionRepositoryImplement extends BaseRepositoryImplement implements VersionRepository{
+class VersionRepositoryImplement extends Eloquent implements VersionRepository{
 
     /**
     * Model class to be used in this repository for the common methods inside Eloquent

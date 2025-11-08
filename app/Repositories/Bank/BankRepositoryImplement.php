@@ -3,10 +3,10 @@
 namespace App\Repositories\Bank;
 
 use Illuminate\Support\Facades\Auth;
-use App\Repositories\BaseRepositoryImplement;
+use LaravelEasyRepository\Implementations\Eloquent;
 use App\Models\Bank;
 
-class BankRepositoryImplement extends BaseRepositoryImplement implements BankRepository{
+class BankRepositoryImplement extends Eloquent implements BankRepository{
 
     /**
     * Model class to be used in this repository for the common methods inside Eloquent
