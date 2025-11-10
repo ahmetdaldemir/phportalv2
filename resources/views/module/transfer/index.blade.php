@@ -164,6 +164,17 @@
             <div class="card-body">
                 <form @submit.prevent="searchTransfers" class="compact-filter-form">
                     <div class="row g-2">
+                        <div class="col-lg-2 col-md-2 col-sm-6">
+                            <div class="compact-filter-group">
+                                <label class="compact-label">
+                                    <i class="bx bx-package"></i>No
+                                </label>
+                                <input type="text"
+                                       v-model="searchForm.number"
+                                       class="form-control compact-input"
+                                       placeholder="Transfer No Giriniz...">
+                            </div>
+                        </div>
                         <div class="col-lg-3 col-md-4 col-sm-6">
                             <div class="compact-filter-group">
                                 <label class="compact-label">
@@ -175,39 +186,7 @@
                                        placeholder="Stok adı giriniz...">
                             </div>
                         </div>
-                        <div class="col-lg-2 col-md-3 col-sm-6">
-                            <div class="compact-filter-group">
-                                <label class="compact-label">
-                                    <i class="bx bx-purchase-tag"></i>Marka
-                                </label>
-                                <select v-model="searchForm.brand" 
-                                        @change="getVersions"
-                                        class="form-select compact-select">
-                                    <option value="">Tümü</option>
-                                    <option v-for="brand in brands" 
-                                            :key="brand.id" 
-                                            :value="brand.id">
-                                        @{{ brand.name }}
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-lg-2 col-md-3 col-sm-6">
-                            <div class="compact-filter-group">
-                                <label class="compact-label">
-                                    <i class="bx bx-mobile"></i>Model
-                                </label>
-                                <select v-model="searchForm.version" 
-                                        class="form-select compact-select">
-                                    <option value="">Tümü</option>
-                                    <option v-for="version in versions" 
-                                            :key="version.id" 
-                                            :value="version.id">
-                                        @{{ version.name }}
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
+
                         <div class="col-lg-2 col-md-3 col-sm-6">
                             <div class="compact-filter-group">
                                 <label class="compact-label">
@@ -619,6 +598,7 @@
                                     <input class="form-check-input" 
                                            type="checkbox" 
                                            v-model="transferFormModal.is_barcode_transfer"
+                                           value="1"
                                            id="barcodeTransferCheck">
                                     <label class="form-check-label fw-bold" for="barcodeTransferCheck">
                                         <i class="bx bx-barcode me-1"></i>
@@ -873,6 +853,7 @@
                                                     <th style="width: 10%">Marka</th>
                                                     <th style="width: 15%">Model</th>
                                                     <th style="width: 10%">Renk</th>
+                                                    <th style="width: 10%">Adet</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -890,6 +871,7 @@
                                                     <td>@{{ item.brand || 'N/A' }}</td>
                                                     <td>@{{ item.version }}</td>
                                                     <td>@{{ item.color || 'N/A' }}</td>
+                                                    <td>@{{ item.quantity || 'N/A' }}</td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -1245,19 +1227,22 @@
                     
                     // Validate serial with backend
                     try {
-                        const response = await axios.get('/getTransferSerialCheck', {
+                        const response = await axios.get('/serialcheck', {
                             params: {
-                                serial_number: this.newSerialModal,
+                                id: this.newSerialModal,
                                 seller_id: this.transferFormModal.main_seller_id
                             }
                         });
-                        
-                        if (response.data !== 'Yes') {
+
+                        const data = response.data;
+
+                        if (!data || !data.status) {
                             alert('Seri numarası transfer edilemez. Bulunamadı veya başka bayiye ait.');
                             this.newSerialModal = '';
                             return;
                         }
-                        
+
+
                         // Add to list
                         this.transferFormModal.sevkList.push(this.newSerialModal);
                         this.newSerialModal = '';

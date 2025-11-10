@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helper\SearchHelper;
 use App\Models\City;
 use App\Models\Customer;
 use App\Models\Safe;
@@ -199,10 +200,13 @@ class TechnicalServiceController extends Controller
     {
         DB::beginTransaction();
         try {
+            if (!isset($request->payment_type['free_sale'])) {
+          
             $total = $request->payment_type['cash'] + $request->payment_type['credit_card'] + $request->payment_type['installment'];
             if ($total != $request->totalprice) {
                 return redirect()->back()->with(['msg' => 'Tutarlar Eşleşmiyor']);;
             }
+        }
             $technicalservice = \App\Models\TechnicalService::find($request->id);
 
             $technicalserviceproducts = TechnicalServiceProducts::where('technical_service_id', $technicalservice->id)->get();
@@ -218,12 +222,13 @@ class TechnicalServiceController extends Controller
                 'credit_card' => $request->payment_type['credit_card'],
                 'cash' => $request->payment_type['cash'],
                 'installment' => $request->payment_type['installment'],
+                'free_sale' => isset($request->payment_type['free_sale']) ? 1 : 0,
                 'description' => "Teknik Servis",
                 'is_status' => 1,
                 'total_price' => $request->totalprice,
                 'tax_total' => 1,
                 'discount_total' => 0,
-                'staff_id' => $request->payment_person,
+                'staff_id' => $request->technical_person,
                 'customer_id' => $technicalservice->customer_id ?? null,
                 'user_id' => Auth::user()->id,
                 'company_id' => Auth::user()->company_id,
@@ -244,8 +249,15 @@ class TechnicalServiceController extends Controller
 
             $invoiceID = $this->invoiceService->create($data);
             $i = 0;
+            if(count($technicalserviceproducts)  > 0){
             foreach ($technicalserviceproducts as $item) {
-                $stockcardmovement = StockCardMovement::where('type', 5)->where('serial_number', $item->serial_number)->first();
+
+                $searchInfo = SearchHelper::determineSearchType($request->id);
+                if ($searchInfo['type'] === 'barcode') {
+                    $stockcardmovement = StockCardMovement::where('type', 5)->where('barcode', $item->serial_number)->first();
+                }else{
+                    $stockcardmovement = StockCardMovement::where('type', 5)->where('serial_number', $item->serial_number)->first();
+                }
                 $SaleCheck = Sale::where('serial', $item->serial_number)->first();
 
                 if (!$SaleCheck) {
@@ -271,7 +283,7 @@ class TechnicalServiceController extends Controller
                 $stockcardmovement->type =2;
                 $stockcardmovement->save();
             }
-
+            }
             $technicalservice->payment_status = 1;
             $technicalservice->status = 6;
             $technicalservice->technical_person = $request->technical_person;
@@ -373,7 +385,6 @@ class TechnicalServiceController extends Controller
 
         return view('module.technical_service.detail', $data);
     }
-
 
     function array_column_recursive(array $haystack, $needle)
     {
@@ -489,7 +500,6 @@ class TechnicalServiceController extends Controller
         }
     }
 
-
     protected function store(Request $request)
     {
 
@@ -569,6 +579,7 @@ class TechnicalServiceController extends Controller
 
     protected function detailstore(Request $request)
     {
+        Log::info($request->all());
         try {
             // Stock card movement kontrolü
             if (!$request->filled('stock_card_movement_id')) {
@@ -598,7 +609,7 @@ class TechnicalServiceController extends Controller
             $product = TechnicalServiceProducts::firstOrCreate(
                 [
                     'stock_card_movement_id' => $request->stock_card_movement_id,
-                    'serial_number' => $request->serial,
+                    'serial_number' => $request->serial_number,
                     'technical_service_id' => $request->id
                 ],
                 [
@@ -641,7 +652,7 @@ class TechnicalServiceController extends Controller
             return redirect()->back()->with('success', 'Ürün başarıyla eklendi.');
             
         } catch (\Exception $e) {
-            \Log::error('Product add error: ' . $e->getMessage());
+            Log::error('Product add error: ' . $e->getMessage());
             
             if ($request->ajax()) {
                 return response()->json([
@@ -668,8 +679,8 @@ class TechnicalServiceController extends Controller
                         'user_id' => Auth::id(),
                         'company_id' => Auth::user()->company_id,
                         'stock_card_id' => $stockcardmovement->stock_card_id,
-                        'quantity' => 1,
-                        'sale_price' => request('sale_price'),
+                        'quantity' => $request->quantity ?? 1,
+                        'sale_price' => request('sale_price') * ($request->quantity ?? 1)
                     ]
                 );
             }
@@ -751,13 +762,16 @@ class TechnicalServiceController extends Controller
     {
         DB::beginTransaction();
         try {
-            $total = $request->payment_type['cash'] + $request->payment_type['credit_card'];
-            if ($total != $request->customer_price) {
-                return redirect()->back()->with(['msg' => 'Tutarlar Eşleşmiyor']);;
-            }else if($total < $request->total_price){
-                return redirect()->back()->with(['msg' => 'Nakıt Veya Kart Tutar toplamı Toplam tutardan küçük olamaz']);;
-            }else if ($total == 0) {
-                return redirect()->back()->with(['msg' => 'Toplam 0 Olamaz']);;
+
+            if (!isset($request->payment_type['free_sale'])) {
+                $total = $request->payment_type['cash'] + $request->payment_type['credit_card'];
+                if ($total != $request->customer_price) {
+                    return redirect()->back()->with(['msg' => 'Tutarlar Eşleşmiyor']);;
+                }else if($total < $request->total_price){
+                    return redirect()->back()->with(['msg' => 'Nakıt Veya Kart Tutar toplamı Toplam tutardan küçük olamaz']);;
+                }else if ($total == 0) {
+                    return redirect()->back()->with(['msg' => 'Toplam 0 Olamaz']);;
+                }
             }
             $technicalservice = \App\Models\TechnicalCustomService::find($request->id);
 
@@ -774,6 +788,7 @@ class TechnicalServiceController extends Controller
                 'credit_card' => $request->payment_type['credit_card'],
                 'cash' => $request->payment_type['cash'],
                 'installment' => $request->payment_type['installment'],
+                'free_sale' => isset($request->payment_type['free_sale']) ? 1 : 0,
                 'description' => "Teknik Servis",
                 'is_status' => 1,
                 'total_price' => $request->customer_price,
@@ -831,12 +846,12 @@ class TechnicalServiceController extends Controller
                     $sale->stock_card_movement_id = $stockcardmovement->id;
                     $sale->invoice_id = $invoiceID->id;
                     $sale->customer_id = $technicalservice->customer_id;
-                    $sale->sale_price = $item->sale_price;
+                    $sale->sale_price = ($request->customer_price != 0)?$request->customer_price:$request->total_price;
                     $sale->customer_price = $stockcardmovement->customer_price;
                     $sale->name = StockCard::find($stockcardmovement->stock_card_id)->name;
                     $sale->seller_id = Auth::user()->seller_id;
                     $sale->company_id = Auth::user()->company_id;
-                    $sale->user_id = Auth::user()->id;
+                    $sale->user_id = $request->delivery_staff;
                     $sale->serial = $item->serial_number;
                     $sale->technical_service_person_id = $request->delivery_staff;
                     $sale->discount = 0;

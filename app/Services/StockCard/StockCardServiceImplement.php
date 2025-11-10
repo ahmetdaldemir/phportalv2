@@ -39,7 +39,7 @@ class StockCardServiceImplement extends Service implements StockCardService
             } else {
                 $stocks = $this->mainRepository->all();
             }
-            
+            $stocks = $this->mainRepository->all();
             // Format version names for each stock
             $stocks->each(function ($stock) {
                 if ($stock->version_id && is_array($stock->version_id)) {

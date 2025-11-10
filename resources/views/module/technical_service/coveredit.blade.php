@@ -70,6 +70,12 @@
                                     <input type="number" name="payment_type[cash]" id="money_order" class="form-control"  value="0"
                                            required>
                                 </div>
+                                <div class="col-md-3 col-12">
+                                    <label class="form-label">Bedelsiz Satis</label>
+                                    <div class="input-group">
+                                        <input type="checkbox" name="payment_type[free_sale]" value="1" id="free_sale" class="form-checkbox" style="width: 25px;height: 25px" />
+                                    </div>
+                                </div>
                                 <div class="col-md-4">
                                     <label class="form-label" for="fullname">.</label>
                                     <input type="number" name="payment_type[installment]" id="installment" value="0"

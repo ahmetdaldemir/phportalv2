@@ -37,6 +37,11 @@
                 <label class="form-label" for="fullname">Taksitli</label>
                 <input type="text" name="payment_type[installment]" id="installment"  class="form-control">
             </div>
+            <div class="col-md-4">
+                <label class="form-label" for="fullname">Bedelsiz Satis</label>
+                <input type="checkbox" name="payment_type[free_sale]" value="0" id="free_sale" class="form-checkbox" style="width: 25px;height: 25px" />
+            </div>
+
         </div>
         <div class="col-12 text-center">
             <button type="submit" class="btn btn-primary me-sm-3 me-1 mt-3">Submit</button>

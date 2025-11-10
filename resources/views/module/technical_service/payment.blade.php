@@ -52,17 +52,23 @@
                             <label class="form-label" for="fullname">İndirim</label>
                             <input type="number" name="discount" id="credit_card" class="form-control" required>
                         </div -->
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label" for="fullname">Kredi Kartı</label>
                             <input type="text" name="payment_type[credit_card]"  value="0"  id="credit_card" class="form-control" required>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label" for="fullname">Nakit</label>
                             <input type="text" name="payment_type[cash]" id="money_order"   value="0"  class="form-control" required>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label" for="fullname">Taksitli</label>
                             <input type="text" name="payment_type[installment]" id="installment"  value="0"  class="form-control">
+                        </div>
+                        <div class="col-md-3 col-12">
+                            <label class="form-label">Bedelsiz Satis</label>
+                            <div class="input-group">
+                                <input type="checkbox" name="payment_type[free_sale]" value="1" id="free_sale" class="form-checkbox" style="width: 25px;height: 25px" />
+                            </div>
                         </div>
                     </div>
                     <div class="col-12 text-center">

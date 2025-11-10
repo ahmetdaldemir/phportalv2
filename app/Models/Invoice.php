@@ -27,6 +27,7 @@ class Invoice extends BaseModel
         'credit_card',
         'cash',
         'installment',
+        'free_sale',
         'description',
         'is_status',
         'total_price',
@@ -51,8 +52,8 @@ class Invoice extends BaseModel
     ];
 
     public const INVOICE_TYPE = [
-        '2' => 'Giden Fatura',
-        '1' => 'Gelen Fatura'
+        '2' => 'Giden',
+        '1' => 'Gelen'
     ];
 
     public const INVOICE_TYPE_COLOR = [
@@ -94,10 +95,13 @@ class Invoice extends BaseModel
         return $this->hasOne(Seller::class, 'id', 'seller');
     }
 
-    public function staff(): HasOne
+    public function staff(): BelongsTo
     {
-        return $this->hasOne(User::class, 'id', 'staff_id');
+        return $this->belongsTo(User::class, 'staff_id');
+
     }
+
+
 
     public function hasSeller($id): string
     {

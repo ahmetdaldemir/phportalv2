@@ -7,7 +7,9 @@ use App\Helper\BarcodeHelper;
 use App\Helper\SearchHelper;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Invoice;
 use App\Models\Refund;
+use App\Models\Sale;
 use App\Models\Seller;
 use App\Models\StockCard;
 use App\Models\StockCardMovement;
@@ -156,7 +158,19 @@ class StockCardController extends Controller
                     'category' => $card->category->name ?? 'Belirtilmedi',
                     'category_sperator_name' => $this->categorySeperator($card->category_id ?? 0) ?? '',
                     'brand' => $card->brand->name ?? 'Belirtilmedi',
-                    'version' => $card->version ? json_decode($card->version->version, true) ?? [] : [],
+                    'version' => (function($v){
+                        if (empty($v)) return '';
+                        if (is_string($v)) {
+                            $ids = json_decode($v, true);
+                            if ($ids === null) { $ids = [$v]; }
+                        } elseif (is_array($v)) {
+                            $ids = $v;
+                        } else {
+                            $ids = [$v];
+                        }
+                        $names = \App\Models\Version::whereIn('id', $ids)->pluck('name')->toArray();
+                        return implode(', ', $names);
+                    })($card->version_id),
                     'barcode' => $card->barcode ?? '',
                     'is_status' => $card->is_status ?? 0,
                     'quantity' => $card->quantity() ?? 0,
@@ -183,6 +197,139 @@ class StockCardController extends Controller
                 'success' => false,
                 'message' => 'Stok kartları yüklenirken hata oluştu: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function searchStocksAjax(Request $request)
+    {
+        try {
+            if (!Auth::check()) {
+                return response()->json([], 401);
+            }
+
+            $companyId = Auth::user()->company_id;
+            $barcode = trim((string) $request->get('barcode', ''));
+            $query = trim((string) $request->get('q', ''));
+
+            $formatStock = function (StockCard $stock) {
+                $stock->loadMissing('brand');
+
+                $versionNames = '';
+                try {
+                    $versionJson = $stock->versionNames();
+                    if ($versionJson) {
+                        $decoded = json_decode($versionJson, true);
+                        if (is_array($decoded)) {
+                            $versionNames = implode(', ', array_filter($decoded));
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    $versionNames = '';
+                }
+
+                return [
+                    'id' => $stock->id,
+                    'text' => $stock->name,
+                    'brand_name' => $stock->brand->name ?? '',
+                    'version_names' => $versionNames,
+                    'sku' => $stock->sku,
+                    'barcode' => $stock->barcode,
+                ];
+            };
+
+            if ($barcode !== '') {
+                $normalizedBarcode = BarcodeHelper::formatBarcode($barcode);
+                $candidates = array_unique(array_filter([
+                    $barcode,
+                    $normalizedBarcode,
+                    BarcodeHelper::formatSerialNumber($barcode),
+                    BarcodeHelper::formatSerialNumber($normalizedBarcode)
+                ]));
+
+                $stock = StockCard::with('brand')
+                    ->where('company_id', $companyId)
+                    ->where(function ($q) use ($barcode, $normalizedBarcode, $candidates) {
+                        $q->where('barcode', $barcode)
+                          ->orWhere('barcode', $normalizedBarcode)
+                          ->orWhere(function ($inner) use ($candidates) {
+                              foreach ($candidates as $value) {
+                                  $inner->orWhere('barcode', $value)
+                                        ->orWhere('sku', $value);
+                              }
+                          })
+                          ->orWhere('name', 'like', '%' . $barcode . '%');
+                    })
+                    ->orderBy('name')
+                    ->first();
+
+                if (!$stock) {
+                    $movementQuery = StockCardMovement::with(['stock.brand', 'stock.stockCardPrice'])
+                        ->where(function ($q) use ($candidates) {
+                            foreach ($candidates as $value) {
+                                $q->orWhere('barcode', $value)
+                                  ->orWhere('serial_number', $value);
+                            }
+                        })
+                        ->where('stock_card_movements.company_id', $companyId)
+                        ->orderByDesc('id');
+
+                    $movement = $movementQuery->first();
+
+                    if ($movement && $movement->stock) {
+                        $stock = $movement->stock;
+                    }
+                }
+
+                if ($stock) {
+                    $formatted = $formatStock($stock);
+                    if (isset($movement) && $movement) {
+                        $formatted['stock_card_movement_id'] = $movement->id;
+                        $formatted['warehouse_id'] = $movement->warehouse_id;
+                        $formatted['seller_id'] = $movement->seller_id;
+                        $formatted['cost_price'] = $movement->cost_price;
+                        $formatted['base_cost_price'] = $movement->base_cost_price;
+                        $formatted['sale_price'] = $movement->sale_price;
+                        $formatted['tax'] = $movement->tax;
+                        $formatted['stockcardid'] = $movement->stock_card_id;
+                    }
+                    return response()->json(['stock' => $formatted]);
+                }
+
+                return response()->json(['stock' => null]);
+            }
+
+            if (strlen($query) < 2) {
+                return response()->json([]);
+            }
+
+            $stocks = StockCard::with('brand')
+                ->where('company_id', $companyId)
+                ->where(function ($q) use ($query) {
+                    $q->where('name', 'like', '%' . $query . '%')
+                      ->orWhere('sku', 'like', '%' . $query . '%')
+                      ->orWhere('barcode', 'like', '%' . $query . '%');
+                })
+                ->orderBy('name')
+                ->limit(20)
+                ->get();
+
+            if ($stocks->isEmpty()) {
+                $stocks = StockCardMovement::with('stock.brand')
+                    ->where('serial_number', 'like', '%' . $query . '%')
+                    ->limit(20)
+                    ->get()
+                    ->pluck('stock')
+                    ->filter()
+                    ->unique('id')
+                    ->values();
+            }
+
+            $formatted = collect($stocks)->filter()->map($formatStock)->values();
+
+            return response()->json($formatted);
+        } catch (\Exception $e) {
+            Log::error('Stock search ajax error: ' . $e->getMessage());
+            return response()->json([], 500);
         }
     }
 
@@ -617,7 +764,8 @@ SELECT * FROM category_path ORDER BY path;");
     protected function store(Request $request)
     {
         $this->authorize('create-accessory');
-  
+        Cache::delete('stock_cards_all');
+
         $data = array(
             'name' =>  Str::upper($request->name),
             'company_id' => Auth::user()->company_id,
@@ -1174,17 +1322,32 @@ SELECT * FROM category_path ORDER BY path;");
 
     public function singlepriceupdate(Request $request)
     {
+
         $stockcardmovement = StockCardMovement::where('id', $request->stock_card_id)->where('type', 1)->first();
 
         if (!$stockcardmovement) {
             return response()->json(['error' => 'Stok kartı bulunamadı'], 404);
         }
 
-        if ($this->sanitize($stockcardmovement->base_cost_price) > $this->sanitize($request->sale_price)) {
+        // Validate using new base_cost_price if provided, otherwise use existing
+        $baseToCheck = $request->filled('base_cost_price') ? $request->base_cost_price : $stockcardmovement->base_cost_price;
+
+// Ensure numeric values
+        if (!is_numeric($baseToCheck) || !is_numeric($request->sale_price)) {
+            return response()->json(['error' => 'Fiyatlar geçerli sayı olmalı'], 400);
+        }
+
+        if ($this->sanitize($baseToCheck) > $this->sanitize($request->sale_price)) {
             return response()->json(['error' => 'Satış Fiyatı maliyetten küçük olamaz'], 400);
         }
 
         $stockcardmovement->sale_price = $request->sale_price;
+        $stockcardmovement->cost_price = $request->cost_price;
+// Sadece gönderilmişse base_cost_price güncelle
+        if ($request->filled('base_cost_price')) {
+            $stockcardmovement->base_cost_price = $request->base_cost_price;
+        }
+
         $stockcardmovement->save();
         
         return response()->json(['success' => true, 'message' => 'Kayıt Güncellendi'], 200);
@@ -1314,9 +1477,7 @@ SELECT * FROM category_path ORDER BY path;");
 
     public function refundlist(Request $request)
     {
-        $refunds = collect($this->refundService->get());
-
-        $x = Refund::where('company_id', Auth::user()->company_id);
+        $x = Refund::with('stock','brand')->where('company_id', Auth::user()->company_id);
 
         if ($request->filled('brand')) {
             $x->whereHas('stock', function ($q) use ($request) {
@@ -1355,6 +1516,58 @@ SELECT * FROM category_path ORDER BY path;");
         return view('module.refund.index', $data);
     }
 
+    public function getRefundsData(Request $request)
+    {
+        $query = Refund::with([
+            'stock.brand',
+            'color',
+            'reason',
+            'brand',
+        ])->where('company_id', Auth::user()->company_id);
+
+        if ($request->filled('brand')) {
+            $query->whereHas('stock', function ($q) use ($request) {
+                $q->where('brand_id', $request->brand);
+            });
+        }
+
+        if ($request->filled('version')) {
+            $query->whereHas('stock', function ($q) use ($request) {
+                $q->whereJsonContains('version_id', $request->version);
+            });
+        }
+
+        if ($request->filled('color')) {
+            $query->where('color_id', $request->color);
+        }
+
+        if ($request->filled('seller')) {
+            $query->where('seller_id', $request->seller);
+        }
+
+        if ($request->filled('reason')) {
+            $query->where('reason_id', $request->reason);
+        }
+
+        $serialNumber = $request->input('serial_number') ?: $request->input('barcode');
+        if (!empty($serialNumber)) {
+            $query->where('serial_number', $serialNumber);
+        }
+
+        $refunds = $query->orderByDesc('id')->get();
+
+        return response()->json([
+            'refunds' => $refunds,
+            'filters' => [
+                'brands' => $this->brandService->get(),
+                'sellers' => $this->sellerService->get(),
+                'colors' => $this->colorService->get(),
+                'reasons' => $this->reasonService->get(),
+                'stocks' => $this->stockcardService->all(),
+            ],
+        ]);
+    }
+
     public function refundcomfirm(Request $request)
     {
         $refund = Refund::find($request->id);
@@ -1378,6 +1591,37 @@ SELECT * FROM category_path ORDER BY path;");
             $stockcardmovement->type = 3;
             $stockcardmovement->save();
         }
+
+        if ($request->type == 'normal_refund') {
+            $refund->status = 1;
+            $refund->save();
+
+            $stockcardmovement = StockCardMovement::where('serial_number', $refund->serial_number)->first();
+            if (!$stockcardmovement) {
+                return response()->json(['error' => 'Stock hareketi bulunamadı'], 404);
+            }
+
+            $stockcardmovement->type = 1;
+
+            $sale = Sale::where('stock_card_movement_id', $stockcardmovement->id)->first();
+
+            if ($sale) {
+                $sameInvoiceCount = Sale::where('invoice_id', $sale->invoice_id)->count();
+
+                // Eğer bu invoice'a ait yalnızca bu sale varsa faturayı sil
+                DB::transaction(function () use ($sale, $sameInvoiceCount) {
+                    if ($sale->invoice_id && $sameInvoiceCount <= 1) {
+                        Invoice::find($sale->invoice_id)?->delete();
+                    }
+                    $sale->delete();
+                });
+            }
+
+            $stockcardmovement->save();
+        }
+
+
+        
         if ($request->type == 'delivered') {
             $refund->status = 4;  // Teslim Edildi
             $refund->save();
@@ -1691,8 +1935,15 @@ SELECT * FROM category_path ORDER BY path;");
     public function getSerialListAjax(Request $request)
     {
         try {
-            $query = StockCardMovement::with(['stock.brand', 'stock.category', 'color', 'seller', 'sale.user'])
-                ->where('company_id', Auth::user()->company_id);
+            if($request->filled('type')) {
+                $query = StockCardMovement::with(['stock.brand', 'stock.category', 'color', 'seller', 'sale.user'])
+                    ->where('company_id', Auth::user()->company_id)
+                    ->where('type', $request->type);
+            } else {
+                $query = StockCardMovement::with(['stock.brand', 'stock.category', 'color', 'seller', 'sale.user'])
+                    ->where('company_id', Auth::user()->company_id);
+            }
+     
 
             // Seri numarası/barkod filtresi
             if ($request->filled('serialNumber')) {

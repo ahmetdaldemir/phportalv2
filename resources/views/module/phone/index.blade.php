@@ -652,7 +652,7 @@
                     }
                     
                     try {
-                        const response = await axios.post(`/phone/confirm/${phoneId}`);
+                        const response = await axios.get(`/phone/confirm?id=${phoneId}`);
                         this.showNotification('Başarılı', 'Telefon onaylandı', 'success');
                         this.searchPhones(); // Refresh the list
                     } catch (error) {

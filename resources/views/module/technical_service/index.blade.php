@@ -448,13 +448,16 @@
             if (!confirm("Durum Değişikliği yapmak istediğinizden eminmisiniz?")) {
                 return;
             }
-
             var val = $(this).val();
             var technicalservice_id = $(this).data('technicalservice_id');
-            var postUrl = window.location.origin + '/technical_service/statusCgange?id=' + technicalservice_id + '&val=' + val;   // Returns base URL (https://example.com)
+            var postUrl = window.location.origin + '/technical_service/statusCgange?id=' + technicalservice_id + '&val=' + val;
+            var csrfToken = $('meta[name="csrf-token"]').attr('content') || '{{ csrf_token() }}';
             $.ajax({
                 type: "POST",
                 url: postUrl,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                },
                 success: function (data) {
                     Swal.fire(data);
                     window.location.reload();
@@ -466,7 +469,7 @@
                 },
                 complete: function () {
                     //
-                },
+                }
 
             });
         })

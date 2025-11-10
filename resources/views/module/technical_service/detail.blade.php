@@ -322,6 +322,15 @@
                                 <small class="text-muted">Seri no otomatik kontrol edilecek</small>
                             </div>
 
+                            <div class="mb-3">
+                                <label for="sale_price" class="form-label fw-semibold">
+                                    <i class="bx bx-money me-1"></i>Seri No
+                                </label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="serial_number" id="serial_number"  @if($technical_services->payment_status != 0) disabled @endif/>
+                                </div>
+                            </div>
+
                             <!-- Stok -->
                                     <div class="mb-3">
                                 <label for="stock_card_id" class="form-label fw-semibold">
@@ -934,6 +943,7 @@
                             // Diğer alanları doldur
                             $("#sale_price").val(data.sales_price);
                             $("#quantity").val(1);
+                           $("#serial_number").val(data.serial_number);
                             $("#detailForm").find('select#stock_card_id').val(data.stock_card_id).trigger('change');
                             
                             // Başarı mesajı - daha bilgilendirici

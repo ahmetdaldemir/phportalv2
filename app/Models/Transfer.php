@@ -42,7 +42,9 @@ class Transfer extends BaseModel
         'description',
         'serial_list',
         'type',
-        'detail'
+        'detail',
+        'is_barcode_transfer'
+
     ];
 
     protected $casts = ['stocks' => 'array','serial_list' => 'array','detail' => 'array'];

@@ -8,28 +8,131 @@
             font-family: 'Courier New', monospace;
             font-weight: 600;
         }
-        
+
         .price-display.cost-price {
             color: #dc3545;
         }
-        
+
         .price-display.sale-price {
             color: #198754;
         }
-        
+
         /* Form input formatting */
         .form-control[placeholder*="0,00"] {
             text-align: right;
         }
-        
+
         .form-text {
             font-size: 0.75rem;
             color: #6c757d;
         }
-        
+
         /* Table price column styling */
         .table td[style*="text-align: end"] {
             font-family: 'Courier New', monospace;
+        }
+
+        /* Horizontal scroll fixes */
+        .table-responsive {
+            overflow-x: auto; /* gerektiğinde kaydırma göster */
+            -webkit-overflow-scrolling: touch; /* mobilde dokunarak kaydırma */
+            -ms-overflow-style: -ms-autohiding-scrollbar;
+            min-height: 0;
+            scrollbar-width: thin;
+        }
+
+        .table-responsive::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .table-responsive::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+        }
+
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
+            border-radius: 3px;
+        }
+
+        /* Görünür bir yatay scrollbar isteniyorsa: overflow-x: scroll; kullan */
+        /* .table-responsive { overflow-x: scroll; } */
+
+        /* Tablo genişliğini minimum bir genişliğe zorla, böylece container dar olduğunda kaydırma oluşur */
+        .professional-table {
+            min-width: 1100px; /* ihtiyaca göre ayarla */
+            width: 100%;
+            table-layout: fixed; /* hücrelerin aşırı genişlemesini engelle ve taşma için ellipsis uygula */
+            border-collapse: collapse;
+        }
+
+        /* Hücrelerde taşma olması ve yatay kaydırma tetiklenmesi için */
+        .professional-tbody td,
+        .professional-table th {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* İsteğe bağlı: küçük ekranlarda daha esnek davranış */
+        @media (max-width: 768px) {
+            .professional-table {
+                min-width: 900px;
+            }
+        }
+        /* Transfer Modal Styles */
+        #transferModal .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px 15px 0 0;
+        }
+
+        #transferModal .modal-content {
+            border-radius: 15px;
+            border: none;
+        }
+
+        #transferModal .form-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        #transferModal .form-control,
+        #transferModal .form-select {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 0.6rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        #transferModal .form-control:focus,
+        #transferModal .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .serial-list-container-modal {
+            background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            border: 2px dashed #dee2e6;
+            transition: all 0.3s ease;
+        }
+
+        .serial-list-container-modal:hover {
+            border-color: #667eea;
+        }
+
+        #transferModal .input-group {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #transferModal .input-group .form-control {
+            border-radius: 10px 0 0 10px;
+            border-right: none;
+        }
+
+        #transferModal .input-group .btn {
+            border-radius: 0 10px 10px 0;
         }
     </style>
 @endsection
@@ -96,7 +199,7 @@
             <div class="card-body p-4">
                 <form @submit.prevent="searchStockCards" class="compact-filter-form">
                     <div class="row g-2 mb-2">
-                        <div class="col-lg-9 col-md-8">
+                        <div class="col-lg-8 col-md-7">
                             <div class="compact-filter-group">
                                 <label class="compact-label">
                                     <i class="bx bx-barcode"></i> Seri Numarası
@@ -112,7 +215,7 @@
                             </div>
                         </div>
                         
-                        <div class="col-lg-3 col-md-4">
+                        <div class="col-lg-2 col-md-3">
                             <div class="compact-filter-group">
                                 <label class="compact-label d-none d-md-block invisible">Aksiyon</label>
                                 <div class="d-flex gap-2">
@@ -123,6 +226,16 @@
                                     </button>
                                     <button type="button" @click="clearSearch" class="btn btn-outline-secondary btn-sm" title="Temizle">
                                         <i class="bx bx-x"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-2">
+                            <div class="compact-filter-group">
+                                <label class="compact-label d-none d-md-block invisible">Aksiyon</label>
+                                <div class="d-flex gap-2">
+                                    <button type="button" @click="getTransfer" class="btn btn-outline-primary btn-sm" title="Transferde Kalanlar">
+                                        Transferde Kalanlar
                                     </button>
                                 </div>
                             </div>
@@ -197,7 +310,8 @@
                             :key="stockData.id"
                             :data-type="stockData.type" 
                             :data-quantity="stockData.quantity"
-                            v-show="stockData.quantity > 0">
+                            v-show="stockData.quantity > 0"
+                          >
                             <td class="text-center">
                                 <input v-if="stockData.type == 1"
                                        type="checkbox" 
@@ -205,7 +319,9 @@
                                        :value="stockData.id"
                                        class="form-check-input">
                             </td>
-                            <td style="width: 55px;text-align:center">@{{ stockData.id }}</td>
+                            <td style="width: 55px;text-align:center;cursor: pointer;"
+                                @click="openPriceModal(stockData.id)"
+                            >@{{ stockData.id }}</td>
                             <td>
                                 <div class="d-flex flex-column">
                                     <strong>@{{ stockData.serial_number }}</strong>
@@ -232,6 +348,12 @@
                             <td>
                                 <!-- Status Badges -->
                                 <span v-if="stockData.type == 4" class="badge badge-info">TRANSFER</span>
+                                <button v-if="stockData.type == 4"  type="button"
+                                        @click="updateTransfer(stockData.serial_number)"
+                                        class="btn btn-sm btn-info"
+                                        title="Talep Oluştur">
+                                    <i class="bx bx-radar"></i>
+                                </button>
                                 <span v-else-if="stockData.type == 3" class="badge badge-warning">HASARLI</span>
                                 <span v-else-if="stockData.type == 5" class="badge badge-secondary">TEKNİK SERVİS</span>
                                 <div v-else-if="stockData.type == 2" class="text-success small">
@@ -245,7 +367,7 @@
                                             @click="openTransferModal(stockData.serial_number)"
                                             title="Sevk Et"
                                             class="btn btn-sm btn-success">
-                                        <i class="bx bx-transfer"></i>
+                                        <i class="bx bxl-ok-ru"></i>
                                     </button>
                                     @role('Depo Sorumlusu|super-admin')
                                     <button type="button"
@@ -260,6 +382,7 @@
                                             title="Sil">
                                         <i class="bx bx-trash"></i>
                                     </button>
+
                                     @endrole
                                     <button type="button"
                                             @click="openDemandModal(stockData.id, stockData.stock?.name, stockData.color_id)"
@@ -267,6 +390,7 @@
                                             title="Talep Oluştur">
                                         <i class="bx bx-radar"></i>
                                     </button>
+
                                 </div>
                             </td>
                         </tr>
@@ -365,11 +489,22 @@
                 </div>
                 <div class="modal-body">
                     <div class="row">
+                    <div class="col mb-3">
+                            <label for="nameBackdrop" class="form-label">Giris Maliyeti</label>
+                            <input type="text" id="serialBackdrop" class="form-control" name="cost_price" placeholder="0,00"/>
+                            <div class="form-text">Örnek: 50,50</div>
+                        </div>
+                       <div class="col mb-3">
+                            <label for="nameBackdrop" class="form-label">Desteklı Satış Fiyatı</label>
+                            <input type="text" id="serialBackdrop" class="form-control" name="base_cost_price" placeholder="0,00"/>
+                            <div class="form-text">Örnek: 1000,50</div>
+                        </div>
                         <div class="col mb-3">
                             <label for="nameBackdrop" class="form-label">Satış Fiyatı</label>
                             <input type="text" id="serialBackdrop" class="form-control" name="sale_price" placeholder="0,00"/>
                             <div class="form-text">Örnek: 1500,50</div>
                         </div>
+                      
                     </div>
 
                 </div>
@@ -531,53 +666,134 @@
                                     <i class="bx bx-hash me-1"></i>
                                     Sevk Numarası
                                 </label>
-                                <input type="text" 
-                                       v-model="transferFormModal.number" 
-                                       class="form-control" 
+                                <input type="text"
+                                       v-model="transferFormModal.number"
+                                       class="form-control"
                                        required>
                             </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       v-model="transferFormModal.is_barcode_transfer"
+                                       value="1"
+                                       id="barcodeTransferCheck">
+                                <label class="form-check-label fw-bold" for="barcodeTransferCheck">
+                                    <i class="bx bx-barcode me-1"></i>
+                                    Barkod Transfer
+                                </label>
+                            </div>
+                            <small class="text-muted">
+                                <i class="bx bx-info-circle me-1"></i>
+                                Barkod transfer seçilirse seri numarası yerine barkodlar girilecektir
+                            </small>
                         </div>
 
                         <!-- Seri Numaraları -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">
                                 <i class="bx bx-barcode me-1"></i>
-                                Seri Numaraları
+                                <span v-if="transferFormModal.is_barcode_transfer">Barkodlar ve Adetler</span>
+                                <span v-else>Seri Numaraları</span>
                             </label>
                             <div class="serial-list-container-modal p-3 bg-light rounded">
                                 <div v-if="transferFormModal.sevkList.length === 0" class="text-muted text-center py-3">
-                                    Seri numarası eklemek için aşağıdaki alana girin ve Enter tuşuna basın
+                                        <span v-if="transferFormModal.is_barcode_transfer">
+                                            Barkod ve adet eklemek için aşağıdaki alanları doldurun
+                                        </span>
+                                    <span v-else>
+                                            Seri numarası eklemek için aşağıdaki alana girin ve Enter tuşuna basın
+                                        </span>
                                 </div>
-                                <div v-for="(serial, index) in transferFormModal.sevkList" 
-                                     :key="index"
-                                     class="input-group mb-2">
-                                    <input type="text" 
-                                           :value="serial" 
-                                           class="form-control" 
-                                           readonly>
-                                    <button type="button" 
-                                            @click="removeSerialModal(index)"
-                                            class="btn btn-danger">
-                                        <i class="bx bx-trash"></i>
-                                    </button>
+
+                                <!-- Seri Numaraları Listesi (Normal Transfer) -->
+                                <div v-if="!transferFormModal.is_barcode_transfer">
+                                    <div v-for="(serial, index) in transferFormModal.sevkList"
+                                         :key="index"
+                                         class="input-group mb-2">
+                                        <input type="text"
+                                               :value="serial"
+                                               class="form-control"
+                                               readonly>
+                                        <button type="button"
+                                                @click="removeSerialModal(index)"
+                                                class="btn btn-danger">
+                                            <i class="bx bx-trash"></i>
+                                        </button>
+                                    </div>
                                 </div>
-                                
-                                <!-- Yeni Seri Ekle -->
-                                <div class="input-group mt-3">
-                                    <input type="text" 
-                                           v-model="newSerialModal" 
+
+                                <!-- Barkod ve Adet Listesi (Barkod Transfer) -->
+                                <div v-else>
+                                    <div v-for="(item, index) in transferFormModal.sevkList"
+                                         :key="index"
+                                         class="row mb-2 align-items-center">
+                                        <div class="col-md-6">
+                                            <input type="text"
+                                                   :value="item.barcode || item"
+                                                   class="form-control"
+                                                   readonly>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="number"
+                                                   :value="item.quantity || 1"
+                                                   class="form-control"
+                                                   readonly>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button"
+                                                    @click="removeSerialModal(index)"
+                                                    class="btn btn-danger btn-sm">
+                                                <i class="bx bx-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Yeni Ekleme Alanı -->
+                                <div v-if="!transferFormModal.is_barcode_transfer" class="input-group mt-3">
+                                    <input type="text"
+                                           v-model="newSerialModal"
                                            @keyup.enter="addSerialModal"
-                                           class="form-control" 
+                                           class="form-control"
                                            placeholder="Seri numarası girin ve Enter tuşuna basın">
-                                    <button type="button" 
+                                    <button type="button"
                                             @click="addSerialModal"
                                             class="btn btn-primary">
                                         <i class="bx bx-plus"></i> Ekle
                                     </button>
                                 </div>
+
+                                <!-- Barkod ve Adet Ekleme Alanı -->
+                                <div v-else class="mt-3">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <input type="text"
+                                                   v-model="newBarcodeModal"
+                                                   class="form-control"
+                                                   placeholder="Barkod girin">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="number"
+                                                   v-model="newQuantityModal"
+                                                   class="form-control"
+                                                   min="1"
+                                                   value="1"
+                                                   placeholder="Adet">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button"
+                                                    @click="addBarcodeModal"
+                                                    class="btn btn-primary">
+                                                <i class="bx bx-plus"></i> Ekle
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
                         <!-- Not -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">
@@ -699,26 +915,67 @@
                 },
                 
                 // Load stock cards
-                async loadStockCards(page = 1) {
+                async loadStockCards(page = 1,type=null) {
                     this.loading.stockCards = true;
                     try {
-                        const response = await axios.get('/stockcard/serialList', {
-                            params: {
-                                page: page,
-                                serialNumber: this.searchForm.serialNumber
-                            }
-                        });
+                        const params = {
+                            page: page,
+                            serialNumber: this.searchForm.serialNumber
+                        };
+                        if (type !== null && typeof type !== 'undefined') {
+                            params.type = type; // isteğe bağlı parametre olarak ekle
+                        }
+                        const response = await axios.get('/stockcard/serialList', { params });
                         
                         // Parse the response data
                         this.stockCards = response.data.stockcards || [];
                         this.pagination = response.data.pagination || null;
-                        
                     } catch (error) {
                         console.error('Stok kartları yüklenemedi:', error);
                         this.stockCards = [];
                     } finally {
                         this.loading.stockCards = false;
                     }
+                },
+
+                async updateTransfer(serialNumber) {
+                    this.loading.stockCards = true;
+                    try {
+                        const response = await axios.get('/transfer/updateTransfer', {
+                            params: {
+                                serial_number: serialNumber
+                            }
+                        });
+
+                        if (response.status === 200) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Başarılı',
+                                text: response.data || 'Transfer güncellendi',
+                                customClass: { confirmButton: "btn btn-success" }
+                            });
+                            this.loadStockCards();
+                        } else {
+                            Swal.fire({
+                                icon: 'info',
+                                title: 'Bilgi',
+                                text: response.data || 'İşlem tamamlandı'
+                            });
+                        }
+
+                    } catch (error) {
+                        const msg = error.response?.data || error.message || 'Bir hata oluştu';
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Hata',
+                            text: msg,
+                            customClass: { confirmButton: "btn btn-danger" }
+                        });
+                        console.error('Transfer updateTransfer error:', error);
+                    } finally {
+                        this.loading.stockCards = false;
+                    }
+
                 },
                 
                 // Search stock cards
@@ -734,6 +991,15 @@
                     this.stockCards = [];
                     this.pagination = null;
                 },
+
+
+              async getTransfer() {
+                    this.loading.search = true;
+                    await this.loadStockCards(1,4);
+                    this.loading.search = false;
+                },
+
+
                 
                 // Load specific page
                 async loadPage(page) {
@@ -822,7 +1088,7 @@
                 hasRole(roles) {
                     // Bu fonksiyon backend'den gelen user role bilgisine göre çalışmalı
                     // Şimdilik basit bir kontrol yapıyoruz
-                    const userRoles = @json(\Illuminate\Support\Facades\Auth::user()->roles->pluck('name')->toArray());
+                    const userRoles = window.currentUserRoles || [];
                     if (Array.isArray(roles)) {
                         return roles.some(role => userRoles.includes(role));
                     }
@@ -892,26 +1158,16 @@
                             number: this.transferFormModal.number,
                             sevkList: this.transferFormModal.sevkList,
                             description: this.transferFormModal.description,
-                            type: this.transferFormModal.type
+                            type: this.transferFormModal.type,
+                            is_barcode_transfer: this.transferFormModal.is_barcode_transfer
                         });
-                        
+
                         // Close modal
                         const modal = bootstrap.Modal.getInstance(document.getElementById('transferModal'));
                         modal.hide();
-                        
+
                         // Show success message
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Başarılı',
-                            text: 'Transfer oluşturuldu',
-                            customClass: {
-                                confirmButton: "btn btn-success"
-                            }
-                        });
-                        
-                        // Reload stock cards
-                        this.loadStockCards();
-                        
+                        alert(response.data || 'Transfer başarıyla oluşturuldu');
                     } catch (error) {
                         console.error('Transfer error:', error);
                         Swal.fire({
@@ -973,7 +1229,7 @@
             const selectedIds = document.getElementById('stockCardMovementIdArray').value.split(',');
             
             try {
-                const response = await axios.post('{{route('stockcard.multiplepriceupdate')}}', {
+                const response = await axios.post("{{ route('stockcard.multiplepriceupdate') }}", {
                     stock_card_id_multiple: selectedIds,
                     cost_price: formData.get('cost_price'),
                     base_cost_price: formData.get('base_cost_price'),
@@ -1011,16 +1267,11 @@
             const stockCardId = document.getElementById('stockCardMovementId').value;
             try {
                 const response = await axios.post(`{{route('stockcard.singlepriceupdate')}}`, {
-                    sale_price: formData.get('sale_price'),
-                    stock_card_id: stockCardId,
-                    _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    sale_price: formData.get('sale_price'), 
+                    cost_price: formData.get('cost_price'),
+                    base_cost_price: formData.get('base_cost_price'),
+                     stock_card_id: stockCardId, _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 });
-                
-                console.log('Response status:', response.status);
-                console.log('Response data:', response.data);
-                console.log('Response data type:', typeof response.data);
-                
-                // Check if response is successful (either object with success: true or string message)
                 if (response.data && (response.data.success === true || typeof response.data === 'string')) {
                     Swal.fire({
                         icon: 'success',

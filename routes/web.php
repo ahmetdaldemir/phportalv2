@@ -311,7 +311,7 @@ Route::middleware(['companies'])->group(function () {
         Route::get('/incoming-ajax', [App\Http\Controllers\TransferController::class, 'getIncomingTransfersAjax'])->name('incoming.ajax');
         Route::get('/outgoing-ajax', [App\Http\Controllers\TransferController::class, 'getOutgoingTransfersAjax'])->name('outgoing.ajax');
         Route::get('/versions-ajax', [App\Http\Controllers\TransferController::class, 'getVersionsAjax'])->name('versions.ajax');
-        
+        Route::get('/updateTransfer', [App\Http\Controllers\TransferController::class, 'updateTransfer'])->name('updateTransfer');
         // Specific routes before the catch-all {id} route
         Route::get('show', [App\Http\Controllers\TransferController::class, 'show'])->name('show');
         Route::get('{id}', [App\Http\Controllers\TransferController::class, 'getTransferJson'])->where('id', '[0-9]+')->name('json');

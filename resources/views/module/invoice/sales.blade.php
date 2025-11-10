@@ -149,6 +149,10 @@
                                                 <i class="bx bx-barcode me-1"></i>
                                                 <span class="header-text">Seri No</span>
                                             </th>
+                                            <th class="compact-header">
+                                                <i class="bx bx-barcode me-1"></i>
+                                                <span class="header-text">Barkod</span>
+                                            </th>
                                             @if (auth()->user()->hasRole('admin'))
                                             <th class="compact-header">
                                                 <i class="bx bx-money me-1"></i>
@@ -222,6 +226,19 @@
                                                        @blur="validateSerialNumber(item.id, item.serialNumber)"
                                                        required 
                                                        placeholder="Seri numarası" />
+                                                <small class="text-danger d-none">
+                                                    <i class="bx bx-error-circle"></i> Zorunlu
+                                                </small>
+                                            </td>
+
+
+                                            <td>
+                                                <input type="text"
+                                                       class="form-control form-control-sm serialnumber"
+                                                       v-model="item.barkod"
+                                                       @blur="validateSerialNumber(item.id, item.barkod)"
+                                                       required
+                                                       placeholder="Barkod" />
                                                 <small class="text-danger d-none">
                                                     <i class="bx bx-error-circle"></i> Zorunlu
                                                 </small>
@@ -358,25 +375,32 @@
                                                 <i class="bx bx-credit-card me-1"></i>Ödeme Tipleri
                                             </label>
                                         </div>
-                                        <div class="col-md-4 col-12">
+                                        <div class="col-md-3 col-12">
                                             <label class="form-label">Kredi Kartı</label>
                                             <div class="input-group">
                                                 <span class="input-group-text">₺</span>
                                                 <input type="text" name="payment_type[credit_card]" value="0" id="credit_card" class="form-control" placeholder="0.00">
                                             </div>
                                         </div>
-                                        <div class="col-md-4 col-12">
+                                        <div class="col-md-3 col-12">
                                             <label class="form-label">Nakit</label>
                                             <div class="input-group">
                                                 <span class="input-group-text">₺</span>
                                                 <input type="text" name="payment_type[cash]" id="money_order" value="0" class="form-control" placeholder="0.00">
                                             </div>
                                         </div>
-                                        <div class="col-md-4 col-12">
+                                        <div class="col-md-3 col-12">
                                             <label class="form-label">Taksit</label>
                                             <div class="input-group">
                                                 <span class="input-group-text">₺</span>
                                                 <input type="text" name="payment_type[installment]" value="0" id="installment" class="form-control" placeholder="0.00">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-3 col-12">
+                                            <label class="form-label">Bedelsiz Satis</label>
+                                            <div class="input-group">
+                                                <input type="checkbox" name="payment_type[free_sale]" value="0" id="free_sale" class="form-checkbox" style="width: 25px;height: 25px" />
                                             </div>
                                         </div>
 

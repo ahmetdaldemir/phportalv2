@@ -32,7 +32,7 @@ class Phone extends BaseModel
         'physical_condition',
         'altered_parts',
         'memory',
-        'battery',
+        'batery',
         'warranty',
         'status'
     ];

@@ -158,11 +158,8 @@
                                     <span class="badge bg-secondary" v-text="stockcard.brand || stockcard.brand_name"></span>
                                 </td>
                                 <td>
-                                    <div v-if="Array.isArray(stockcard.version) && stockcard.version.length > 0">
-                                        <span v-for="(ver, idx) in stockcard.version.slice(0, 3)" :key="idx" class="badge bg-info me-1 mb-1" v-text="ver"></span>
-                                        <span v-if="stockcard.version.length > 3" class="badge bg-dark" v-text="'+' + (stockcard.version.length - 3)"></span>
-                                    </div>
-                                    <span v-else class="text-muted">-</span>
+                                    <span class="badge bg-secondary" v-text="stockcard.version"></span>
+
                                 </td>
                                 <td>
                                     <span v-text="stockcard.category_separator_name || stockcard.category_sperator_name || ''"></span>

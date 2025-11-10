@@ -30,19 +30,11 @@ class SearchHelper
                 'value' => $input
             ];
         } else {
-            // Prefix yoksa - önce barkod olarak dene, sonra seri numarası
-            // Barkod genellikle daha uzun ve sayısal karakterler içerir
-            if (strlen($input) >= 8 && is_numeric($input)) {
-                return [
-                    'type' => 'barcode',
-                    'value' => $input
-                ];
-            } else {
-                return [
-                    'type' => 'serial',
-                    'value' => $input
-                ];
-            }
+            // Prefix yoksa seri numarası olarak kabul et
+            return [
+                'type' => 'serial',
+                'value' => $input
+            ];
         }
     }
 

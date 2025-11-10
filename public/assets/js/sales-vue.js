@@ -195,10 +195,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     const item = this.invoiceItems.find(item => item.id === rowId);
                     if (item) {
                         item.stockCardId = data.stock_card_id;
+                        item.barcode = data.barcode;
                         item.salePrice = parseFloat(data.sales_price) || 0;
                         item.costPrice = parseFloat(data.base_cost_price) || 0;
                         item.serialNumber =  data.serial_number;
-                        console.log(data);
+                        console.log('burada',data);
                         // Find and set stock name
                         const stock = this.stocks.find(s => s.id == data.stock_card_id);
                         if (stock) {
@@ -336,6 +337,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (selectedStock && this.invoiceItems.length > 0) {
                         const firstItem = this.invoiceItems[0];
                         firstItem.stockCardId = selectedStock.id;
+                        firstItem.barcode = selectedStock.barcode;
                         firstItem.stockName = selectedStock.name + ' - ' + (selectedStock.brand?.name || '') + ' - ' + (selectedStock.version_names || '');
                         this.stockSearchQueries[firstItem.id] = firstItem.stockName;
                     }
@@ -384,9 +386,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
                 
                 this.isLoaded = true;
-                console.log('Vue.js app mounted with customers:', this.customers.length);
-                console.log('Vue.js app mounted with stocks:', this.stocks.length);
-                console.log('Vue.js app mounted with invoice items:', this.invoiceItems.length);
             } catch (error) {
                 console.error('Error in Vue.js mounted:', error);
             }

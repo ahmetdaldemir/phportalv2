@@ -6,6 +6,7 @@ use App\Helper\SearchHelper;
 use App\Models\Category;
 use App\Models\Currency;
 use App\Models\DeletedAtSerialNumber;
+use App\Models\Invoice;
 use App\Models\Sale;
 use App\Models\Seller;
 use App\Models\StockCard;
@@ -503,29 +504,29 @@ class HomeController extends Controller
             
             if ($period === 'daily') {
                 $date = $request->get('date', date('Y-m-d'));
-                
-                $sales = Sale::select('user_id', DB::raw('SUM(sale_price) as total_sales'))
-                    ->with('user:id,name')
+                $sales = Invoice::select('staff_id', DB::raw('SUM(total_price) as total_sales'))
+                    ->with('staff:id,name')
                     ->where('company_id', $companyId)
+                    ->where('free_sale', 0)
                     ->whereDate('created_at', $date)
-                    ->groupBy('user_id')
+                    ->groupBy('staff_id')
                     ->get();
             } else {
                 $month = $request->get('month', date('Y-m'));
-                
-                $sales = Sale::select('user_id', DB::raw('SUM(sale_price) as total_sales'))
-                    ->with('user:id,name')
+                $sales = Invoice::select('staff_id', DB::raw('SUM(total_price) as total_sales'))
+                    ->with('staff:id,name')
                     ->where('company_id', $companyId)
+                    ->where('free_sale', 0)
                     ->whereYear('created_at', substr($month, 0, 4))
                     ->whereMonth('created_at', substr($month, 5, 2))
-                    ->groupBy('user_id')
+                    ->groupBy('staff_id')
                     ->get();
             }
             
             $formattedData = $sales->map(function($sale) {
                 return [
-                    'staff_id' => $sale->user_id,
-                    'staff_name' => $sale->user->name ?? 'Bilinmiyor',
+                    'staff_id' => $sale->staff_id,
+                    'staff_name' => $sale->staff->name ?? 'Bilinmiyor',
                     'total_sales' => $sale->total_sales
                 ];
             });

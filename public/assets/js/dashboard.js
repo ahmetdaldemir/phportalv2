@@ -76,6 +76,7 @@ createApp({
         console.log('Sellers loaded from backend:', this.sellers.length);
         
         this.setupAxios();
+        this.handleSaleFromQuery();
         await Promise.all([
             this.loadSalesChart(),
             this.loadStockTurnover(),
@@ -427,8 +428,11 @@ createApp({
         /**
          * Satış modalını aç
          */
-        openSaleModal() {
-            this.saleSearch.input = '';
+        openSaleModal(options = {}) {
+            const { preserveInput = false } = options;
+            if (!preserveInput) {
+                this.saleSearch.input = '';
+            }
             this.saleSearch.error = null;
             this.saleSearch.success = null;
             this.saleSearch.loading = false;
@@ -440,6 +444,48 @@ createApp({
             setTimeout(() => {
                 document.getElementById('saleSearchInput')?.focus();
             }, 500);
+        },
+
+        /**
+         * URL parametresi üzerinden hızlı satış başlat
+         */
+        handleSaleFromQuery() {
+            if (typeof window === 'undefined') {
+                return;
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const serial = params.get('sale_serial');
+            const stockId = params.get('sale_stock');
+
+            if (!serial) {
+                return;
+            }
+
+            const cleanUrl = () => {
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState(null, '', window.location.pathname);
+                }
+            };
+
+            const redirectToSalePage = () => {
+                const url = `/invoice/sales?serial=${encodeURIComponent(serial)}${stockId ? `&stock_id=${encodeURIComponent(stockId)}` : ''}`;
+                cleanUrl();
+                window.location.href = url;
+            };
+
+            this.saleSearch.input = serial;
+
+            if (stockId) {
+                redirectToSalePage();
+                return;
+            }
+
+            this.openSaleModal({ preserveInput: true });
+            this.$nextTick(() => {
+                this.checkStockAndRedirect();
+            });
+            cleanUrl();
         },
         
         /**

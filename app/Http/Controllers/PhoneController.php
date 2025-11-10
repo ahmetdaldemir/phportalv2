@@ -327,7 +327,7 @@ class PhoneController extends Controller
             'total_price' => $request->payment_type['credit_card'] + $request->payment_type['cash'] + $request->payment_type['installment'],
             'tax_total' => 18,
             'discount_total' => $request->discount_total,
-            'staff_id' => Auth::user()->id,
+            'staff_id' => $request->sales_person,
             'customer_id' => $request->customer_id ?? null,
             'user_id' => Auth::user()->id,
             'company_id' => Auth::user()->company_id,
