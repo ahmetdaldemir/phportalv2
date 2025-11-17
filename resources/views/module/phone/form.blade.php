@@ -99,8 +99,8 @@
                                         <i class="bx bx-barcode me-1 text-primary"></i>IMEI
                                         <span class="text-danger">*</span>
                                     </label>
-                                    <input type="text" class="form-control form-control-lg" id="imei" name="imei" maxlength="15" 
-                                           placeholder="IMEI numarasını giriniz..." required>
+                                    <input type="text" class="form-control form-control-lg" id="imei" name="imei" maxlength="15"
+                                           placeholder="IMEI numarasını giriniz..." required onkeydown="if (event.key === 'Enter') { event.preventDefault(); return false; }">
                                 </div>
                                 <div class="col-12">
                                     <label for="type" class="form-label fw-semibold">

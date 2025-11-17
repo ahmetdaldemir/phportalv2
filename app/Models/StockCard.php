@@ -136,8 +136,16 @@ class StockCard extends BaseModel
 
     public function quantity()
     {
-        $in = StockCardMovement::where('stock_card_id', $this->id)->where('company_id',Auth::user()->company_id)->where('type', 1)->sum('quantity');
-         return $in;
+        $companyId = optional(Auth::user())->company_id;
+        $query = StockCardMovement::where('stock_card_id', $this->id)
+            ->where('company_id', $companyId)
+            ->where('type', 1);
+
+        if (!empty($this->seller)) {
+            $query->where('seller_id', $this->seller);
+        }
+
+        return (int) $query->sum('quantity');
     }
 
     public function quantityId($id)

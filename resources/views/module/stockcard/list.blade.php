@@ -1,5 +1,14 @@
 @extends('layouts.admin')
 
+@php
+    $initialData = [
+        'brands' => $brands ?? [],
+        'colors' => $colors ?? [],
+        'categories' => $categories ?? [],
+        'userRoles' => optional(auth()->user())->getRoleNames() ?? [],
+    ];
+@endphp
+
 @section('custom-css')
     <link rel="stylesheet" href="{{ asset('assets/css/table-page-framework.css') }}">
     <style>
@@ -190,6 +199,17 @@
             border-color: #667eea;
         }
 
+        .serial-list-container-modal {
+            background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px dashed #dee2e6;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .serial-list-container-modal:hover {
+            border-color: #667eea;
+        }
+
         #transferModal .form-select:focus,
         #transferModal .form-control:focus,
         #transferModal textarea:focus {
@@ -235,23 +255,27 @@
                         </div>
                     </div>
                     <div class="header-actions">
-                        <a href="{{ route('stockcard.deleted') }}" type="button" formtarget="_blank" class="btn btn-success btn-sm">
+                        <a href="{{ route('stockcard.deleted') }}" type="button" formtarget="_blank"
+                           class="btn btn-success btn-sm">
                             <i class="bx bx-trash me-1"></i>
                             Silinen Seriler
                         </a>
-                        <button id="barcode" type="button" formtarget="_blank" onclick="document.getElementById('itemFrom').submit();" disabled="disabled" class="btn btn-danger btn-sm">
+                        <button id="barcode" type="button" formtarget="_blank"
+                                onclick="document.getElementById('itemFrom').submit();" disabled="disabled"
+                                class="btn btn-danger btn-sm">
                             <i class="bx bx-barcode me-1"></i>
                             Barkod Yazdır
                         </button>
                         @role(['Depo Sorumlusu', 'super-admin'])
-                            <button id="multiplepriceUpdate" type="button" class="btn btn-warning btn-sm">
-                                <i class="bx bx-dollar me-1"></i>
-                                Fiyat Güncelle
-                            </button>
-                            <a href="{{ route('stockcard.create', ['category' => $category]) }}" class="btn btn-primary btn-sm">
-                                <i class="bx bx-plus me-1"></i>
-                                Yeni Stok Ekle
-                            </a>
+                        <button id="multiplepriceUpdate" type="button" class="btn btn-warning btn-sm">
+                            <i class="bx bx-dollar me-1"></i>
+                            Fiyat Güncelle
+                        </button>
+                        <a href="{{ route('stockcard.create', ['category' => $category]) }}"
+                           class="btn btn-primary btn-sm">
+                            <i class="bx bx-plus me-1"></i>
+                            Yeni Stok Ekle
+                        </a>
                         @endrole
                     </div>
                 </div>
@@ -268,7 +292,7 @@
                 <div class="filter-body">
                     <form @submit.prevent="searchStockCards">
                         @csrf
-                        <input type="hidden" name="category_id" value="{{ $category }}" />
+                        <input type="hidden" name="category_id" value="{{ $category }}"/>
 
                         <!-- Row 1: Main Filters -->
                         <div class="filter-row">
@@ -277,86 +301,94 @@
                                     <i class="bx bx-package"></i> Stok Adı
                                 </label>
                                 <div class="position-relative">
-                                    <input type="text" v-model="searchForm.stockName" @input="searchStock" @focus="onStockInputFocus" @blur="hideStockDropdown" class="filter-input" placeholder="Stok adı ara..." autocomplete="off">
-                                        <div v-if="showStockDropdown" class="autocomplete-dropdown">
-                                            <!-- Loading State -->
-                                            <div v-if="searchingStock" class="autocomplete-loading">
-                                                <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                                    <span class="visually-hidden">Aranıyor...</span>
-                                                </div>
-                                                <span class="ms-2">Aranıyor...</span>
+                                    <input type="text" v-model="searchForm.stockName" @input="searchStock"
+                                           @focus="onStockInputFocus" @blur="hideStockDropdown" class="filter-input"
+                                           placeholder="Stok adı ara..." autocomplete="off">
+                                    <div v-if="showStockDropdown" class="autocomplete-dropdown">
+                                        <!-- Loading State -->
+                                        <div v-if="searchingStock" class="autocomplete-loading">
+                                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                                <span class="visually-hidden">Aranıyor...</span>
                                             </div>
+                                            <span class="ms-2">Aranıyor...</span>
+                                        </div>
 
-                                            <!-- Results -->
-                                            <div v-else-if="filteredStocks.length > 0">
-                                                <div v-for="stock in filteredStocks" :key="stock.id"
-                                                    @mousedown.prevent="selectStock(stock)" class="autocomplete-item">
-                                                    <div class="d-flex justify-content-between align-items-start">
-                                                        <div class="flex-grow-1">
-                                                            <strong>@{{ stock.name }}</strong>
-                                                            <span class="text-muted"> - @{{ stock.brand_name }}</span>
-                                                            <span class="text-muted" v-if="stock.version_name"
-                                                                v-html="stock.version_name"></span>
-                                                            <small class="text-muted d-block">
-                                                                <i class="bx bx-category-alt"></i> @{{ stock.category_name }}
-                                                            </small>
-                                                        </div>
-                                                        <div class="text-end">
+                                        <!-- Results -->
+                                        <div v-else-if="filteredStocks.length > 0">
+                                            <div v-for="stock in filteredStocks" :key="stock.id"
+                                                 @mousedown.prevent="selectStock(stock)" class="autocomplete-item">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div class="flex-grow-1">
+                                                        <strong>@{{ stock.name }}</strong>
+                                                        <span class="text-muted"> - @{{ stock.brand_name }}</span>
+                                                        <span class="text-muted" v-if="stock.version_name"
+                                                              v-html="stock.version_name"></span>
+                                                        <small class="text-muted d-block">
+                                                            <i class="bx bx-category-alt"></i> @{{ stock.category_name
+                                                            }}
+                                                        </small>
+                                                    </div>
+                                                    <div class="text-end">
                                                             <span class="badge"
-                                                                :class="stock.quantity > 0 ? 'bg-success' : 'bg-secondary'">
+                                                                  :class="stock.quantity > 0 ? 'bg-success' : 'bg-secondary'">
                                                                 @{{ stock.quantity }} Adet
                                                             </span>
-                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
+                                        </div>
 
-                                            <!-- No Results -->
-                                            <div v-else class="autocomplete-no-results">
-                                                <i class="bx bx-search-alt"></i>
-                                                <span class="ms-2">Sonuç bulunamadı</span>
-                                            </div>
+                                        <!-- No Results -->
+                                        <div v-else class="autocomplete-no-results">
+                                            <i class="bx bx-search-alt"></i>
+                                            <span class="ms-2">Sonuç bulunamadı</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="filter-group">
                                 <label class="filter-label">
                                     <i class="bx bx-package"></i> Marka
                                 </label>
                                 <select v-model="searchForm.brand" @change="loadVersions" class="filter-select">
                                     <option value="">Tüm Markalar</option>
-                                    <option v-for="brand in brands" :key="brand.id" :value="brand.id" v-text="brand.name"></option>
+                                    <option v-for="brand in brands" :key="brand.id" :value="brand.id"
+                                            v-text="brand.name"></option>
                                 </select>
                             </div>
-                            
+
                             <div class="filter-group">
                                 <label class="filter-label">
                                     <i class="bx bx-mobile-alt"></i> Model
                                 </label>
-                                <select v-model="searchForm.version" class="filter-select" :disabled="!searchForm.brand">
+                                <select v-model="searchForm.version" class="filter-select"
+                                        :disabled="!searchForm.brand">
                                     <option value="">Tüm Modeller</option>
-                                    <option v-for="version in versions" :key="version.id" :value="version.id" v-text="version.name"></option>
+                                    <option v-for="version in versions" :key="version.id" :value="version.id"
+                                            v-text="version.name"></option>
                                 </select>
                             </div>
-                            
+
                             <div class="filter-group">
                                 <label class="filter-label">
                                     <i class="bx bx-category"></i> Kategori
                                 </label>
                                 <select v-model="searchForm.category" class="filter-select">
                                     <option value="">Tüm Kategoriler</option>
-                                    <option v-for="category in categories" :key="category.id" :value="category.id" v-text="category.path"></option>
+                                    <option v-for="category in categories" :key="category.id" :value="category.id"
+                                            v-text="category.path"></option>
                                 </select>
                             </div>
-                            
+
                             <div class="filter-group">
                                 <label class="filter-label">
                                     <i class="bx bx-palette"></i> Renk
                                 </label>
                                 <select v-model="searchForm.color" class="filter-select">
                                     <option value="">Tümü</option>
-                                    <option v-for="color in colors" :key="color.id" :value="color.id" v-text="color.name"></option>
+                                    <option v-for="color in colors" :key="color.id" :value="color.id"
+                                            v-text="color.name"></option>
                                 </select>
                             </div>
                         </div>
@@ -369,33 +401,37 @@
                                 </label>
                                 <select v-model="searchForm.seller" class="filter-select">
                                     <option value="all">Tüm Şubeler</option>
-                                    <option v-for="seller in sellers" :key="seller.id" :value="seller.id" v-text="seller.name"></option>
+                                    <option v-for="seller in sellers" :key="seller.id" :value="seller.id"
+                                            v-text="seller.name"></option>
                                 </select>
                             </div>
-                            
+
                             <div class="filter-group">
                                 <label class="filter-label">
                                     <i class="bx bx-barcode"></i> Seri Numarası
                                 </label>
-                                <input type="text" v-model="searchForm.serialNumber" class="filter-input" placeholder="Seri numarası...">
+                                <input type="text" v-model="searchForm.serialNumber" class="filter-input"
+                                       placeholder="Seri numarası...">
                             </div>
-                            
+
                             <div class="filter-group auto">
                                 <label class="filter-label">
                                     <i class="bx bx-search"></i> Ara
                                 </label>
-                                <button type="button" @click="searchStockCards" class="filter-button primary" :disabled="loading.search">
+                                <button type="button" @click="searchStockCards" class="filter-button primary"
+                                        :disabled="loading.search">
                                     <span v-if="loading.search" class="spinner-border spinner-border-sm me-1"></span>
                                     <i v-else class="bx bx-search me-1"></i>
                                     <span v-text="loading.search ? 'Aranıyor...' : 'Ara'"></span>
                                 </button>
                             </div>
-                            
+
                             <div class="filter-group auto">
                                 <label class="filter-label">
                                     <i class="bx bx-refresh"></i> Temizle
                                 </label>
-                                <button type="button" @click="clearFilters" class="filter-button secondary" title="Filtreleri Temizle">
+                                <button type="button" @click="clearFilters" class="filter-button secondary"
+                                        title="Filtreleri Temizle">
                                     <i class="bx bx-refresh me-1"></i>
                                     Temizle
                                 </button>
@@ -404,7 +440,7 @@
                     </form>
                 </div>
             </div>
-            
+
             <!-- Data Table -->
             <div class="table-page-table table-page-fade-in-delay-2">
                 <form id="itemFrom" role="form" method="POST" action="{{ route('stockcard.barcodes') }}">
@@ -412,292 +448,305 @@
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
-                                <tr>
-                                    <th style="width: 20px;">
-                                        <input type="checkbox" class="form-check-input" @change="toggleAllStockCards"
-                                            :checked="allStockCardsSelected">
-                                    </th>
-                                    <th style="width: 30%;"><i class="bx bx-package me-1"></i>Stok Adı</th>
-                                    <th style="width: 25%;"><i class="bx bx-category me-1"></i>Kategori</th>
-                                    <th style="width: 10%;"><i class="bx bx-package me-1"></i>Marka</th>
-                                    <th style="width: 10%;"><i class="bx bx-tachometer me-1"></i>Devir Hızı</th>
-                                    <th style="width: 50px;"><i class="bx bx-box me-1"></i>Adet</th>
-                                    <th style="width: 120px;"><i class="bx bx-cog me-1"></i>İşlemler</th>
-                                </tr>
+                            <tr>
+                                <th style="width: 20px;">
+                                    <input type="checkbox" class="form-check-input" @change="toggleAllStockCards"
+                                           :checked="allStockCardsSelected">
+                                </th>
+                                <th style="width: 30%;"><i class="bx bx-package me-1"></i>Stok Adı</th>
+                                <th style="width: 25%;"><i class="bx bx-category me-1"></i>Kategori</th>
+                                <th style="width: 10%;"><i class="bx bx-package me-1"></i>Marka</th>
+                                <th style="width: 10%;"><i class="bx bx-tachometer me-1"></i>Devir Hızı</th>
+                                <th style="width: 50px;"><i class="bx bx-box me-1"></i>Adet</th>
+                                <th style="width: 120px;"><i class="bx bx-cog me-1"></i>İşlemler</th>
+                            </tr>
                             </thead>
                             <tbody>
-                                <!-- Empty State - İlk açılışta gösterilecek -->
-                                <tr v-if="stockcards.length === 0 && !loading.stockcards">
-                                    <td colspan="6" class="table-page-empty">
-                                        <i class="bx bx-search"></i>
-                                        <h4 class="mt-3">Stok kartı aramak için filtreleri kullanın</h4>
-                                        <p>Yukarıdaki filtreleri doldurarak arama yapabilirsiniz.</p>
-                                    </td>
-                                </tr>
+                            <!-- Empty State - İlk açılışta gösterilecek -->
+                            <tr v-if="stockcards.length === 0 && !loading.stockcards">
+                                <td colspan="6" class="table-page-empty">
+                                    <i class="bx bx-search"></i>
+                                    <h4 class="mt-3">Stok kartı aramak için filtreleri kullanın</h4>
+                                    <p>Yukarıdaki filtreleri doldurarak arama yapabilirsiniz.</p>
+                                </td>
+                            </tr>
 
-                                <!-- Loading State -->
-                                <tr v-if="loading.stockcards">
-                                    <td colspan="6" class="table-page-loading">
-                                        <div class="spinner-border text-primary" role="status"></div>
-                                        <p class="text-primary mt-2">Stok kartları yükleniyor...</p>
-                                    </td>
-                                </tr>
+                            <!-- Loading State -->
+                            <tr v-if="loading.stockcards">
+                                <td colspan="6" class="table-page-loading">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                    <p class="text-primary mt-2">Stok kartları yükleniyor...</p>
+                                </td>
+                            </tr>
 
-                                <!-- Stock Cards -->
-                                <tr v-else v-for="stockcard in stockcards" :key="stockcard.id" class="clickable-row"
-                                    @click="openStockModal(stockcard.ids, stockcard.id, stockcard.stock_name)">
-                                    <td style="width: 20px;text-align: center;" @click.stop>
-                                        <input type="checkbox" class="form-check-input" name="item[]"
-                                            :value="stockcard.ids" v-model="selectedStockCards"
-                                            @change="updateBarcodeButton">
-                                    </td>
-                                    <td style="width:30%;">
+                            <!-- Stock Cards -->
+                            <tr v-else v-for="stockcard in stockcards" :key="stockcard.id" class="clickable-row"
+                                @click="openStockModal(stockcard.ids, stockcard.id, stockcard.stock_name)">
+                                <td style="width: 20px;text-align: center;" @click.stop>
+                                    <input type="checkbox" class="form-check-input" name="item[]"
+                                           :value="stockcard.ids" v-model="selectedStockCards"
+                                           @change="updateBarcodeButton">
+                                </td>
+                                <td style="width:30%;">
                                         <span class="text-truncate d-inline-block" :title="stockcard.stock_name"
-                                            style="max-width: calc(100% - 35px);">
+                                              style="max-width: calc(100% - 35px);">
                                             @{{ stockcard.stock_name }}
                                         </span>
-                                    </td>
+                                </td>
 
-                                    <td class="text-truncate" :title="stockcard.category_separator_name"
-                                        style="width: 25%;">
-                                        @{{ stockcard.category_separator_name }}
-                                    </td>
-                                    <td class="text-truncate" :title="stockcard.brand_name" style="width: 10%;">
-                                        @{{ stockcard.brand_name }}
-                                    </td>
-                                    <td class="text-center" style="width: 10%;">
-                                        <span v-if="stockcard.turnover_rate && stockcard.turnover_rate > 0" 
-                                              class="badge" 
+                                <td class="text-truncate" :title="stockcard.category_separator_name"
+                                    style="width: 25%;">
+                                    @{{ stockcard.category_separator_name }}
+                                </td>
+                                <td class="text-truncate" :title="stockcard.brand_name" style="width: 10%;">
+                                    @{{ stockcard.brand_name }}
+                                </td>
+                                <td class="text-center" style="width: 10%;">
+                                        <span v-if="stockcard.turnover_rate && stockcard.turnover_rate > 0"
+                                              class="badge"
                                               :class="stockcard.turnover_status?.class || 'bg-secondary'"
                                               :title="stockcard.turnover_status?.description || ''"
                                               v-text="stockcard.turnover_rate + ' gün'">
                                         </span>
-                                        <span v-else class="badge bg-secondary" title="Son 90 günde satış yok">-</span>
-                                    </td>
-                                    <td v-text="stockcard.quantity" style="width: 50px; text-align: center;"></td>
-                                    <td style="white-space: nowrap;">
-                                        <div class="d-flex gap-1 align-items-center">
-                                            <a target="_blank" class="btn btn-xs btn-primary"
-                                                :href="`/stockcard/barcode?ids=${stockcard.ids}`" title="Barkodlar">
-                                                <i class="bx bx-barcode"></i>
-                                            </a>
-                                            @role('Depo Sorumlusu|super-admin')
-                                                <button type="button" class="btn btn-xs btn-success" title="Fiyat Güncelle"
-                                                    @click.stop="multipleAllPriceUpdate(stockcard.ids)">
-                                                    <i class="bx bx-dollar"></i>
-                                                </button>
-                                              
-                                            @endrole
-                                        </div>
-                                    </td>
-                                </tr>
+                                    <span v-else class="badge bg-secondary" title="Son 90 günde satış yok">-</span>
+                                </td>
+                                <td v-text="stockcard.quantity" style="width: 50px; text-align: center;"></td>
+                                <td style="white-space: nowrap;">
+                                    <div class="d-flex gap-1 align-items-center">
+                                        <a target="_blank" class="btn btn-xs btn-primary"
+                                           :href="`/stockcard/barcode?ids=${stockcard.ids}`" title="Barkodlar">
+                                            <i class="bx bx-barcode"></i>
+                                        </a>
+                                        @role('Depo Sorumlusu|super-admin')
+                                        <button type="button" class="btn btn-xs btn-success" title="Fiyat Güncelle"
+                                                @click.stop="multipleAllPriceUpdate(stockcard.ids)">
+                                            <i class="bx bx-dollar"></i>
+                                        </button>
+
+                                        @endrole
+                                    </div>
+                                </td>
+                            </tr>
                             </tbody>
+                            <tfoot>
+                            <tr>
+                                <td colspan="7" class="table-page-empty">
+                                    <strong>Toplam Seri Adet:</strong> @{{ pagination.total_quantity }}
+                                </td>
+                            </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </form>
             </div>
+        </div>
+        <!-- Pagination -->
+        <div v-if="pagination && pagination.last_page > 1" class="table-page-pagination table-page-fade-in-delay-3">
+            <nav aria-label="Page navigation">
+                <ul class="pagination">
+                    <!-- Previous Page -->
+                    <li class="page-item" :class="{ disabled: pagination.current_page <= 1 }">
+                        <a class="page-link" href="#" @click.prevent="changePage(pagination.current_page - 1)"
+                           :disabled="pagination.current_page <= 1">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+
+                    <!-- Page Numbers -->
+                    <li v-for="page in getPageNumbers()" :key="page" class="page-item"
+                        :class="{ active: page === pagination.current_page }">
+                        <a v-if="page !== '...'" class="page-link" href="#" @click.prevent="changePage(page)"
+                           v-text="page"></a>
+                        <span v-else class="page-link">...</span>
+                    </li>
+
+                    <!-- Next Page -->
+                    <li class="page-item" :class="{ disabled: pagination.current_page >= pagination.last_page }">
+                        <a class="page-link" href="#" @click.prevent="changePage(pagination.current_page + 1)"
+                           :disabled="pagination.current_page >= pagination.last_page">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- Pagination Info -->
+            <div class="pagination-info">
+                <small class="text-muted">
+                    <span v-text="pagination.from"></span>-<span v-text="pagination.to"></span> / <span
+                            v-text="pagination.total"></span> kayıt
+                </small>
             </div>
-            <!-- Pagination -->
-            <div v-if="pagination && pagination.last_page > 1" class="table-page-pagination table-page-fade-in-delay-3">
-                <nav aria-label="Page navigation">
-                    <ul class="pagination">
-                        <!-- Previous Page -->
-                        <li class="page-item" :class="{ disabled: pagination.current_page <= 1 }">
-                            <a class="page-link" href="#" @click.prevent="changePage(pagination.current_page - 1)" :disabled="pagination.current_page <= 1">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
+        </div>
 
-                        <!-- Page Numbers -->
-                        <li v-for="page in getPageNumbers()" :key="page" class="page-item" :class="{ active: page === pagination.current_page }">
-                            <a v-if="page !== '...'" class="page-link" href="#" @click.prevent="changePage(page)" v-text="page"></a>
-                            <span v-else class="page-link">...</span>
-                        </li>
-
-                        <!-- Next Page -->
-                        <li class="page-item" :class="{ disabled: pagination.current_page >= pagination.last_page }">
-                            <a class="page-link" href="#" @click.prevent="changePage(pagination.current_page + 1)" :disabled="pagination.current_page >= pagination.last_page">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-
-                <!-- Pagination Info -->
-                <div class="pagination-info">
-                    <small class="text-muted">
-                        <span v-text="pagination.from"></span>-<span v-text="pagination.to"></span> / <span v-text="pagination.total"></span> kayıt
-                    </small>
-                </div>
-            </div>
-
-            <hr class="my-5">
+        <hr class="my-5">
 
 
-            <!-- Stock Details Modal -->
-            <div class="modal fade" id="stockDetailsModal" tabindex="-1" aria-labelledby="stockDetailsModalLabel"
-                aria-hidden="true">
-                <div class="modal-dialog modal-xl" style="max-width: 95%;">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="stockDetailsModalLabel">
-                                <i class="bx bx-package me-2"></i>
-                                <span v-text="'Stok Detayları - ' + selectedStock.name"></span>
-                            </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <!-- Stock Details Modal -->
+        <div class="modal fade" id="stockDetailsModal" tabindex="-1" aria-labelledby="stockDetailsModalLabel"
+             aria-hidden="true">
+            <div class="modal-dialog modal-xl" style="max-width: 95%;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="stockDetailsModalLabel">
+                            <i class="bx bx-package me-2"></i>
+                            <span v-text="'Stok Detayları - ' + selectedStock.name"></span>
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Loading State -->
+                        <div v-show="loading.stockDetails" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="text-primary mt-2">Stok detayları yükleniyor...</p>
                         </div>
-                        <div class="modal-body">
-                            <!-- Loading State -->
-                            <div v-show="loading.stockDetails" class="text-center py-4">
-                                <div class="spinner-border text-primary" role="status"></div>
-                                <p class="text-primary mt-2">Stok detayları yükleniyor...</p>
-                            </div>
 
-                            <!-- Content -->
-                            <div v-show="!loading.stockDetails">
-                                <!-- Summary Cards -->
-                                <div class="row mb-4">
-                                    <div class="col-md-3">
-                                        <div class="stat-card stat-card-primary">
-                                            <div class="stat-value" v-text="stockDetails.length"></div>
-                                            <div class="stat-label">Toplam Seri</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="stat-card stat-card-success">
-                                            <div class="stat-value" v-text="getAvailableCount()"></div>
-                                            <div class="stat-label">Mevcut</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="stat-card stat-card-warning">
-                                            <div class="stat-value" v-text="getDamagedCount()"></div>
-                                            <div class="stat-label">Hasarlı</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="stat-card stat-card-info">
-                                            <div class="stat-value" v-text="getTransferCount()"></div>
-                                            <div class="stat-label">Transfer</div>
-                                        </div>
+                        <!-- Content -->
+                        <div v-show="!loading.stockDetails">
+                            <!-- Summary Cards -->
+                            <div class="row mb-4">
+                                <div class="col-md-3">
+                                    <div class="stat-card stat-card-primary">
+                                        <div class="stat-value" v-text="stockDetails.length"></div>
+                                        <div class="stat-label">Toplam Seri</div>
                                     </div>
                                 </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card stat-card-success">
+                                        <div class="stat-value" v-text="getAvailableCount()"></div>
+                                        <div class="stat-label">Mevcut</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card stat-card-warning">
+                                        <div class="stat-value" v-text="getDamagedCount()"></div>
+                                        <div class="stat-label">Hasarlı</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card stat-card-info">
+                                        <div class="stat-value" v-text="getTransferCount()"></div>
+                                        <div class="stat-label">Transfer</div>
+                                    </div>
+                                </div>
+                            </div>
 
-                                <!-- Stock Details Table -->
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead class="table-header-modern">
-                                            <tr>
-                                                <th class="compact-header" style="width: 70px;">
-                                                    <i class="bx bx-check me-1"></i>
-                                                    <span class="header-text">Seç</span>
-                                                </th>
-                                                <th class="compact-header" style="width: 100px;">
-                                                    <i class="bx bx-hash me-1"></i>
-                                                    <span class="header-text">#</span>
-                                                </th>
-                                                <th class="compact-header">
-                                                    <i class="bx bx-barcode me-1"></i>
-                                                    <span class="header-text">Seri No</span>
-                                                </th>
-                                                @role(['Depo Sorumlusu', 'super-admin'])
-                                                    <th class="compact-header text-end"
-                                                        style="width: 100px; text-align: center;">
-                                                        <i class="bx bx-dollar me-1"></i>
-                                                        <span class="header-text">Maliyet</span>
-                                                    </th>
-                                                    <th class="compact-header text-end"
-                                                        style="width: 100px; text-align: center;">
-                                                        <i class="bx bx-dollar me-1"></i>
-                                                        <span class="header-text">D. Maliyet</span>
-                                                    </th>
-                                                @endrole
-                                                <th class="compact-header text-end"
-                                                    style="width: 100px; text-align: center;">
-                                                    <i class="bx bx-dollar me-1"></i>
-                                                    <span class="header-text">Satış F.</span>
-                                                </th>
-                                                <th class="compact-header" style="width: 100px;">
-                                                    <i class="bx bx-palette me-1"></i>
-                                                    <span class="header-text">Renk</span>
-                                                </th>
-                                                <th class="compact-header" style="width: 100px;">
-                                                    <i class="bx bx-package me-1"></i>
-                                                    <span class="header-text">Marka</span>
-                                                </th>
-                                                <th class="compact-header">
-                                                    <i class="bx bx-mobile-alt me-1"></i>
-                                                    <span class="header-text">Model</span>
-                                                </th>
-                                                <th class="compact-header">
-                                                    <i class="bx bx-category me-1"></i>
-                                                    <span class="header-text">Kategori</span>
-                                                </th>
-                                                <th class="compact-header" style="width: 200px;">
-                                                    <i class="bx bx-store me-1"></i>
-                                                    <span class="header-text">Şube</span>
-                                                </th>
-                                                <th class="compact-header">
-                                                    <i class="bx bx-cog me-1"></i>
-                                                    <span class="header-text">İşlemler</span>
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="item in stockDetails" :key="item.id"
-                                                :class="getRowClass(item)" v-show="item.quantity > 0">
-                                                <td class="text-center">
-                                                    <input type="checkbox" v-model="selectedItems" :value="item.id"
-                                                        class="form-check-input">
-                                                </td>
-                                                <td v-text="item.id"></td>
-                                                <td>
-                                                    <code v-text="item.serial_number"></code> / <code
-                                                        v-text="item.barcode"></code>
-                                                </td>
-                                                @role(['Depo Sorumlusu', 'super-admin'])
-                                                    <td class="text-end">
+                            <!-- Stock Details Table -->
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-header-modern">
+                                    <tr>
+                                        <th class="compact-header" style="width: 70px;">
+                                            <i class="bx bx-check me-1"></i>
+                                            <span class="header-text">Seç</span>
+                                        </th>
+                                        <th class="compact-header" style="width: 100px;">
+                                            <i class="bx bx-hash me-1"></i>
+                                            <span class="header-text">#</span>
+                                        </th>
+                                        <th class="compact-header">
+                                            <i class="bx bx-barcode me-1"></i>
+                                            <span class="header-text">Seri No</span>
+                                        </th>
+                                        @role(['Depo Sorumlusu', 'super-admin'])
+                                        <th class="compact-header text-end"
+                                            style="width: 100px; text-align: center;">
+                                            <i class="bx bx-dollar me-1"></i>
+                                            <span class="header-text">Maliyet</span>
+                                        </th>
+                                        <th class="compact-header text-end"
+                                            style="width: 100px; text-align: center;">
+                                            <i class="bx bx-dollar me-1"></i>
+                                            <span class="header-text">D. Maliyet</span>
+                                        </th>
+                                        @endrole
+                                        <th class="compact-header text-end"
+                                            style="width: 100px; text-align: center;">
+                                            <i class="bx bx-dollar me-1"></i>
+                                            <span class="header-text">Satış F.</span>
+                                        </th>
+                                        <th class="compact-header" style="width: 100px;">
+                                            <i class="bx bx-palette me-1"></i>
+                                            <span class="header-text">Renk</span>
+                                        </th>
+                                        <th class="compact-header" style="width: 100px;">
+                                            <i class="bx bx-package me-1"></i>
+                                            <span class="header-text">Marka</span>
+                                        </th>
+                                        <th class="compact-header">
+                                            <i class="bx bx-mobile-alt me-1"></i>
+                                            <span class="header-text">Model</span>
+                                        </th>
+                                        <th class="compact-header">
+                                            <i class="bx bx-category me-1"></i>
+                                            <span class="header-text">Kategori</span>
+                                        </th>
+                                        <th class="compact-header" style="width: 200px;">
+                                            <i class="bx bx-store me-1"></i>
+                                            <span class="header-text">Şube</span>
+                                        </th>
+                                        <th class="compact-header">
+                                            <i class="bx bx-cog me-1"></i>
+                                            <span class="header-text">İşlemler</span>
+                                        </th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr v-for="item in stockDetails" :key="item.id"
+                                        :class="getRowClass(item)" v-show="item.quantity > 0">
+                                        <td class="text-center">
+                                            <input type="checkbox" v-model="selectedItems" :value="item.id"
+                                                   class="form-check-input">
+                                        </td>
+                                        <td v-text="item.id"></td>
+                                        <td>
+                                            <code v-text="item.serial_number"></code> / <code
+                                                    v-text="item.barcode"></code>
+                                        </td>
+                                        @role(['Depo Sorumlusu', 'super-admin'])
+                                        <td class="text-end">
                                                         <span class="price-display fw-bold"
-                                                            v-text="formatCurrency(item.cost_price)"></span>
-                                                    </td>
-                                                    <td class="text-end">
+                                                              v-text="formatCurrency(item.cost_price)"></span>
+                                        </td>
+                                        <td class="text-end">
                                                         <span class="price-display fw-bold"
-                                                            v-text="formatCurrency(item.base_cost_price)"></span>
-                                                    </td>
-                                                @endrole
-                                                <td class="text-end">
+                                                              v-text="formatCurrency(item.base_cost_price)"></span>
+                                        </td>
+                                        @endrole
+                                        <td class="text-end">
                                                     <span class="price-display fw-bold"
-                                                        v-text="formatCurrency(item.sale_price)"></span>
-                                                </td>
-                                                <td v-text="item.color_name"></td>
-                                                <td v-text="item.brand_name"></td>
-                                                <td v-text="item.versions"></td>
-                                                <td>
+                                                          v-text="formatCurrency(item.sale_price)"></span>
+                                        </td>
+                                        <td v-text="item.color_name"></td>
+                                        <td v-text="item.brand_name"></td>
+                                        <td v-text="item.versions"></td>
+                                        <td>
                                                     <span
-                                                        v-text="item.category_sperator_name + ' ' + item.category_name"></span>
-                                                </td>
-                                                <td v-text="item.seller_name"></td>
-                                                <td>
+                                                            v-text="item.category_sperator_name + ' ' + item.category_name"></span>
+                                        </td>
+                                        <td v-text="item.seller_name"></td>
+                                        <td>
                                                     <span v-if="item.type == 4" class="badge bg-primary">TRANSFER
                                                         SÜRECİNDE</span>
-                                                    <span v-if="item.type == 3" class="badge bg-danger">HASARLI
+                                            <span v-if="item.type == 3" class="badge bg-danger">HASARLI
                                                         ÜRÜN</span>
-                                                    <span v-if="item.type == 5" class="badge bg-warning">TEKNİK SERVİS
+                                            <span v-if="item.type == 5" class="badge bg-warning">TEKNİK SERVİS
                                                         SÜRECİNDE</span>
 
-                                                    <span v-if="item.type == 1">
+                                            <span v-if="item.type == 1">
                                                         <!-- Action Buttons -->
                                                         <div class="d-flex gap-1 align-items-center">
                                                             <!-- Sevk Et -->
                                                             <button type="button" @click="openTransferModal(item)"
-                                                                class="btn btn-xs btn-success" title="Sevk Et">
+                                                                    class="btn btn-xs btn-success" title="Sevk Et">
                                                                 <i class="bx bx-transfer"></i>
                                                             </button>
 
                                                             <!-- Fiyat Güncelle (Depo Sorumlusu|super-admin) -->
                                                             @role('Depo Sorumlusu|super-admin')
                                                                 <button type="button" @click="openPriceModal(item.id)"
-                                                                    class="btn btn-xs btn-warning" title="Fiyat Güncelle">
+                                                                        class="btn btn-xs btn-warning"
+                                                                        title="Fiyat Güncelle">
                                                                     <i class="bx bxs-dollar-circle"></i>
                                                                 </button>
                                                             @endrole
@@ -705,77 +754,79 @@
                                                             <!-- Sil (super-admin) -->
                                                             @role('super-admin')
                                                                 <button type="button" @click="deleteMovement(item.id)"
-                                                                    class="btn btn-xs btn-danger" title="Sil">
+                                                                        class="btn btn-xs btn-danger" title="Sil">
                                                                     <i class="bx bx-trash"></i>
                                                                 </button>
                                                             @endrole
 
                                                             <!-- Talep Oluştur -->
                                                             <button type="button"
-                                                                @click="openDemandModal(selectedStock.id, selectedStock.name, item.color_id)"
-                                                                class="btn btn-xs btn-info" title="Talep Oluştur">
+                                                                    @click="openDemandModal(selectedStock.id, selectedStock.name, item.color_id)"
+                                                                    class="btn btn-xs btn-info" title="Talep Oluştur">
                                                                 <i class="bx bx-radar"></i>
                                                             </button>
                                                         </div>
                                                     </span>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
 
-                                <!-- Modal Pagination -->
-                                <nav v-if="stockDetailsPagination && stockDetailsPagination.last_page > 1" class="mt-5">
-                                    <ul class="pagination pagination-sm justify-content-center">
-                                        <li class="page-item"
-                                            :class="{ disabled: stockDetailsPagination.current_page <= 1 }">
-                                            <button class="page-link"
+                            <!-- Modal Pagination -->
+                            <nav v-if="stockDetailsPagination && stockDetailsPagination.last_page > 1" class="mt-5">
+                                <ul class="pagination pagination-sm justify-content-center">
+                                    <li class="page-item"
+                                        :class="{ disabled: stockDetailsPagination.current_page <= 1 }">
+                                        <button class="page-link"
                                                 @click="changeStockDetailsPage(stockDetailsPagination.current_page - 1)"
                                                 :disabled="stockDetailsPagination.current_page <= 1">
-                                                <i class="bx bx-chevron-left"></i>
-                                            </button>
-                                        </li>
+                                            <i class="bx bx-chevron-left"></i>
+                                        </button>
+                                    </li>
 
-                                        <li v-for="page in getStockDetailsPageNumbers()" :key="page"
-                                            class="page-item"
-                                            :class="{ active: page === stockDetailsPagination.current_page }">
-                                            <button class="page-link" @click="changeStockDetailsPage(page)">
-                                                @{{ page }}
-                                            </button>
-                                        </li>
+                                    <li v-for="page in getStockDetailsPageNumbers()" :key="page"
+                                        class="page-item"
+                                        :class="{ active: page === stockDetailsPagination.current_page }">
+                                        <button class="page-link" @click="changeStockDetailsPage(page)">
+                                            @{{ page }}
+                                        </button>
+                                    </li>
 
-                                        <li class="page-item"
-                                            :class="{ disabled: stockDetailsPagination.current_page >= stockDetailsPagination
+                                    <li class="page-item"
+                                        :class="{ disabled: stockDetailsPagination.current_page >= stockDetailsPagination
                                                     .last_page }">
-                                            <button class="page-link"
+                                        <button class="page-link"
                                                 @click="changeStockDetailsPage(stockDetailsPagination.current_page + 1)"
                                                 :disabled="stockDetailsPagination.current_page >= stockDetailsPagination.last_page">
-                                                <i class="bx bx-chevron-right"></i>
-                                            </button>
-                                        </li>
-                                    </ul>
+                                            <i class="bx bx-chevron-right"></i>
+                                        </button>
+                                    </li>
+                                </ul>
 
-                                    <div class="text-center mt-2">
-                                        <small class="text-muted">
-                                            @{{ stockDetailsPagination.from }} - @{{ stockDetailsPagination.to }} / @{{ stockDetailsPagination.total }}
-                                            kayıt
-                                            (Sayfa @{{ stockDetailsPagination.current_page }} / @{{ stockDetailsPagination.last_page }})
-                                        </small>
-                                    </div>
-                                </nav>
-                            </div>
+                                <div class="text-center mt-2">
+                                    <small class="text-muted">
+                                        @{{ stockDetailsPagination.from }} - @{{ stockDetailsPagination.to }} / @{{
+                                        stockDetailsPagination.total }}
+                                        kayıt
+                                        (Sayfa @{{ stockDetailsPagination.current_page }} / @{{
+                                        stockDetailsPagination.last_page }})
+                                    </small>
+                                </div>
+                            </nav>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
-                            <button v-if="selectedItems.length > 0" type="button" class="btn btn-primary"
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                        <button v-if="selectedItems.length > 0" type="button" class="btn btn-primary"
                                 @click="enableBarcodePrint">
-                                Barkod Yazdır (@{{ selectedItems.length }})
-                            </button>
-                        </div>
+                            Barkod Yazdır (@{{ selectedItems.length }})
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
+
         <div class="modal fade" id="backDropModal" data-bs-backdrop="static" tabindex="-1">
             <div class="modal-dialog">
                 <form class="modal-content" id="transferForm">
@@ -791,7 +842,7 @@
                         <div class="row">
                             <div class="col mb-3">
                                 <label for="nameBackdrop" class="form-label">Serial Number</label>
-                                <input type="text" id="serialBackdrop" class="form-control" name="serial_number[]" />
+                                <input type="text" id="serialBackdrop" class="form-control" name="serial_number[]"/>
                             </div>
                         </div>
                         <div class="row g-2">
@@ -800,7 +851,8 @@
                                 <select class="form-control" name="seller_id" id="sellerBackdrop">
                                     <option value="">Şube Seçin</option>
                                     <option v-for="seller in sellers" :key="seller.id" :value="seller.id">
-                                        @{{ seller.name }}</option>
+                                        @{{ seller.name }}
+                                    </option>
                                 </select>
                             </div>
                         </div>
@@ -839,7 +891,7 @@
                         <div class="row">
                             <div class="col mb-3">
                                 <label for="nameBackdrop" class="form-label">Satış Fiyatı</label>
-                                <input type="text" id="serialBackdrop" class="form-control" name="sale_price" />
+                                <input type="text" id="serialBackdrop" class="form-control" name="sale_price"/>
                             </div>
                         </div>
 
@@ -867,13 +919,14 @@
                                     <select class="form-select" id="color" name="color_id">
                                         <option value="">Renk Seçin</option>
                                         <option v-for="color in colors" :key="color.id" :value="color.id">
-                                            @{{ color.name }}</option>
+                                            @{{ color.name }}
+                                        </option>
                                     </select>
                                 </div>
                                 <div class="col-12 mb-3">
                                     <label for="nameSmall" class="form-label">Açıklama</label>
                                     <input type="text" id="nameSmall" name="description" class="form-control"
-                                        placeholder="Açıklama">
+                                           placeholder="Açıklama">
                                 </div>
                             </div>
                         </div>
@@ -898,26 +951,26 @@
                         <div class="row">
                             <div class="col mb-3">
                                 <label for="nameBackdrop" class="form-label">Barkod</label>
-                                <input type="text" id="barcode" class="form-control" name="barcode" />
+                                <input type="text" id="barcode" class="form-control" name="barcode"/>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col mb-3">
                                 <label for="nameBackdrop" class="form-label">Maliyet</label>
-                                <input type="text" id="cost_price" class="form-control" name="cost_price" />
+                                <input type="text" id="cost_price" class="form-control" name="cost_price"/>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col mb-3">
                                 <label for="nameBackdrop" class="form-label">Destekli Maliyet</label>
                                 <input type="text" id="base_cost_price" class="form-control"
-                                    name="base_cost_price" />
+                                       name="base_cost_price"/>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col mb-3">
                                 <label for="nameBackdrop" class="form-label">Satış Fiyatı</label>
-                                <input type="text" id="serialBackdrop" class="form-control" name="sale_price" />
+                                <input type="text" id="serialBackdrop" class="form-control" name="sale_price"/>
                             </div>
                         </div>
                     </div>
@@ -930,7 +983,7 @@
                 </form>
             </div>
         </div>
-  
+
         <div class="modal fade" id="deleteModal" data-bs-backdrop="static" tabindex="-1">
             <div class="modal-dialog">
                 <form class="modal-content" action="{{ route('stockcard.movementdelete') }}" id="deleteModalForm">
@@ -944,7 +997,7 @@
                         <div class="row">
                             <div class="col mb-3">
                                 <label for="nameBackdrop" class="form-label">Not</label>
-                                <input type="text" id="note" class="form-control" name="note" required />
+                                <input type="text" id="note" class="form-control" name="note" required/>
                             </div>
                         </div>
                     </div>
@@ -955,143 +1008,216 @@
                 </form>
             </div>
         </div>
- 
 
-    <!-- Transfer Modal -->
-    <div class="modal fade" id="transferModal" data-bs-backdrop="static" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-gradient-primary text-white">
-                    <h5 class="modal-title">
-                        <i class="bx bx-transfer me-2"></i>
-                        Transfer İşlemi
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="transferForm" @submit.prevent="submitTransfer">
-                        <!-- Transfer Bilgileri -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold"></label>
-                                    <i class="bx bx-user me-1"></i>
-                                    Gönderici Bayi
-                                </label>
 
-                                <select v-model="transferForm.main_seller_id" class="form-select" required>
-                                    <option value="">Bayi Seçiniz</option>
-                                    <option v-for="seller in sellers" :key="seller.id" :value="seller.id"
-                                        v-text="seller.name"></option>
-                                </select>
-                                <!-- Debug -->
+        <!-- Transfer Modal -->
+        <!-- Transfer Modal -->
+        <div class="modal fade" id="transferModal" data-bs-backdrop="static" tabindex="-1">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header bg-gradient-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="bx bx-transfer me-2"></i>
+                            Yeni Transfer Oluştur
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="transferCreateForm" @submit.prevent="submitTransfer">
+                            <input type="hidden" name="type" value="other"/>
+
+                            <!-- Transfer Bilgileri -->
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">
+                                        <i class="bx bx-user me-1"></i>
+                                        Gönderici Bayi
+                                    </label>
+                                    <select v-model="transferFormModal.main_seller_id" class="form-select">
+                                        <option value="">Bayi Seçiniz</option>
+                                        <option v-for="seller in sellers" :key="seller.id" :value="seller.id"
+                                                v-text="seller.name"></option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">
+                                        <i class="bx bx-building me-1"></i>
+                                        Alıcı Bayi
+                                    </label>
+                                    <select v-model="transferFormModal.delivery_seller_id"
+                                            class="form-select"
+                                            required>
+                                        <option value="">Bayi Seçiniz</option>
+                                        <option v-for="seller in sellers" :key="seller.id" :value="seller.id">
+                                            @{{ seller.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">
+                                        <i class="bx bx-hash me-1"></i>
+                                        Sevk Numarası
+                                    </label>
+                                    <input type="text"
+                                           v-model="transferFormModal.number"
+                                           class="form-control"
+                                           required>
+                                </div>
                             </div>
-                            <div class="col-md-6">
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           v-model="transferFormModal.is_barcode_transfer"
+                                           value="1"
+                                           id="barcodeTransferCheck">
+                                    <label class="form-check-label fw-bold" for="barcodeTransferCheck">
+                                        <i class="bx bx-barcode me-1"></i>
+                                        Barkod Transfer
+                                    </label>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="bx bx-info-circle me-1"></i>
+                                    Barkod transfer seçilirse seri numarası yerine barkodlar girilecektir
+                                </small>
+                            </div>
+
+                            <!-- Seri Numaraları -->
+                            <div class="mb-3">
                                 <label class="form-label fw-bold">
-                                    <i class="bx bx-building me-1"></i>
-                                    Alıcı Bayi
+                                    <i class="bx bx-barcode me-1"></i>
+                                    <span v-if="transferFormModal.is_barcode_transfer">Barkodlar ve Adetler</span>
+                                    <span v-else>Seri Numaraları</span>
                                 </label>
-                                <select v-model="transferForm.delivery_seller_id" class="form-select" required>
-                                    <option value="">Bayi Seçiniz</option>
-                                    <option v-for="seller in sellers" :key="seller.id" :value="seller.id"
-                                        v-text="seller.name"></option>
-                                </select>
-                                <!-- Debug -->
-                            </div>
-                        </div>
+                                <div class="serial-list-container-modal p-3 bg-light rounded">
+                                    <div v-if="transferFormModal.sevkList.length === 0"
+                                         class="text-muted text-center py-3">
+                                        <span v-if="transferFormModal.is_barcode_transfer">
+                                            Barkod ve adet eklemek için aşağıdaki alanları doldurun
+                                        </span>
+                                        <span v-else>
+                                            Seri numarası eklemek için aşağıdaki alana girin ve Enter tuşuna basın
+                                        </span>
+                                    </div>
 
-                        <div class="row mb-3">
-                            <div class="col-md-12">
+                                    <!-- Seri Numaraları Listesi (Normal Transfer) -->
+                                    <div v-if="!transferFormModal.is_barcode_transfer">
+                                        <div v-for="(serial, index) in transferFormModal.sevkList"
+                                             :key="index"
+                                             class="input-group mb-2">
+                                            <input type="text"
+                                                   :value="serial"
+                                                   class="form-control"
+                                                   readonly>
+                                            <button type="button"
+                                                    @click="removeSerialModal(index)"
+                                                    class="btn btn-danger">
+                                                <i class="bx bx-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Barkod ve Adet Listesi (Barkod Transfer) -->
+                                    <div v-else>
+                                        <div v-for="(item, index) in transferFormModal.sevkList"
+                                             :key="index"
+                                             class="row mb-2 align-items-center">
+                                            <div class="col-md-6">
+                                                <input type="text"
+                                                       :value="item.barcode || item"
+                                                       class="form-control"
+                                                       readonly>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <input type="number"
+                                                       :value="item.quantity || 1"
+                                                       class="form-control"
+                                                       readonly>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button"
+                                                        @click="removeSerialModal(index)"
+                                                        class="btn btn-danger btn-sm">
+                                                    <i class="bx bx-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Yeni Ekleme Alanı -->
+                                    <div v-if="!transferFormModal.is_barcode_transfer" class="input-group mt-3">
+                                        <input type="text"
+                                               v-model="newSerialModal"
+                                               @keyup.enter="addSerialModal"
+                                               class="form-control"
+                                               placeholder="Seri numarası girin ve Enter tuşuna basın">
+                                        <button type="button"
+                                                @click="addSerialModal"
+                                                class="btn btn-primary">
+                                            <i class="bx bx-plus"></i> Ekle
+                                        </button>
+                                    </div>
+
+                                    <!-- Barkod ve Adet Ekleme Alanı -->
+                                    <div v-else class="mt-3">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <input type="text"
+                                                       v-model="newBarcodeModal"
+                                                       class="form-control"
+                                                       placeholder="Barkod girin">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <input type="number"
+                                                       v-model="newQuantityModal"
+                                                       class="form-control"
+                                                       min="1"
+                                                       value="1"
+                                                       placeholder="Adet">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button"
+                                                        @click="addBarcodeModal"
+                                                        class="btn btn-primary">
+                                                    <i class="bx bx-plus"></i> Ekle
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Not -->
+                            <div class="mb-3">
                                 <label class="form-label fw-bold">
-                                    <i class="bx bx-hash me-1"></i>
-                                    Sevk Numarası
+                                    <i class="bx bx-note me-1"></i>
+                                    Açıklama
                                 </label>
-                                <input type="text" v-model="transferForm.number" class="form-control"
-                                    placeholder="Otomatik oluşturulacak" readonly>
+                                <textarea v-model="transferFormModal.description"
+                                          class="form-control"
+                                          rows="3"
+                                          placeholder="Transfer açıklaması..."></textarea>
                             </div>
-                        </div>
-
-                        <!-- Seri Numaraları -->
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">
-                                <i class="bx bx-barcode me-1"></i>
-                                Seri Numaraları
-                            </label>
-                            <div class="serial-list-container p-3 bg-light rounded">
-                                <!-- Debug info -->
-
-
-                                <div v-if="transferForm.sevkList.length === 0" class="text-muted text-center py-3">
-                                    Seri numarası eklemek için aşağıdaki alana girin
-                                </div>
-                                <div v-for="(serial, index) in transferForm.sevkList" :key="index"
-                                    class="input-group mb-2">
-                                    <input type="text" :value="serial" class="form-control" readonly>
-                                    <button type="button" @click="removeSerial(index)" class="btn btn-danger">
-                                        <i class="bx bx-trash"></i>
-                                    </button>
-                                </div>
-
-                                <!-- Yeni Seri Ekle -->
-                                <div class="input-group mt-3">
-                                    <input type="text" v-model="newSerial" @keyup.enter="addSerial"
-                                        class="form-control" placeholder="Seri numarası girin ve Enter tuşuna basın">
-                                    <button type="button" @click="addSerial" class="btn btn-primary">
-                                        <i class="bx bx-plus"></i> Ekle
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Not -->
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">
-                                <i class="bx bx-note me-1"></i>
-                                Açıklama
-                            </label>
-                            <textarea v-model="transferForm.description" class="form-control" rows="3"
-                                placeholder="Transfer hakkında notlarınızı yazabilirsiniz..."></textarea>
-                        </div>
-
-                        <!-- Ürün Bilgileri -->
-                        <div v-if="transferForm.selectedItem" class="alert alert-info">
-                            <h6 class="alert-heading">
-                                <i class="bx bx-info-circle me-1"></i>
-                                Transfer Edilecek Ürün
-                            </h6>
-                            <p class="mb-1"><strong>Stok Adı:</strong> <span
-                                    v-text="transferForm.selectedItem.stock_name"></span></p>
-                            <p class="mb-1"><strong>Seri No:</strong> <span
-                                    v-text="transferForm.selectedItem.serial_number"></span></p>
-                            <p class="mb-1"><strong>Marka:</strong> <span
-                                    v-text="transferForm.selectedItem.brand_name"></span></p>
-                            <p class="mb-1"><strong>Renk:</strong> <span
-                                    v-text="transferForm.selectedItem.color_name"></span></p>
-                            <p class="mb-0"><strong>Bayi:</strong> <span
-                                    v-text="transferForm.selectedItem.seller_name"></span></p>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="bx bx-x me-1"></i>
-                        İptal
-                    </button>
-                    <button type="button" @click="submitTransfer" class="btn btn-primary"
-                        :disabled="loading.transfer || transferForm.sevkList.length === 0">
-                        <span v-if="loading.transfer">
-                            <span class="spinner-border spinner-border-sm me-1"></span>
-                            İşleniyor...
-                        </span>
-                        <span v-else>
-                            <i class="bx bx-paper-plane me-1"></i>
-                            Transfer Oluştur
-                        </span>
-                    </button>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bx bx-x me-1"></i>
+                            İptal
+                        </button>
+                        <button type="button"
+                                @click="submitTransfer"
+                                class="btn btn-primary"
+                                :disabled="loading.transfer">
+                            <i class="bx bx-save me-1"></i>
+                            <span v-if="loading.transfer">Kaydediliyor...</span>
+                            <span v-else>Transfer Oluştur</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 @endsection
 @section('custom-js')
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -1107,10 +1233,8 @@
             'content');
 
         // Initial data from backend
-        window.initialData = {
-            brands: @json($brands ?? []),
-            colors: @json($colors ?? [])
-        };
+        window.initialData = <?php echo json_encode($initialData); ?>;
+        const initialData = window.initialData || {};
 
         createApp({
             data() {
@@ -1120,10 +1244,10 @@
                     pagination: {},
 
                     // Filter data (will be loaded dynamically)
-                    brands: [],
+                    brands: initialData.brands || [],
                     versions: [],
-                    categories: @json($categories ?? []),
-                    colors: [],
+                    categories: initialData.categories || [],
+                    colors: initialData.colors || [],
                     sellers: [],
 
                     // Autocomplete data
@@ -1170,18 +1294,20 @@
                         transfer: false
                     },
 
-                    // Transfer form data
-                    transferForm: {
+                    // Transfer modal data
+                    transferFormModal: {
                         main_seller_id: '',
                         delivery_seller_id: '',
-                        number: Math.floor(Math.random() * 999999989) + 111,
+                        number: '',
                         sevkList: [],
                         description: '',
                         type: 'other',
-                        selectedItem: null
+                        is_barcode_transfer: false
                     },
-                    newSerial: '',
-                    userRoles: @json(auth()->user()->getRoleNames() ?? [])
+                    newSerialModal: '',
+                    newBarcodeModal: '',
+                    newQuantityModal: 1,
+                    userRoles: initialData.userRoles || []
                 }
             },
 
@@ -1205,7 +1331,6 @@
 
                 // Filter verilerini yükle
                 async loadFilterData() {
-
                     try {
                         // Paralel olarak tüm verileri yükle
                         const [brandsRes, colorsRes, sellersRes] = await Promise.all([
@@ -1214,567 +1339,622 @@
                             axios.get('/api/common/sellers')
                         ]);
 
-                        this.brands = brandsRes.data || [];
-                        this.colors = colorsRes.data || [];
-                        this.sellers = sellersRes.data || [];
-
+                        this.brands = this.normalizeApiResponse(brandsRes.data);
+                        this.colors = this.normalizeApiResponse(colorsRes.data);
+                        this.sellers = this.normalizeApiResponse(sellersRes.data);
                     } catch (error) {
                         console.error('Error loading global data:', error);
                         this.showNotification('Genel veriler yüklenemedi', 'error');
                     }
+                },
 
-            },
-
-            // Load versions by brand
-            async loadVersions() {
-                try {
-                    if (this.searchForm.brand) {
-                        console.log('Loading versions for brand:', this.searchForm.brand);
-                        const response = await axios.get(
-                            `/api/common/versions?brand_id=${this.searchForm.brand}`);
-                        this.versions = response.data || [];
-                        console.log('Versions loaded:', this.versions.length);
-                    } else {
-                        this.versions = [];
-                        this.searchForm.version = '';
+                normalizeApiResponse(payload) {
+                    if (Array.isArray(payload)) {
+                        return payload;
                     }
-                } catch (error) {
-                    console.error('Error loading versions:', error);
-                    this.versions = [];
-                }
-            },
-
-            // Stock autocomplete search
-            searchStock() {
-                clearTimeout(this.stockSearchTimeout);
-
-                if (this.searchForm.stockName.length < 2) {
-                    this.filteredStocks = [];
-                    this.showStockDropdown = false;
-                    this.searchingStock = false;
-                    return;
-                }
-
-                // Show dropdown and loading state immediately when typing
-                this.showStockDropdown = true;
-                this.searchingStock = true;
-
-                this.stockSearchTimeout = setTimeout(async () => {
+                    if (payload && Array.isArray(payload.data)) {
+                        return payload.data;
+                    }
+                    if (payload && typeof payload === 'object') {
+                        return Object.values(payload);
+                    }
+                    return [];
+                },
+                // Load versions by brand
+                async loadVersions() {
                     try {
-                        const response = await axios.get('/searchStockCard', {
-                            params: {
-                                search: this.searchForm.stockName
+                        if (this.searchForm.brand) {
+                            console.log('Loading versions for brand:', this.searchForm.brand);
+                            const response = await axios.get(
+                                `/api/common/versions?brand_id=${this.searchForm.brand}`);
+                            this.versions = response.data || [];
+                            console.log('Versions loaded:', this.versions.length);
+                        } else {
+                            this.versions = [];
+                            this.searchForm.version = '';
+                        }
+                    } catch (error) {
+                        console.error('Error loading versions:', error);
+                        this.versions = [];
+                    }
+                },
+
+                // Stock autocomplete search
+                searchStock() {
+                    clearTimeout(this.stockSearchTimeout);
+
+                    if (this.searchForm.stockName.length < 2) {
+                        this.filteredStocks = [];
+                        this.showStockDropdown = false;
+                        this.searchingStock = false;
+                        return;
+                    }
+
+                    // Show dropdown and loading state immediately when typing
+                    this.showStockDropdown = true;
+                    this.searchingStock = true;
+
+                    this.stockSearchTimeout = setTimeout(async () => {
+                        try {
+                            const response = await axios.get('/searchStockCard', {
+                                params: {
+                                    search: this.searchForm.stockName
+                                }
+                            });
+
+                            if (response.data && Array.isArray(response.data)) {
+                                this.filteredStocks = response.data.slice(0, 10); // Limit to 10 results
+                                this.showStockDropdown = this.filteredStocks.length > 0;
+                            } else {
+                                this.filteredStocks = [];
+                                this.showStockDropdown = false;
+                            }
+                        } catch (error) {
+                            console.error('Stock search error:', error);
+                            this.filteredStocks = [];
+                            this.showStockDropdown = false;
+                        } finally {
+                            this.searchingStock = false;
+                        }
+                    }, 300); // 300ms debounce
+                },
+
+                // Focus event - show previous results if available
+                onStockInputFocus() {
+                    if (this.searchForm.stockName.length >= 2) {
+                        // Trigger search to get fresh results
+                        this.searchStock();
+                    }
+                },
+
+                // Select stock from autocomplete
+                selectStock(stock) {
+                    // IMPORTANT: Only store the stock name (not brand/model)
+                    // Backend searches by 'name' field: WHERE name LIKE '%stockName%'
+                    this.searchForm.stockName = stock.name;
+                    this.showStockDropdown = false;
+                    this.filteredStocks = [];
+                },
+
+                // Hide stock dropdown
+                hideStockDropdown() {
+                    setTimeout(() => {
+                        this.showStockDropdown = false;
+                    }, 200);
+                },
+
+                async loadStockCards() {
+                    try {
+                        console.log('loadStockCards called');
+                        this.loading.stockcards = true;
+
+                        const params = new URLSearchParams();
+                        Object.keys(this.searchForm).forEach(key => {
+                            if (this.searchForm[key]) {
+                                params.append(key, this.searchForm[key]);
                             }
                         });
 
-                        if (response.data && Array.isArray(response.data)) {
-                            this.filteredStocks = response.data.slice(0, 10); // Limit to 10 results
-                            this.showStockDropdown = this.filteredStocks.length > 0;
+                        // Category ID'yi URL'den al
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const categoryId = urlParams.get('category_id') || this.searchForm.category;
+                        if (categoryId) {
+                            params.append('category_id', categoryId);
+                        }
+
+                        console.log('Request params:', params.toString());
+                        const url = `{{ route('stockcard.getListData') }}?${params.toString()}`;
+                        console.log('Request URL:', url);
+
+                        const response = await axios.get(url, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            }
+                        });
+
+
+                        if (response.data && response.data.success && response.data.data) {
+                            this.stockcards = response.data.data;
+                            this.pagination = response.data.pagination || {
+                                from: 0,
+                                to: 0,
+                                total: 0,
+                                current_page: 1,
+                                last_page: 1
+                            };
+                            console.log('Stockcards loaded:', this.stockcards.length);
                         } else {
-                            this.filteredStocks = [];
-                            this.showStockDropdown = false;
+                            console.error('API response error:', response.data);
+                            this.showNotification('Stok kartları yüklenemedi', 'error');
+                            this.stockcards = [];
                         }
+
                     } catch (error) {
-                        console.error('Stock search error:', error);
-                        this.filteredStocks = [];
-                        this.showStockDropdown = false;
-                    } finally {
-                        this.searchingStock = false;
-                    }
-                }, 300); // 300ms debounce
-            },
-
-            // Focus event - show previous results if available
-            onStockInputFocus() {
-                if (this.searchForm.stockName.length >= 2) {
-                    // Trigger search to get fresh results
-                    this.searchStock();
-                }
-            },
-
-            // Select stock from autocomplete
-            selectStock(stock) {
-                // IMPORTANT: Only store the stock name (not brand/model)
-                // Backend searches by 'name' field: WHERE name LIKE '%stockName%'
-                this.searchForm.stockName = stock.name;
-                this.showStockDropdown = false;
-                this.filteredStocks = [];
-            },
-
-            // Hide stock dropdown
-            hideStockDropdown() {
-                setTimeout(() => {
-                    this.showStockDropdown = false;
-                }, 200);
-            },
-
-            async loadStockCards() {
-                try {
-                    console.log('loadStockCards called');
-                    this.loading.stockcards = true;
-
-                    const params = new URLSearchParams();
-                    Object.keys(this.searchForm).forEach(key => {
-                        if (this.searchForm[key]) {
-                            params.append(key, this.searchForm[key]);
-                        }
-                    });
-
-                    // Category ID'yi URL'den al
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const categoryId = urlParams.get('category_id') || this.searchForm.category;
-                    if (categoryId) {
-                        params.append('category_id', categoryId);
-                    }
-
-                    console.log('Request params:', params.toString());
-                    const url = `{{ route('stockcard.getListData') }}?${params.toString()}`;
-                    console.log('Request URL:', url);
-
-                    const response = await axios.get(url, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json'
-                        }
-                    });
-
-
-                    if (response.data && response.data.success && response.data.data) {
-                        this.stockcards = response.data.data;
-                        this.pagination = response.data.pagination || {
-                            from: 0,
-                            to: 0,
-                            total: 0,
-                            current_page: 1,
-                            last_page: 1
-                        };
-                        console.log('Stockcards loaded:', this.stockcards.length);
-                    } else {
-                        console.error('API response error:', response.data);
-                        this.showNotification('Stok kartları yüklenemedi', 'error');
+                        console.error('Error loading stock cards:', error);
                         this.stockcards = [];
+                    } finally {
+                        this.loading.stockcards = false;
                     }
+                },
 
-                } catch (error) {
-                    console.error('Error loading stock cards:', error);
-                    this.stockcards = [];
-                } finally {
-                    this.loading.stockcards = false;
-                }
-            },
-
-            async searchStockCards() {
-                console.log('searchStockCards called');
-                console.log('Search form:', this.searchForm);
-                await this.loadStockCards();
-            },
-
-            // Checkbox methods for main table barcode printing
-            toggleAllStockCards(event) {
-                if (event.target.checked) {
-                    this.selectedStockCards = this.stockcards.map(sc => sc.ids);
-                } else {
-                    this.selectedStockCards = [];
-                }
-                this.updateBarcodeButton();
-            },
-
-            updateBarcodeButton() {
-                const barcodeButton = document.getElementById('barcode');
-                if (this.selectedStockCards.length > 0) {
-                    barcodeButton.removeAttribute('disabled');
-                } else {
-                    barcodeButton.setAttribute('disabled', 'disabled');
-                }
-            },
-
-            // Pagination methods
-            changePage(page) {
-                if (page >= 1 && page <= this.pagination.last_page) {
-                    this.searchForm.page = page;
-                    this.loadStockCards();
-                }
-            },
-
-            getPageNumbers() {
-                const current = this.pagination.current_page;
-                const last = this.pagination.last_page;
-                const delta = 2;
-                const range = [];
-                const rangeWithDots = [];
-
-                for (let i = Math.max(2, current - delta); i <= Math.min(last - 1, current + delta); i++) {
-                    range.push(i);
-                }
-
-                if (current - delta > 2) {
-                    rangeWithDots.push(1, '...');
-                } else {
-                    rangeWithDots.push(1);
-                }
-
-                rangeWithDots.push(...range);
-
-                if (current + delta < last - 1) {
-                    rangeWithDots.push('...', last);
-                } else {
-                    rangeWithDots.push(last);
-                }
-
-                return rangeWithDots;
-            },
-
-            clearFilters() {
-                this.searchForm = {
-                    stockName: '',
-                    brand: '',
-                    version: '',
-                    category: '',
-                    color: '',
-                    seller: '',
-                    serialNumber: '',
-                    page: 1
-                };
-                this.loadStockCards();
-            },
-
-
-            async openStockModal(ids, stockId, stockName) {
-                console.log('Opening stock modal for:', {
-                    ids,
-                    stockId,
-                    stockName
-                });
-
-                // Set selected stock
-                this.selectedStock = {
-                    id: stockId,
-                    name: stockName,
-                    ids: ids
-                };
-
-                // Reset data
-                this.stockDetails = [];
-                this.selectedItems = [];
-
-                // Open modal first
-                const modal = new bootstrap.Modal(document.getElementById('stockDetailsModal'), {
-                    backdrop: 'static',
-                    keyboard: false,
-                    focus: true
-                });
-                modal.show();
-
-                // Start loading
-                this.loading.stockDetails = true;
-
-                // Load stock movements with pagination
-                await this.loadStockMovements(stockId, 1);
-            },
-
-            getRowClass(item) {
-                if (item.quantity == 0) return 'table-warning';
-                if (item.type == 3) return 'table-danger';
-                return '';
-            },
-
-            getAvailableCount() {
-                return this.stockDetails.filter(item => item.type == 1 && item.quantity > 0).length;
-            },
-
-            getDamagedCount() {
-                return this.stockDetails.filter(item => item.type == 3).length;
-            },
-
-            getTransferCount() {
-                return this.stockDetails.filter(item => item.type == 4).length;
-            },
-
-            formatCurrency(amount) {
-                return new Intl.NumberFormat('tr-TR', {
-                    style: 'currency',
-                    currency: 'TRY'
-                }).format(amount || 0);
-            },
-
-            openPriceModal(id) {
-                $("#priceModal").modal('show');
-                $("#priceModal #stockCardMovementId").val(id);
-            },
-
-            openDemandModal(id, name, color) {
-                $("#demandModal").modal('show');
-                $("#demandModal").find('.modal-header span').html(name);
-                $("#demandModal").find('input#id').val(id);
-                $("#demandModal").find('select#color').val(color).trigger('change');
-                $("#demandModal").find('select#color').attr('data-color', color);
-            },
-
-            deleteMovement(id) {
-                Swal.fire({
-                    title: "Silmek istediğinizden emin misiniz?",
-                    text: "Silme işlemi yapılırken kesinlikle not girmelisiniz!",
-                    icon: "warning",
-                    showCancelButton: true,
-                    confirmButtonColor: "#3085d6",
-                    cancelButtonColor: "#d33",
-                    confirmButtonText: "EVET!"
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#stockCardMovementIdDelete').val(id);
-                        $('#deleteModal').modal('show');
-                    }
-                });
-            },
-
-            enableBarcodePrint() {
-                if (this.selectedItems.length > 0) {
-                    // Enable barcode print button
-                    document.getElementById('barcode').disabled = false;
-
-                    // Set selected items in form
-                    const form = document.getElementById('itemFrom');
-                    const checkboxes = form.querySelectorAll('input[name="selected[]"]');
-                    checkboxes.forEach(checkbox => {
-                        checkbox.checked = this.selectedItems.includes(parseInt(checkbox.value));
-                    });
-
-                    // Close modal
-                    bootstrap.Modal.getInstance(document.getElementById('stockDetailsModal')).hide();
-
-                    // Show success message
-                    Swal.fire({
-                        title: 'Başarılı!',
-                        text: `${this.selectedItems.length} ürün seçildi. Barkod yazdırma aktif.`,
-                        icon: 'success',
-                        timer: 2000
-                    });
-                }
-            },
-
-            multipleAllPriceUpdate(ids) {
-                if (!ids) {
-                    Swal.fire('Seçim Yapılmadı');
-                    return;
-                }
-                $("#multiplepriceModal").modal('show');
-                $("#multiplepriceModal").find("#stockCardMovementIdArray").val(ids);
-            },
-
- 
-
-            // Transfer Modal İşlemleri
-            openTransferModal(item) {
-                console.log('Opening transfer modal for item:', item);
-                console.log('Available sellers:', this.sellers);
-
-                // Form'u sıfırla
-                this.transferForm = {
-                    main_seller_id: item.seller_id || (item.seller ? item.seller.id : ''),
-                    delivery_seller_id: '',
-                    number: Math.floor(Math.random() * 999999989) + 111,
-                    sevkList: [item.serial_number],
-                    description: '',
-                    type: 'other',
-                    selectedItem: item
-                };
-                this.newSerial = '';
-                console.log('Transfer form initialized:', this.transferForm);
-
-                // Modal'ı aç
-                const modal = new bootstrap.Modal(document.getElementById('transferModal'));
-                modal.show();
-            },
-
-            addSerial() {
-                if (!this.newSerial || this.newSerial.length < 7) {
-                    this.showNotification('Geçerli bir seri numarası girin (minimum 7 karakter)', 'warning');
-                    return;
-                }
-
-                // Aynı seri numarası var mı kontrol et
-                if (this.transferForm.sevkList.includes(this.newSerial)) {
-                    this.showNotification('Bu seri numarası zaten eklenmiş', 'warning');
-                    this.newSerial = '';
-                    return;
-                }
-
-                // Seri numarasını ekle
-                this.transferForm.sevkList.push(this.newSerial);
-                this.newSerial = '';
-            },
-
-            removeSerial(index) {
-                this.transferForm.sevkList.splice(index, 1);
-            },
-
-            async submitTransfer() {
-                // Validasyon
-                if (!this.transferForm.main_seller_id) {
-                    this.showNotification('Gönderici bayi seçiniz', 'warning');
-                    return;
-                }
-
-                if (!this.transferForm.delivery_seller_id) {
-                    this.showNotification('Alıcı bayi seçiniz', 'warning');
-                    return;
-                }
-
-                if (this.transferForm.sevkList.length === 0) {
-                    this.showNotification('En az bir seri numarası eklemelisiniz', 'warning');
-                    return;
-                }
-
-                if (this.transferForm.main_seller_id === this.transferForm.delivery_seller_id) {
-                    this.showNotification('Gönderici ve alıcı bayi aynı olamaz', 'warning');
-                    return;
-                }
-
-                try {
-                    this.loading.transfer = true;
-
-                    const response = await axios.post('/transfer/store', {
-                        main_seller_id: this.transferForm.main_seller_id,
-                        delivery_seller_id: this.transferForm.delivery_seller_id,
-                        number: this.transferForm.number,
-                        sevkList: this.transferForm.sevkList,
-                        description: this.transferForm.description,
-                        type: this.transferForm.type
-                    }, {
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
-                                .getAttribute('content'),
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        }
-                    });
-
-                    console.log('Transfer response:', response);
-
-                    // Modal'ı kapat
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('transferModal'));
-                    if (modal) {
-                        modal.hide();
-                    }
-
-                    // Başarı mesajı
-                    this.showNotification(response.data || 'Transfer başarıyla oluşturuldu', 'success');
-
-                    // Sayfayı yenile
+                async searchStockCards() {
+                    console.log('searchStockCards called');
+                    console.log('Search form:', this.searchForm);
                     await this.loadStockCards();
+                },
 
-                } catch (error) {
-                    console.error('Transfer error:', error);
-                    const errorMessage = error.response?.data?.message || error.response?.data ||
-                        'Transfer oluşturulurken bir hata oluştu';
-                    this.showNotification(errorMessage, 'error');
-                } finally {
-                    this.loading.transfer = false;
-                }
-            },
+                // Checkbox methods for main table barcode printing
+                toggleAllStockCards(event) {
+                    if (event.target.checked) {
+                        this.selectedStockCards = this.stockcards.map(sc => sc.ids);
+                    } else {
+                        this.selectedStockCards = [];
+                    }
+                    this.updateBarcodeButton();
+                },
 
-            hasRole(roles) {
-                if (!Array.isArray(roles)) {
-                    roles = [roles];
-                }
-                return roles.some(role => this.userRoles.includes(role));
-            },
+                updateBarcodeButton() {
+                    const barcodeButton = document.getElementById('barcode');
+                    if (this.selectedStockCards.length > 0) {
+                        barcodeButton.removeAttribute('disabled');
+                    } else {
+                        barcodeButton.setAttribute('disabled', 'disabled');
+                    }
+                },
 
-            // Bildirim göster
-            showNotification(message, type = 'success') {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: type,
-                        title: message,
-                        timer: 3000,
-                        showConfirmButton: false
+                // Pagination methods
+                changePage(page) {
+                    if (page >= 1 && page <= this.pagination.last_page) {
+                        this.searchForm.page = page;
+                        this.loadStockCards();
+                    }
+                },
+
+                getPageNumbers() {
+                    const current = this.pagination.current_page;
+                    const last = this.pagination.last_page;
+                    const delta = 2;
+                    const range = [];
+                    const rangeWithDots = [];
+
+                    for (let i = Math.max(2, current - delta); i <= Math.min(last - 1, current + delta); i++) {
+                        range.push(i);
+                    }
+
+                    if (current - delta > 2) {
+                        rangeWithDots.push(1, '...');
+                    } else {
+                        rangeWithDots.push(1);
+                    }
+
+                    rangeWithDots.push(...range);
+
+                    if (current + delta < last - 1) {
+                        rangeWithDots.push('...', last);
+                    } else {
+                        rangeWithDots.push(last);
+                    }
+
+                    return rangeWithDots;
+                },
+
+                clearFilters() {
+                    this.searchForm = {
+                        stockName: '',
+                        brand: '',
+                        version: '',
+                        category: '',
+                        color: '',
+                        seller: '',
+                        serialNumber: '',
+                        page: 1
+                    };
+                    this.loadStockCards();
+                },
+
+
+                async openStockModal(ids, stockId, stockName) {
+                    console.log('Opening stock modal for:', {
+                        ids,
+                        stockId,
+                        stockName
                     });
-                } else {
-                    console.log(`${type.toUpperCase()}: ${message}`);
-                }
-            },
 
-            // Modal pagination methods
-            changeStockDetailsPage(page) {
-                if (page >= 1 && page <= this.stockDetailsPagination.last_page) {
-                    this.stockDetailsPagination.current_page = page;
-                    this.loadStockMovements(this.selectedStock.id, page);
-                }
-            },
+                    // Set selected stock
+                    this.selectedStock = {
+                        id: stockId,
+                        name: stockName,
+                        ids: ids
+                    };
 
-            getStockDetailsPageNumbers() {
-                const current = this.stockDetailsPagination.current_page;
-                const last = this.stockDetailsPagination.last_page;
-                const pages = [];
+                    // Reset data
+                    this.stockDetails = [];
+                    this.selectedItems = [];
 
-                // Show max 5 pages
-                let start = Math.max(1, current - 2);
-                let end = Math.min(last, start + 4);
+                    // Open modal first
+                    const modal = new bootstrap.Modal(document.getElementById('stockDetailsModal'), {
+                        backdrop: 'static',
+                        keyboard: false,
+                        focus: true
+                    });
+                    modal.show();
 
-                // Adjust start if we're near the end
-                if (end - start < 4) {
-                    start = Math.max(1, end - 4);
-                }
-
-                for (let i = start; i <= end; i++) {
-                    pages.push(i);
-                }
-
-                return pages;
-            },
-
-            // Updated loadStockMovements method with pagination
-            async loadStockMovements(stockCardId, page = 1) {
-                try {
+                    // Start loading
                     this.loading.stockDetails = true;
 
-                    const response = await axios.get('/stockcard/movements', {
-                        params: {
-                            stock_card_ids: stockCardId,
-                            page: page,
-                            per_page: 10,
-                            serialNumber: '',
-                            seller: '',
-                            color: ''
+                    // Load stock movements with pagination
+                    await this.loadStockMovements(stockId, 1);
+                },
+
+                getRowClass(item) {
+                    if (item.quantity == 0) return 'table-warning';
+                    if (item.type == 3) return 'table-danger';
+                    return '';
+                },
+
+                getAvailableCount() {
+                    return this.stockDetails.filter(item => item.type == 1 && item.quantity > 0).length;
+                },
+
+                getDamagedCount() {
+                    return this.stockDetails.filter(item => item.type == 3).length;
+                },
+
+                getTransferCount() {
+                    return this.stockDetails.filter(item => item.type == 4).length;
+                },
+
+                formatCurrency(amount) {
+                    return new Intl.NumberFormat('tr-TR', {
+                        style: 'currency',
+                        currency: 'TRY'
+                    }).format(amount || 0);
+                },
+
+                openPriceModal(id) {
+                    $("#priceModal").modal('show');
+                    $("#priceModal #stockCardMovementId").val(id);
+                },
+
+                openDemandModal(id, name, color) {
+                    $("#demandModal").modal('show');
+                    $("#demandModal").find('.modal-header span').html(name);
+                    $("#demandModal").find('input#id').val(id);
+                    $("#demandModal").find('select#color').val(color).trigger('change');
+                    $("#demandModal").find('select#color').attr('data-color', color);
+                },
+
+                deleteMovement(id) {
+                    Swal.fire({
+                        title: "Silmek istediğinizden emin misiniz?",
+                        text: "Silme işlemi yapılırken kesinlikle not girmelisiniz!",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#3085d6",
+                        cancelButtonColor: "#d33",
+                        confirmButtonText: "EVET!"
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $('#stockCardMovementIdDelete').val(id);
+                            $('#deleteModal').modal('show');
                         }
                     });
+                },
 
-                    console.log('Stock movements response:', response.data);
+                enableBarcodePrint() {
+                    if (this.selectedItems.length > 0) {
+                        // Enable barcode print button
+                        document.getElementById('barcode').disabled = false;
 
-                    // Parse response data
-                    if (response.data && response.data.data) {
-                        this.stockDetails = response.data.data;
-                        this.stockDetailsPagination = {
-                            current_page: response.data.current_page || 1,
-                            last_page: response.data.last_page || 1,
-                            per_page: response.data.per_page || 10,
-                            total: response.data.total || 0,
-                            from: response.data.from || 0,
-                            to: response.data.to || 0
-                        };
-                        console.log('Stock details loaded:', this.stockDetails.length, 'items');
-                    } else {
-                        console.warn('No stock movements data found in response');
-                        this.stockDetails = [];
-                        this.stockDetailsPagination = {
-                            current_page: 1,
-                            last_page: 1,
-                            per_page: 10,
-                            total: 0,
-                            from: 0,
-                            to: 0
-                        };
+                        // Set selected items in form
+                        const form = document.getElementById('itemFrom');
+                        const checkboxes = form.querySelectorAll('input[name="selected[]"]');
+                        checkboxes.forEach(checkbox => {
+                            checkbox.checked = this.selectedItems.includes(parseInt(checkbox.value));
+                        });
+
+                        // Close modal
+                        bootstrap.Modal.getInstance(document.getElementById('stockDetailsModal')).hide();
+
+                        // Show success message
+                        Swal.fire({
+                            title: 'Başarılı!',
+                            text: `${this.selectedItems.length} ürün seçildi. Barkod yazdırma aktif.`,
+                            icon: 'success',
+                            timer: 2000
+                        });
+                    }
+                },
+
+                multipleAllPriceUpdate(ids) {
+                    if (!ids) {
+                        Swal.fire('Seçim Yapılmadı');
+                        return;
+                    }
+                    $("#multiplepriceModal").modal('show');
+                    $("#multiplepriceModal").find("#stockCardMovementIdArray").val(ids);
+                },
+
+
+                // Transfer Modal İşlemleri
+                resetTransferModal() {
+                    this.transferFormModal = {
+                        main_seller_id: '',
+                        delivery_seller_id: '',
+                        number: '',
+                        sevkList: [],
+                        description: '',
+                        type: 'other',
+                        is_barcode_transfer: false
+                    };
+                    this.newSerialModal = '';
+                    this.newBarcodeModal = '';
+                    this.newQuantityModal = 1;
+                },
+
+                async ensureSellersLoaded() {
+                    if (this.sellers.length) {
+                        return;
+                    }
+                    try {
+                        const response = await axios.get('/api/common/sellers');
+                        this.sellers = this.normalizeApiResponse(response.data);
+                    } catch (error) {
+                        console.error('Seller load error:', error);
+                    }
+                },
+
+                async openTransferModal(payload) {
+                    await this.ensureSellersLoaded();
+
+                    if (!this.sellers.length) {
+                        this.showNotification('Bayi listesi yüklenemedi', 'error');
+                        return;
                     }
 
-                } catch (error) {
-                    console.error('Error loading stock movements:', error);
-                    this.showNotification('Stok hareketleri yüklenemedi', 'error');
-                    this.stockDetails = [];
-                } finally {
-                    this.loading.stockDetails = false;
+                    const serial = typeof payload === 'string'
+                        ? payload
+                        : (payload?.serial_number || payload?.serial || payload?.barcode || '');
+
+                    this.resetTransferModal();
+                    this.transferFormModal.main_seller_id = payload?.seller_id || payload?.seller?.id || '';
+
+                    if (serial) {
+                        this.transferFormModal.sevkList = [serial];
+                    }
+
+                    const modal = new bootstrap.Modal(document.getElementById('transferModal'));
+                    modal.show();
+                },
+
+                addSerialModal() {
+                    const serial = (this.newSerialModal || '').trim();
+
+                    if (serial.length < 5) {
+                        this.showNotification('Geçerli bir seri numarası girin', 'warning');
+                        return;
+                    }
+
+                    if (this.transferFormModal.sevkList.includes(serial)) {
+                        this.showNotification('Bu seri numarası zaten eklenmiş', 'warning');
+                        this.newSerialModal = '';
+                        return;
+                    }
+
+                    this.transferFormModal.sevkList.push(serial);
+                    this.newSerialModal = '';
+                },
+
+                addBarcodeModal() {
+                    const barcode = (this.newBarcodeModal || '').trim();
+                    const quantity = Number(this.newQuantityModal) || 1;
+
+                    if (!barcode) {
+                        this.showNotification('Barkod giriniz', 'warning');
+                        return;
+                    }
+
+                    if (quantity < 1) {
+                        this.showNotification('Adet en az 1 olmalıdır', 'warning');
+                        return;
+                    }
+
+                    this.transferFormModal.sevkList.push({
+                        barcode,
+                        quantity
+                    });
+                    this.newBarcodeModal = '';
+                    this.newQuantityModal = 1;
+                },
+
+                removeSerialModal(index) {
+                    this.transferFormModal.sevkList.splice(index, 1);
+                },
+
+                async submitTransfer() {
+                    if (!this.transferFormModal.main_seller_id) {
+                        this.showNotification('Gönderici bayi seçiniz', 'warning');
+                        return;
+                    }
+
+                    if (!this.transferFormModal.delivery_seller_id) {
+                        this.showNotification('Alıcı bayi seçiniz', 'warning');
+                        return;
+                    }
+
+                    if (!this.transferFormModal.sevkList.length) {
+                        this.showNotification('En az bir kayıt eklemelisiniz', 'warning');
+                        return;
+                    }
+
+                    if (this.transferFormModal.main_seller_id === this.transferFormModal.delivery_seller_id) {
+                        this.showNotification('Gönderici ve alıcı bayi aynı olamaz', 'warning');
+                        return;
+                    }
+
+                    try {
+                        this.loading.transfer = true;
+
+                        const payload = {
+                            main_seller_id: this.transferFormModal.main_seller_id,
+                            delivery_seller_id: this.transferFormModal.delivery_seller_id,
+                            number: this.transferFormModal.number,
+                            sevkList: this.transferFormModal.sevkList,
+                            description: this.transferFormModal.description,
+                            type: this.transferFormModal.type,
+                            is_barcode_transfer: this.transferFormModal.is_barcode_transfer ? 1 : 0
+                        };
+
+                        const response = await axios.post('/transfer/store', payload, {
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            }
+                        });
+
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('transferModal'));
+                        if (modal) {
+                            modal.hide();
+                        }
+
+                        this.showNotification(response.data || 'Transfer başarıyla oluşturuldu', 'success');
+                        this.resetTransferModal();
+                        await this.loadStockCards();
+
+                    } catch (error) {
+                        console.error('Transfer error:', error);
+                        const errorMessage = error.response?.data?.message || error.response?.data ||
+                            'Transfer oluşturulurken bir hata oluştu';
+                        this.showNotification(errorMessage, 'error');
+                    } finally {
+                        this.loading.transfer = false;
+                    }
+                },
+
+                hasRole(roles) {
+                    if (!Array.isArray(roles)) {
+                        roles = [roles];
+                    }
+                    return roles.some(role => this.userRoles.includes(role));
+                },
+
+                // Bildirim göster
+                showNotification(message, type = 'success') {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: type,
+                            title: message,
+                            timer: 3000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        console.log(`${type.toUpperCase()}: ${message}`);
+                    }
+                },
+
+                // Modal pagination methods
+                changeStockDetailsPage(page) {
+                    if (page >= 1 && page <= this.stockDetailsPagination.last_page) {
+                        this.stockDetailsPagination.current_page = page;
+                        this.loadStockMovements(this.selectedStock.id, page);
+                    }
+                },
+
+                getStockDetailsPageNumbers() {
+                    const current = this.stockDetailsPagination.current_page;
+                    const last = this.stockDetailsPagination.last_page;
+                    const pages = [];
+
+                    // Show max 5 pages
+                    let start = Math.max(1, current - 2);
+                    let end = Math.min(last, start + 4);
+
+                    // Adjust start if we're near the end
+                    if (end - start < 4) {
+                        start = Math.max(1, end - 4);
+                    }
+
+                    for (let i = start; i <= end; i++) {
+                        pages.push(i);
+                    }
+
+                    return pages;
+                },
+
+                // Updated loadStockMovements method with pagination
+                async loadStockMovements(stockCardId, page = 1) {
+                    try {
+                        this.loading.stockDetails = true;
+
+                        const response = await axios.get('/stockcard/movements', {
+                            params: {
+                                stock_card_ids: stockCardId,
+                                page: page,
+                                per_page: 10,
+                                serialNumber: '',
+                                seller: this.searchForm.seller,
+                                color: ''
+                            }
+                        });
+
+                        console.log('Stock movements response:', response.data);
+
+                        // Parse response data
+                        if (response.data && response.data.data) {
+                            this.stockDetails = response.data.data;
+                            this.stockDetailsPagination = {
+                                current_page: response.data.current_page || 1,
+                                last_page: response.data.last_page || 1,
+                                per_page: response.data.per_page || 10,
+                                total: response.data.total || 0,
+                                from: response.data.from || 0,
+                                to: response.data.to || 0
+                            };
+                            console.log('Stock details loaded:', this.stockDetails.length, 'items');
+                        } else {
+                            console.warn('No stock movements data found in response');
+                            this.stockDetails = [];
+                            this.stockDetailsPagination = {
+                                current_page: 1,
+                                last_page: 1,
+                                per_page: 10,
+                                total: 0,
+                                from: 0,
+                                to: 0
+                            };
+                        }
+
+                    } catch (error) {
+                        console.error('Error loading stock movements:', error);
+                        this.showNotification('Stok hareketleri yüklenemedi', 'error');
+                        this.stockDetails = [];
+                    } finally {
+                        this.loading.stockDetails = false;
+                    }
                 }
             }
-        }
         }).mount('#app');
     </script>
 
@@ -1782,9 +1962,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <script type="text/javascript">
         var selected = [];
-        $(document).ready(function() {
-            $("#multiplepriceUpdate").click(function(e) {
-                $("input:checkbox[name^='selected']:checked").each(function() {
+        $(document).ready(function () {
+            $("#multiplepriceUpdate").click(function (e) {
+                $("input:checkbox[name^='selected']:checked").each(function () {
                     selected.push($(this).val());
                 });
                 if (selected.length > 0) {
@@ -1796,10 +1976,10 @@
             });
         });
 
-        $("#multiplepriceForm").submit(function(e) {
+        $("#multiplepriceForm").submit(function (e) {
             e.preventDefault();
             var form = $(this);
-            var actionUrl = '{{ route('stockcard.multiplepriceupdate') }}';
+            var actionUrl = "{{ route('stockcard.multiplepriceupdate') }}";
             $.ajax({
                 type: "POST",
                 url: actionUrl,
@@ -1807,7 +1987,7 @@
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
-                success: function(data, status) {
+                success: function (data, status) {
                     Swal.fire({
                         icon: status,
                         title: data,
@@ -1818,7 +1998,7 @@
                     });
                     $("#multiplepriceModal").modal('hide');
                 },
-                error: function(request, status, error) {
+                error: function (request, status, error) {
                     Swal.fire({
                         icon: status,
                         title: request.responseJSON,
@@ -1832,7 +2012,6 @@
             });
         });
 
- 
 
         function openModal(id) {
             $("#backDropModal").modal('show');
@@ -1840,10 +2019,10 @@
             $("#stockCardId").val(id);
         }
 
-        $("#transferForm").submit(function(e) {
+        $("#transferForm").submit(function (e) {
             e.preventDefault();
             var form = $(this);
-            var actionUrl = '{{ route('stockcard.sevk') }}';
+            var actionUrl = "{{ route('stockcard.sevk') }}";
             $.ajax({
                 type: "POST",
                 url: actionUrl + '?id=' + $("#stockCardId").val() + '',
@@ -1851,7 +2030,7 @@
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
-                success: function(data, status) {
+                success: function (data, status) {
                     Swal.fire({
                         icon: status,
                         title: data,
@@ -1862,7 +2041,7 @@
                     });
                     $("#backDropModal").modal('hide');
                 },
-                error: function(request, status, error) {
+                error: function (request, status, error) {
                     Swal.fire({
                         icon: status,
                         title: request.responseJSON,
@@ -1876,10 +2055,10 @@
             });
         });
 
-        $("#priceForm").submit(function(e) {
+        $("#priceForm").submit(function (e) {
             e.preventDefault();
             var form = $(this);
-            var actionUrl = '{{ route('stockcard.singlepriceupdate') }}';
+            var actionUrl = "{{ route('stockcard.singlepriceupdate') }}";
             $.ajax({
                 type: "POST",
                 url: actionUrl + '?id=' + $("#stockCardMovementId").val() + '',
@@ -1887,7 +2066,7 @@
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
-                success: function(data, status) {
+                success: function (data, status) {
                     Swal.fire({
                         icon: status,
                         title: data,
@@ -1899,7 +2078,7 @@
                     $("#priceModal").modal('hide');
                     window.location.reload();
                 },
-                error: function(request, status, error) {
+                error: function (request, status, error) {
                     Swal.fire({
                         icon: status,
                         title: request.responseJSON,

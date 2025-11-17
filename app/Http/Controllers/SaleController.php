@@ -215,6 +215,7 @@ class SaleController extends Controller
                 ->with(['account:id,fullname', 'staff:id,name']);
 
             // Invoice query initialized
+        
 
             // Date filter on invoices
             if ($request->filled('daterange')) {
@@ -232,7 +233,28 @@ class SaleController extends Controller
             }
 
             // Only get invoices that have sales
-            $invoiceQuery->whereHas('sales');
+            $invoiceQuery->where('type',2)->whereHas('sales');
+
+            if ($request->filled('seller')) {
+                $sellerId = $request->seller;
+                $invoiceQuery->whereHas('sales', function ($query) use ($sellerId) {
+                    $query->where('seller_id', $sellerId);
+                });
+            }
+            if($request->filled('customerName')){
+                $customerName = $request->customerName;
+                $invoiceQuery->whereHas('account', function ($query) use ($customerName) {
+                    $query->where('fullname', 'like', '%' . $customerName . '%')
+                          ->orWhere('phone1', 'like', '%' . $customerName . '%')
+                          ->orWhere('phone2', 'like', '%' . $customerName . '%');
+                });
+            }
+            if($request->filled('category')){
+                $categoryId = $request->category;
+                $invoiceQuery->whereHas('category', function ($query) use ($categoryId) {
+                    $query->where('category_id', $categoryId);
+                });
+            }
 
             // Pagination on invoice level
             $invoices = $invoiceQuery->paginate(50);
@@ -592,6 +614,69 @@ class SaleController extends Controller
         } catch (\Exception $e) {
             Log::error('Excel export error: ' . $e->getMessage());
             return response()->json(['error' => 'Excel dosyası oluşturulurken hata oluştu.'], 500);
+        }
+    }
+
+    /**
+     * Return invoice sales details for modal
+     */
+    public function invoiceDetails($invoiceId)
+    {
+        try {
+            $invoice = Invoice::with('sales')->where('company_id', Auth::user()->company_id)->findOrFail($invoiceId);
+
+            $movements = $invoice->sales;
+            $sales = collect($movements)->map(function ($movement) {
+                $quantity = (int) data_get($movement, 'quantity', 1);
+                $salePrice = (float) data_get($movement, 'sale_price', 0);
+                $baseCost = (float) data_get($movement, 'base_cost_price', data_get($movement, 'cost_price', 0));
+                $profit = $salePrice - $baseCost;
+
+                return [
+                    'id' => data_get($movement, 'id'),
+                    'stock_name' => data_get($movement, 'stockCard.name') ?? data_get($movement, 'product_summary') ?? 'Stok',
+                    'brand_name' => data_get($movement, 'stockCard.brand.name') ?? '',
+                    'serial_number' => data_get($movement, 'serial'),
+                    'type_name' => data_get($movement, 'type_name'),
+                    'sale_price' => $salePrice,
+                    'base_cost_price' => $baseCost,
+                    'profit' => $profit,
+                    'quantity' => $quantity,
+                    'seller_name' => data_get($movement, 'seller.name') ?? '',
+                ];
+            });
+
+
+            $totals = [
+                'items_count' => $movements->sum('quantity'),
+                'total_sale_price' => $movements->sum(function ($movement) {
+                    return (float) ($movement->sale_price ?? 0);
+                }),
+                'total_cost_price' => $movements->sum(function ($movement) {
+                    return (float) ($movement->base_cost_price ?? $movement->cost_price ?? 0);
+                }),
+                'total_profit' => $sales->sum(function ($sale) {
+                    return $sale['profit'];
+                })
+            ];
+
+            if (!$totals['total_profit']) {
+                $totals['total_profit'] = $totals['total_sale_price'] - $totals['total_cost_price'];
+            }
+
+            return response()->json([
+                'success' => true,
+                'sales' => $sales,
+                'totals' => $totals
+            ]);
+        } catch (\Throwable $th) {
+            Log::error('Invoice details fetch error: ' . $th->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'details' => $th->getMessage(),
+                'message' => 'Fatura detayları getirilemedi.'
+            ], 500);
         }
     }
 }

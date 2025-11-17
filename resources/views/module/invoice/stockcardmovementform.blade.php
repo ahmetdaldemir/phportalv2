@@ -1,92 +1,129 @@
 @extends('layouts.admin')
 
 @section('content')
-<div id="invoice-form-app" class="container-xxl flex-grow-1 container-p-y">
-    <div v-if="!invoice" class="text-center p-4">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Yükleniyor...</span>
-        </div>
-        <p class="mt-2">Fatura bilgileri yükleniyor...</p>
-    </div>
-    <div v-else class="row invoice-add">
-        <div class="col-12">
-            <div class="card invoice-preview-card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">
-                        <i class="bx bx-receipt me-2"></i>
-                        Fatura Düzenle - #@{{ invoice?.invoice_number || invoice?.id || 'N/A' }}
-                    </h4>
-                    <div class="d-flex gap-2">
-                        <a href="{{ url()->previous() }}" class="btn btn-outline-secondary">
-                            <i class="bx bx-arrow-back me-1"></i>Geri Dön
-                        </a>
-                        <button @click="printInvoice" class="btn btn-outline-primary">
-                            <i class="bx bx-printer me-1"></i>Yazdır
-                        </button>
+    <div id="invoice-app"
+         class="container-xxl flex-grow-1 container-p-y"
+         data-stocks='@json($stocks ?? [])'
+         data-movements='@json($stock_card_movements ?? [])'
+         data-invoice='@json($invoice ?? null)'>
+        <div class="row invoice-add">
+            <div class="col-12">
+           
+
+                <div class="card invoice-preview-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="bx bx-receipt me-2"></i>
+                            Yeni Fatura Oluştur
+                        </h4>
+                        <div class="d-flex gap-2">
+                            <button @click="resetForm" class="btn btn-outline-secondary">
+                                <i class="bx bx-refresh me-1"></i>Sıfırla
+                            </button>
+                            <button @click="saveAsDraft" class="btn btn-outline-primary">
+                                <i class="bx bx-save me-1"></i>Taslak Kaydet
+                            </button>
+                        </div>
                     </div>
-                </div>
+         <!-- @submit.prevent="submitForm" -->
+                    <form  class="invoice-form">
+                        <input type="hidden" name="type" value="1" />
 
-                <form @submit.prevent="submitForm" class="invoice-form">
-                    <input type="hidden" v-model="form.id" />
+                        <div class="card-body">
+                            <!-- Header Section -->
+                            <div class="row p-3">
+                                <div class="col-md-6 mb-4">
+                                    <div class="mb-4">
+                                        <label class="form-label fw-semibold">
+                                            <i class="bx bx-user me-1"></i>Cari Seçiniz
+                                        </label>
+                                        <div class="input-group">
+                                            <div class="position-relative flex-grow-1">
+                                                <input
+                                                        v-model="customer_search"
+                                                        @input="filterCustomers"
+                                                        @focus="showCustomerDropdown"
+                                                        @blur="hideCustomerDropdown"
+                                                        type="text"
+                                                        class="form-control"
+                                                        placeholder="Cari ara..."
+                                                        autocomplete="off">
+                                                <div v-show="show_customer_dropdown && customer_search && customer_search.length >= 1" class="dropdown-menu show position-absolute w-100" style="z-index: 99999 !important; max-height: 200px; overflow-y: auto; display: block !important; visibility: visible !important; opacity: 1 !important;">
+                                                    <div @click="selectCustomer({id: '0', fullname: 'Genel Cari'})"
+                                                         class="dropdown-item"
+                                                         style="cursor: pointer;"
+                                                         v-text="'Genel Cari'">
+                                                    </div>
+                                                    <div v-for="customer in filtered_customers" :key="customer.id"
+                                                         @click="selectCustomer(customer)"
+                                                         class="dropdown-item"
+                                                         style="cursor: pointer;"
+                                                         v-text="(customer.fullname || ((customer.firstname || '') + ' ' + (customer.lastname || '')).trim()) + (customer.phone1 ? ' - ' + customer.phone1 : '')">
+                                                    </div>
+                                                    <div v-if="filtered_customers.length === 0 && customer_search.length >= 1" class="dropdown-item text-muted">
+                                                        Cari bulunamadı
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button @click="openCustomerModal" class="btn btn-primary" type="button">
+                                                <i class="bx bx-plus"></i>
+                                            </button>
+                                        </div>
+                                        <small class="text-muted">Müşteri bilgilerini seçin veya yeni müşteri
+                                            ekleyin</small>
+                                    </div>
+                                    <div class="col-12 mt-3">
+                                        <label class="form-label fw-semibold">
+                                            <i class="bx bx-comment-detail me-1"></i>Fatura Açıklaması
+                                        </label>
+                                        <textarea
+                                                v-model="form.description"
+                                                class="form-control"
+                                                rows="3"
+                                                placeholder="Fatura ile ilgili not ekleyebilirsiniz (opsiyonel)"
+                                        ></textarea>
+                                        <small class="text-muted">Bu açıklama kaydedildiğinde faturaya not olarak eklenir.</small>
+                                    </div>
+                                </div>
 
-                    <div class="card-body">
-                        <!-- Header Section -->
-                        <div class="row p-3">
-                            <div class="col-md-6 mb-4">
-                                <div class="mb-4">
-                                    <label class="form-label fw-semibold">
-                                        <i class="bx bx-user me-1"></i>Cari Seçiniz
-                                    </label>
-                                    <div class="input-group">
-                                        <div class="position-relative flex-grow-1">
-                                            <select 
-                                                v-model="form.customer_id" 
-                                                @change="onCustomerChange"
-                                                class="form-select">
-                                                <option value="1">Genel Cari</option>
-                                                <option 
-                                                    v-for="customer in filteredCustomers" 
-                                                    :key="customer.id"
-                                                    :value="customer.id">
-                                                    @{{ customer.fullname }}
-                                                </option>
+                                <div class="col-md-6 mb-4">
+                                    <div class="row">
+                                        <div class="col-12 mb-3">
+                                            <label class="form-label fw-semibold">Fatura No</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="bx bx-hash"></i>
+                                                </span>
+                                                <input v-model="form.number" type="text" class="form-control"
+                                                       placeholder="Otomatik oluşturulacak">
+                                            </div>
+                                        </div>
+                                        <div class="col-12 mb-3">
+                                            <label class="form-label fw-semibold">Fatura Tarihi</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="bx bx-calendar"></i>
+                                                </span>
+                                                <input v-model="form.create_date" type="date" class="form-control">
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold">
+                                                <i class="bx bx-wallet me-1"></i>Ödeme Durumu
+                                            </label>
+                                            <select v-model="form.payment_status" class="form-select">
+                                                <option value="unpaid">Ödenmedi</option>
+                                                <option value="paid">Ödendi</option>
+                                                <option value="paidOutOfPocket">Cebinden Ödedi</option>
                                             </select>
                                         </div>
-                                        <button @click="openCustomerModal" class="btn btn-primary" type="button">
-                                            <i class="bx bx-plus"></i>
-                                        </button>
+
                                     </div>
-                                    <small class="text-muted">Müşteri bilgilerini seçin veya yeni müşteri ekleyin</small>
                                 </div>
                             </div>
 
-                            <div class="col-md-6 mb-4">
-                                <div class="row">
-                                    <div class="col-12 mb-3">
-                                        <label class="form-label fw-semibold">Fatura No</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">
-                                                <i class="bx bx-hash"></i>
-                                            </span>
-                                            <input v-model="form.number" type="text" class="form-control"
-                                                placeholder="Otomatik oluşturulacak">
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold">Fatura Tarihi</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">
-                                                <i class="bx bx-calendar"></i>
-                                            </span>
-                                            <input v-model="form.create_date" type="date" class="form-control">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <hr class="mx-n4">
                         </div>
-
-                        <hr class="mx-n4">
-                    </div>
 
                         <!-- Items Section -->
                         <div class="card-body">
@@ -94,282 +131,276 @@
                                 <h5 class="mb-0">
                                     <i class="bx bx-list-ul me-2"></i>Fatura Kalemleri
                                 </h5>
-                                <small class="text-muted">
-                                    <i class="bx bx-info-circle me-1"></i>
-                                    Sadece Renk, Barkod ve Fiyat alanları düzenlenebilir
-                                </small>
+                                <button @click="addItem()" type="button" class="btn btn-success">
+                                    <i class="bx bx-plus me-1"></i>Kalem Ekle
+                                </button>
                             </div>
 
                             <div class="table-responsive" style="overflow: visible !important;">
                                 <table class="table table-hover" style="overflow: visible !important;">
                                     <thead class="table-header-modern">
-                                        <tr>
-                                            <th class="compact-header">
-                                                <i class="bx bx-package me-1"></i>
-                                                <span class="header-text">Stok</span>
-                                            </th>
-                                            <th class="compact-header">
-                                                <i class="bx bx-barcode me-1"></i>
-                                                <span class="header-text">Seri No</span>
-                                            </th>
-                                            <th class="compact-header">
-                                                <i class="bx bx-palette me-1"></i>
-                                                <span class="header-text">Renk</span>
-                                            </th>
-                                            <th class="compact-header">
-                                                <i class="bx bx-hash me-1"></i>
-                                                <span class="header-text">Adet</span>
-                                            </th>
-                                            <th class="compact-header">
-                                                <i class="bx bx-code me-1"></i>
-                                                <span class="header-text">Prefix</span>
-                                            </th>
-                                            <th class="compact-header">
-                                                <i class="bx bx-money me-1"></i>
-                                                <span class="header-text">G.Maliyet</span>
-                                            </th>
-                                            <th class="compact-header">
-                                                <i class="bx bx-calculator me-1"></i>
-                                                <span class="header-text">Maliyet</span>
-                                            </th>
-                                            <th class="compact-header">
-                                                <i class="bx bx-credit-card me-1"></i>
-                                                <span class="header-text">Satış<br><small>Fiyatı</small></span>
-                                            </th>
-                                            <th class="compact-header">
-                                                <i class="bx bx-store me-1"></i>
-                                                <span class="header-text">Şube</span>
-                                            </th>
-                                            <th class="compact-header">
-                                                <i class="bx bx-building me-1"></i>
-                                                <span class="header-text">Depo</span>
-                                            </th>
-                                            <th class="compact-header">
-                                                <i class="bx bx-qr me-1"></i>
-                                                <span class="header-text">Barkod</span>
-                                            </th>
-                                            <th class="compact-header">
-                                                <i class="bx bx-cog me-1"></i>
-                                                <span class="header-text">İşlem</span>
-                                            </th>
-                                        </tr>
+                                    <tr>
+                                        <th class="compact-header">
+                                            <i class="bx bx-package me-1"></i>
+                                            <span class="header-text">Stok</span>
+                                        </th>
+                                        <th class="compact-header">
+                                            <i class="bx bx-barcode me-1"></i>
+                                            <span class="header-text">Seri No</span>
+                                        </th>
+                                        <th class="compact-header">
+                                            <i class="bx bx-palette me-1"></i>
+                                            <span class="header-text">Renk</span>
+                                        </th>
+                                        <th class="compact-header">
+                                            <i class="bx bx-hash me-1"></i>
+                                            <span class="header-text">Adet</span>
+                                        </th>
+                                        <th class="compact-header">
+                                            <i class="bx bx-percent me-1"></i>
+                                            <span class="header-text">KDV</span>
+                                        </th>
+                                        <th class="compact-header">
+                                            <i class="bx bx-money me-1"></i>
+                                            <span class="header-text">G.Maliyet</span>
+                                        </th>
+                                        <th class="compact-header">
+                                            <i class="bx bx-calculator me-1"></i>
+                                            <span class="header-text">Maliyet</span>
+                                        </th>
+                                        <th class="compact-header">
+                                            <i class="bx bx-credit-card me-1"></i>
+                                            <span class="header-text">Satış<br><small>Fiyatı</small></span>
+                                        </th>
+                                        <th class="compact-header">
+                                            <i class="bx bx-store me-1"></i>
+                                            <span class="header-text">Şube</span>
+                                        </th>
+                                        <th class="compact-header">
+                                            <i class="bx bx-building me-1"></i>
+                                            <span class="header-text">Depo</span>
+                                        </th>
+                                        <th class="compact-header">
+                                            <i class="bx bx-qr me-1"></i>
+                                            <span class="header-text">Barkod</span>
+                                        </th>
+                                        <th class="compact-header">
+                                            <i class="bx bx-cog me-1"></i>
+                                            <span class="header-text">İşlem</span>
+                                        </th>
+                                    </tr>
                                     </thead>
                                     <tbody style="overflow: visible !important;">
-                                        <tr v-for="(item, index) in form.items" :key="index"
-                                            class="invoice-item-row" style="overflow: visible !important; position: relative !important;">
-                                            <!-- Stok -->
-                                            <td>
-                                                <input 
-                                                    v-model="item.stock_search" 
-                                                    type="text" 
-                                                    class="form-control form-control-sm" 
-                                                    placeholder="Stok"
-                                                    disabled
-                                                    readonly>
-                                            </td>
+                                    <tr v-for="(item, index) in form.items" :key="index"
+                                        class="invoice-item-row" style="overflow: visible !important; position: relative !important;">
+                                        <!-- Stok -->
+                                        <td style="overflow: visible !important; position: relative !important;">
+                                            <div class="position-relative">
+                                                <input
+                                                        v-model="item.stock_search"
+                                                        @input="filterStocks(index)"
+                                                        @focus="showStockDropdown(index)"
+                                                        @blur="hideStockDropdown(index)"
+                                                        @keydown.enter.prevent="selectFirstStock(index)"
+                                                        @keydown.escape="hideStockDropdown(index)"
+                                                        @keydown.down.prevent="navigateDropdown(index, 1)"
+                                                        @keydown.up.prevent="navigateDropdown(index, -1)"
+                                                        type="text"
+                                                        class="form-control form-control-sm"
+                                                        :class="{'is-invalid': item.stock_error, 'is-valid': item.stock_card_id}"
+                                                        placeholder="Stok ara... (en az 2 karakter)"
+                                                        autocomplete="off"
+                                                        :disabled="item.loading_stocks">
+                                                <div v-show="item.show_stock_dropdown && item.stock_search && item.stock_search.length >= 2"
+                                                     :id="'stock-dropdown-' + index"
+                                                     class="dropdown-menu show position-absolute w-100"
+                                                     style="z-index: 99999 !important; max-height: 220px; overflow-y: auto; display: block !important; visibility: visible !important; opacity: 1 !important; border: 1px solid #dee2e6; box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);"
+                                                     @mouseenter="cancelHideDropdown()"
+                                                     @mouseleave="hideStockDropdown(index)">
 
-                                            <!-- Seri No -->
-                                            <td>
-                                                <input v-model="item.serial" type="text"
-                                                    class="form-control form-control-sm" placeholder="Seri No" disabled readonly>
-                                            </td>
+                                                    <!-- Loading state -->
+                                                    <div v-if="item.loading_stocks" class="dropdown-item text-center text-muted">
+                                                        <i class="fas fa-spinner fa-spin me-2"></i>Yükleniyor...
+                                                    </div>
 
-                                            <!-- Renk -->
-                                            <td>
-                                                <div class="position-relative">
-                                                    <input 
-                                                        v-model="item.color_search" 
+                                                    <!-- Stock results -->
+                                                    <div v-else-if="item.filtered_stocks.length > 0">
+                                                        <div v-for="(stock, stockIndex) in item.filtered_stocks" :key="stock.id"
+                                                             @click="selectStock(index, stock)"
+                                                             class="dropdown-item d-flex justify-content-between align-items-center"
+                                                             :class="{'active': item.selected_stock_index === stockIndex}"
+                                                             style="cursor: pointer; padding: 0.5rem 1rem; border-bottom: 1px solid #f8f9fa;"
+                                                             @mouseenter="item.selected_stock_index = stockIndex; $event.target.style.backgroundColor='#f8f9fa'"
+                                                             @mouseleave="$event.target.style.backgroundColor='transparent'">
+
+                                                            <div class="flex-grow-1">
+                                                                <div class="fw-bold text-dark">@{{ stock.name }}</div>
+                                                                <div class="text-muted small">
+                                                                    <div v-if="stock.barcode">@{{ stock.barcode }}</div>
+                                                                    <div v-if="stock.brand_name || stock.version_names">
+                                                                        <span v-if="stock.brand_name">@{{ stock.brand_name }}</span>
+                                                                        <span v-if="stock.version_names" class="ms-1">- @{{ stock.version_names }}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- No results -->
+                                                    <div v-else-if="item.filtered_stocks.length === 0 && item.stock_search.length >= 2" class="dropdown-item text-center text-muted py-3">
+                                                        <i class="fas fa-search me-2"></i>
+                                                        "@{{ item.stock_search }}" için stok bulunamadı
+                                                    </div>
+
+                                                    <!-- Error state -->
+                                                    <div v-if="item.stock_error" class="dropdown-item text-center text-danger py-2">
+                                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                                        @{{ item.stock_error }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <!-- Seri No -->
+                                        <td>
+                                            <input v-model="item.serial"
+                                                   type="text"
+                                                   class="form-control form-control-sm"
+                                                   placeholder="Seri No"
+                                                   @keydown.enter.prevent
+                                                   @keyup.enter.prevent>
+                                        </td>
+
+                                        <!-- Renk -->
+                                        <td>
+                                            <div class="position-relative">
+                                                <input
+                                                        v-model="item.color_search"
                                                         @input="filterColors(index)"
                                                         @focus="showColorDropdown(index)"
                                                         @blur="hideColorDropdown(index)"
-                                                        type="text" 
-                                                        class="form-control form-control-sm" 
+                                                        type="text"
+                                                        class="form-control form-control-sm"
                                                         placeholder="Renk ara..."
-                                                        autocomplete="off"
-                                                        required>
-                                                    <div v-show="item.show_color_dropdown && item.color_search && item.color_search.length >= 1" 
-                                                         :id="'color-dropdown-' + index"
-                                                         class="dropdown-menu show position-absolute w-100" 
-                                                         style="z-index: 99999 !important; max-height: 200px; overflow-y: auto; display: block !important; visibility: visible !important; opacity: 1 !important;">
-                                                        <div v-for="color in item.filtered_colors" :key="color.id" 
-                                                             @click="selectColor(index, color)"
-                                                             class="dropdown-item" 
-                                                             style="cursor: pointer;"
-                                                             v-text="color.name">
-                                                        </div>
-                                                        <div v-if="item.filtered_colors.length === 0 && item.color_search.length >= 1" class="dropdown-item text-muted">
-                                                            Renk bulunamadı
-                                                        </div>
+                                                        autocomplete="off" >
+                                                <div v-show="item.show_color_dropdown && item.color_search && item.color_search.length >= 1"
+                                                     :id="'color-dropdown-' + index"
+                                                     class="dropdown-menu show position-absolute w-100"
+                                                     style="z-index: 99999 !important; max-height: 200px; overflow-y: auto; display: block !important; visibility: visible !important; opacity: 1 !important;">
+                                                    <div v-for="color in item.filtered_colors" :key="color.id"
+                                                         @click="selectColor(index, color)"
+                                                         class="dropdown-item"
+                                                         style="cursor: pointer;"
+                                                         v-text="color.name">
+                                                    </div>
+                                                    <div v-if="item.filtered_colors.length === 0 && item.color_search.length >= 1" class="dropdown-item text-muted">
+                                                        Renk bulunamadı
+                                                    </div>
+                                                </div>
                                             </div>
-                                            </div>
-                                            </td>
+                                        </td>
 
-                                            <!-- Adet -->
-                                            <td>
-                                                <input v-model.number="item.quantity" type="number"
-                                                    class="form-control form-control-sm" min="1" max="5000"
-                                                    @input="calculateItemTotal(index)" disabled readonly>
-                                            </td>
+                                        <!-- Adet -->
+                                        <td>
+                                            <input v-model.number="item.quantity" type="number"
+                                                   class="form-control form-control-sm" min="1" max="5000"
+                                                   @input="calculateItemTotal(index)">
+                                        </td>
 
-                                            <!-- Prefix -->
-                                            <td>
-                                                <input v-model="item.prefix" type="text"
-                                                    class="form-control form-control-sm" maxlength="3"
-                                                    @input="item.prefix = item.prefix.toUpperCase()" pattern="[A-Z]+" disabled readonly>
-                                            </td>
+                                        <!-- Tax -->
+                                        <td>
+                                            <select
+                                                    v-model.number="item.tax"
+                                                    class="form-select form-select-sm"
+                                                    @change="calculateItemTotal(index)"
+                                            >
+                                                <option :value="1">1%</option>
+                                                <option :value="8">8%</option>
+                                                <option :value="18">18%</option>
+                                                <option :value="20">20%</option>
+                                            </select>
+                                        </td>
 
-                                            <!-- Gerçek Maliyet -->
-                                            <td>
-                                                <input v-model.number="item.cost_price" type="number" step="0.01"
-                                                    class="form-control form-control-sm"
-                                                    @input="calculateItemTotal(index)" required disabled readonly>
-                                            </td>
+                                        <!-- Gerçek Maliyet -->
+                                        <td>
+                                            <input v-model.number="item.cost_price" type="number" step="0.01"
+                                                   class="form-control form-control-sm"
+                                                   @input="calculateItemTotal(index)" required>
+                                        </td>
 
-                                            <!-- Maliyet -->
-                                            <td>
-                                                <input v-model.number="item.base_cost_price" type="number"
-                                                    step="0.01" class="form-control form-control-sm"
-                                                    @input="calculateItemTotal(index)" required disabled readonly>
-                                            </td>
+                                        <!-- Maliyet -->
+                                        <td>
+                                            <input v-model.number="item.base_cost_price" type="number"
+                                                   step="0.01" class="form-control form-control-sm"
+                                                   @input="calculateItemTotal(index)" required>
+                                        </td>
 
-                                            <!-- Satış Fiyatı -->
-                                            <td>
-                                                <input v-model.number="item.sale_price" type="number" step="0.01"
-                                                    class="form-control form-control-sm"
-                                                    @input="calculateItemTotal(index)" required>
-                                            </td>
+                                        <!-- Satış Fiyatı -->
+                                        <td>
+                                            <input v-model.number="item.sale_price" type="number" step="0.01"
+                                                   class="form-control form-control-sm" v-text="item.sale_price"
+                                                   @input="calculateItemTotal(index)" required>
+                                        </td>
 
-                                            <!-- Şube -->
-                                            <td>
-                                                <select v-model="item.seller_id" class="form-select form-select-sm"
-                                                        required disabled>
-                                                    <option value="">Şube</option>
-                                                    <option v-for="seller in sellers" :key="seller.id" :value="seller.id" v-text="seller.name"></option>
-                                                </select>
-                                            </td>
+                                        <!-- Şube -->
+                                        <td>
+                                            <select v-model="item.seller_id" class="form-select form-select-sm"  required>
+                                                <option value="">Şube</option>
+                                                <option v-for="seller in sellers" :key="seller.id" :value="seller.id" v-text="seller.name"></option>
+                                            </select>
+                                        </td>
 
-                                            <!-- Depo -->
-                                            <td>
-                                                <select v-model="item.warehouse_id" class="form-select form-select-sm" disabled>
-                                                    <option value="">Depo</option>
-                                                    <option v-for="warehouse in warehouses" :key="warehouse.id"
+                                        <!-- Depo -->
+                                        <td>
+                                            <select v-model="item.warehouse_id" class="form-select form-select-sm">
+                                                <option value="">Depo</option>
+                                                <option v-for="warehouse in warehouses" :key="warehouse.id"
                                                         :value="warehouse.id" v-text="warehouse.name">
-                                                    </option>
-                                                </select>
-                                            </td>
+                                                </option>
+                                            </select>
+                                        </td>
 
-                                            <!-- Barkod -->
-                                            <td>
-                                                <input v-model="item.barcode" type="text"
-                                                    class="form-control form-control-sm" placeholder="Barkod">
-                                            </td>
+                                        <!-- Barkod -->
+                                        <td>
+                                            <div class="input-group input-group-sm">
+                                                <input
+                                                        v-model="item.barcode"
+                                                        @keydown.enter.prevent="handleBarcodeEnter(index)"
+                                                        type="text"
+                                                        class="form-control form-control-sm"
+                                                        placeholder="Barkod"
+                                                        :data-barcode-index="index"
+                                                >
+                                                <button
+                                                        class="btn btn-outline-primary"
+                                                        type="button"
+                                                        @click="searchStockByBarcode(index)"
+                                                        :disabled="scanningStates.loadingIndex === index"
+                                                >
+                                                    <span v-if="scanningStates.loadingIndex === index" class="spinner-border spinner-border-sm"></span>
+                                                    <span v-else><i class="bx bx-search"></i></span>
+                                                </button>
+                                            </div>
+                                            <small v-if="item.stock_lookup_error" class="text-danger">@{{ item.stock_lookup_error }}</small>
+                                        </td>
 
-                                            <!-- İşlem -->
-                                            <td>
-                                                <!-- Remove button disabled for existing items -->
-                                                <span class="text-muted">
-                                                    <i class="bx bx-lock"></i>
-                                                </span>
-                                            </td>
-                                        </tr>
+                                        <!-- İşlem -->
+                                        <td>
+                                            <button @click="removeItem(index)" type="button"
+                                                    class="btn btn-sm btn-outline-danger" v-if="form.items.length > 1">
+                                                <i class="bx bx-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
                                     </tbody>
                                 </table>
                             </div>
 
                             <!-- Summary -->
                             <div class="row mt-4">
-                                <div class="col-md-8">
-                                    <!-- Payment Type Selection -->
-                                    <div class="card mb-4">
-                                        <div class="card-header">
-                                            <h5 class="card-title mb-0">
-                                                <i class="bx bx-money me-2"></i>Ödeme Türü
-                                            </h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="row">
-                                                <div class="col-md-4">
-                                                    <label class="form-label">Ödeme Şekli</label>
-                                                    <div class="form-check">
-                                                        <input 
-                                                            v-model="form.payment_type" 
-                                                            class="form-check-input" 
-                                                            type="radio" 
-                                                            value="cash" 
-                                                            id="paymentCash">
-                                                        <label class="form-check-label" for="paymentCash">
-                                                            <i class="bx bx-money me-1"></i>Nakit
-                                                        </label>
-                                                    </div>
-                                                    <div class="form-check">
-                                                        <input 
-                                                            v-model="form.payment_type" 
-                                                            class="form-check-input" 
-                                                            type="radio" 
-                                                            value="credit_card" 
-                                                            id="paymentCard">
-                                                        <label class="form-check-label" for="paymentCard">
-                                                            <i class="bx bx-credit-card me-1"></i>Kredi Kartı
-                                                        </label>
-                                                    </div>
-                                                    <div class="form-check">
-                                                        <input 
-                                                            v-model="form.payment_type" 
-                                                            class="form-check-input" 
-                                                            type="radio" 
-                                                            value="installment" 
-                                                            id="paymentInstallment">
-                                                        <label class="form-check-label" for="paymentInstallment">
-                                                            <i class="bx bx-calendar me-1"></i>Taksit
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <div v-if="form.payment_type === 'cash'">
-                                                        <label class="form-label">Nakit Tutar</label>
-                                                        <input 
-                                                            v-model.number="form.cash" 
-                                                            type="number" 
-                                                            step="0.01"
-                                                            class="form-control">
-                                                    </div>
-                                                    <div v-if="form.payment_type === 'credit_card'">
-                                                        <label class="form-label">Kredi Kartı Tutar</label>
-                                                        <input 
-                                                            v-model.number="form.credit_card" 
-                                                            type="number" 
-                                                            step="0.01"
-                                                            class="form-control">
-                                                    </div>
-                                                    <div v-if="form.payment_type === 'installment'">
-                                                        <label class="form-label">Taksit Tutar</label>
-                                                        <input 
-                                                            v-model.number="form.installment" 
-                                                            type="number" 
-                                                            step="0.01"
-                                                            class="form-control">
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label">Açıklama</label>
-                                                    <textarea 
-                                                        v-model="form.description" 
-                                                        class="form-control" 
-                                                        rows="3"
-                                                        placeholder="Fatura açıklaması">
-                                                    </textarea>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <div class="col-md-8"></div>
                                 <div class="col-md-4">
                                     <div class="card bg-light">
-                                        <div class="card-header">
-                                            <h5 class="card-title mb-0">
-                                                <i class="bx bx-calculator me-2"></i>Özet
-                                            </h5>
-                                        </div>
                                         <div class="card-body">
                                             <div class="d-flex justify-content-between mb-2">
                                                 <span>Toplam Maliyet:</span>
@@ -383,6 +414,10 @@
                                                 <span>Toplam Satış:</span>
                                                 <strong class="text-primary" v-text="formatCurrency(totals.sale)"></strong>
                                             </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Toplam KDV:</span>
+                                                <strong class="text-warning" v-text="formatCurrency(totals.taxTotal)"></strong>
+                                            </div>
                                             <hr>
                                             <div class="d-flex justify-content-between">
                                                 <span class="fw-bold">Kar:</span>
@@ -392,523 +427,1047 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                    <!-- Submit Button -->
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <button :disabled="loading" type="submit" class="btn btn-primary btn-lg w-100">
-                                <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                                <i v-else class="bx bx-save me-2"></i>
-                                <span v-text="loading ? 'Kaydediliyor...' : 'Faturayı Güncelle'"></span>
-                            </button>
+                            <!-- Submit Button -->
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <button :disabled="submitting || !isFormValid" type="submit"
+                                            class="btn btn-primary btn-lg w-100">
+                                        <span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
+                                        <i v-else class="bx bx-save me-2"></i>
+                                        <span v-text="submitting ? 'Kaydediliyor...' : 'Faturayı Kaydet'"></span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
-@include('components.customermodal')
+    </div>
 @endsection
 
-@section('custom-js')
-<script>
-const { createApp } = Vue;
+@include('components.customermodal')
 
-const app = createApp({
-    data() {
-        const invoice = @json($invoice ?? null);
-        return {
-            invoice: invoice,
-            stockCardMovements: @json($stock_card_movements ?? []),
-            customers: Array.isArray(@json($customers ?? [])) ? @json($customers ?? []) : [],
-            stocks: @json($stocks ?? []),
-            sellers: @json($sellers ?? []),
-            colors: @json($colors ?? []),
-            warehouses: @json($warehouses ?? []),
-            loading: false,
-            form: {
-                id: invoice ? invoice.id : null,
-                customer_id: invoice ? invoice.customer_id : 1,
-                number: invoice ? invoice.invoice_number : '',
-                create_date: invoice ? invoice.create_date : '',
-                payment_type: 'cash',
-                cash: 0,
-                credit_card: 0,
-                installment: 0,
-                description: invoice ? invoice.description : '',
-                is_status: invoice ? invoice.is_status : 1,
-                items: []
+@section('custom-js')
+    <script>
+        // Disable AngularJS for this specific div to avoid conflicts
+        const { createApp } = Vue;
+        const invoiceRootEl = document.getElementById('invoice-app');
+        let initialStocks = [];
+        let initialMovements = [];
+        let initialInvoice = null;
+        if (invoiceRootEl && invoiceRootEl.dataset) {
+            try {
+                if (invoiceRootEl.dataset.stocks) {
+                    initialStocks = JSON.parse(invoiceRootEl.dataset.stocks);
+                }
+            } catch (parseError) {
+                console.error('Initial stocks parse error:', parseError);
+                initialStocks = [];
+            }
+
+            try {
+                if (invoiceRootEl.dataset.movements) {
+                    initialMovements = JSON.parse(invoiceRootEl.dataset.movements);
+                }
+            } catch (parseError) {
+                console.error('Initial movements parse error:', parseError);
+                initialMovements = [];
+            }
+
+            try {
+                if (invoiceRootEl.dataset.invoice) {
+                    initialInvoice = JSON.parse(invoiceRootEl.dataset.invoice);
+                }
+            } catch (parseError) {
+                console.error('Initial invoice parse error:', parseError);
+                initialInvoice = null;
             }
         }
-    },
-    computed: {
-        filteredCustomers() {
-            if (!this.customers || !Array.isArray(this.customers)) {
-                return [];
-            }
-            return this.customers.filter(customer => 
-                customer && customer.type === 'account'
-            );
-        },
-        totals() {
-            try {
-                // Use form.items instead of stockCardMovements
-                if (!this.form.items || !Array.isArray(this.form.items)) {
-                    return {
+
+        createApp({
+            mixins: [VueGlobalMixin],
+            data() {
+                return {
+                    form: {
+                        customer_id: '0',
+                        number: '',
+                        create_date: new Date().toISOString().substr(0, 10),
+                        payment_status: 'unpaid',
+                        description: '',
+                        items: []
+                    },
+                    scanningStates: {
+                        loadingIndex: null
+                    },
+                    stocks: initialStocks,
+                    customers: [],
+                    sellers: [],
+                    colors: [],
+                    warehouses: [],
+                    customer_search: 'Genel Cari',
+                    show_customer_dropdown: false,
+                    filtered_customers: [],
+                    submitting: false,
+                    lastInvoiceId: null
+                }
+            },
+            computed: {
+                totals() {
+                    const result = this.form.items.reduce((acc, item) => {
+                        const qty = Number(item.quantity) || 0;
+                        const costPrice = Number(item.cost_price) || 0;
+                        const baseCostPrice = Number(item.base_cost_price) || 0;
+                        const salePrice = Number(item.sale_price) || 0;
+                        const taxRate = Number(item.tax) || 0;
+                        const taxMultiplier = taxRate / 100;
+
+                        const costTotal = costPrice * qty;
+                        const baseCostTotal = baseCostPrice * qty;
+                        const saleTotal = salePrice * qty;
+                        const costTax = costTotal * taxMultiplier;
+                        const saleTax = saleTotal * taxMultiplier;
+
+                        acc.cost += costTotal;
+                        acc.baseCost += baseCostTotal;
+                        acc.sale += saleTotal;
+                        acc.tax += costTax + saleTax;
+
+                        return acc;
+                    }, {
                         cost: 0,
                         baseCost: 0,
                         sale: 0,
-                        profit: 0
-                    };
+                        tax: 0
+                    });
+
+                    result.profit = result.sale - result.cost;
+                    result.taxTotal = result.tax;
+                    return result;
+                },
+                isFormValid() {
+                    return this.form.items.every(item =>
+                        item.stock_card_id &&
+                        item.seller_id &&
+                        item.quantity > 0
+                    );
                 }
-                
-                const totals = this.form.items.reduce((acc, item) => {
-                    const qty = item.quantity || 0;
-                    acc.cost += (item.cost_price || 0) * qty;
-                    acc.baseCost += (item.base_cost_price || 0) * qty;
-                    acc.sale += (item.sale_price || 0) * qty;
-                    return acc;
-                }, {
-                    cost: 0,
-                    baseCost: 0,
-                    sale: 0,
-                    profit: 0
-                });
-                
-                totals.profit = totals.sale - totals.cost;
-                
-                return totals;
-            } catch (error) {
-                console.error('Error calculating totals:', error);
-                return {
-                    cost: 0,
-                    baseCost: 0,
-                    sale: 0,
-                    profit: 0
-                };
-            }
-        }
-    },
-    methods: {
-        initializeItems() {
-            // Eğer stockCardMovements varsa, onları items olarak kullan
-            if (this.stockCardMovements && this.stockCardMovements.length > 0) {
-                return this.stockCardMovements.map(movement => ({
-                    id: movement.id,
-                    stock_card_id: movement.stock_card_id || '',
-                    stock_search: movement.stock_name || '',
-                    show_stock_dropdown: false,
-                    filtered_stocks: [],
-                    color_id: movement.color_id || '',
-                    color_search: movement.color_name || '',
-                    show_color_dropdown: false,
-                    filtered_colors: [],
-                    serial: movement.serial || '',
-                    quantity: movement.quant || 1,
-                    prefix: movement.prefix || '',
-                    cost_price: movement.cost_price || 0,
-                    base_cost_price: movement.base_cost_price || 0,
-                    sale_price: movement.sale_price || 0,
-                    seller_id: movement.seller_id || 1,
-                    warehouse_id: movement.warehouse_id || '',
-                    barcode: movement.barcode || '',
-                    reason_id: movement.reason_id || 9,
-                    tracking_quantity: movement.tracking_quantity || 0,
-                    discount: movement.discount || 0,
-                    tax: movement.tax || 20,
-                    description: movement.description || ''
-                }));
-            }
-            
-            // Yoksa boş bir item oluştur
-            return [{
-                stock_card_id: '',
-                stock_search: '',
-                show_stock_dropdown: false,
-                filtered_stocks: [],
-                color_id: '',
-                color_search: '',
-                show_color_dropdown: false,
-                filtered_colors: [],
-                serial: '',
-                quantity: 1,
-                prefix: '',
-                cost_price: 0,
-                base_cost_price: 0,
-                sale_price: 0,
-                seller_id: 1,
-                warehouse_id: '',
-                barcode: '',
-                reason_id: 9,
-                tracking_quantity: 0,
-                discount: 0,
-                tax: 20,
-                description: ''
-            }];
-        },
-        
-        addItem() {
-            this.form.items.push({
-                stock_card_id: '',
-                stock_search: '',
-                show_stock_dropdown: false,
-                filtered_stocks: [],
-                color_id: '',
-                color_search: '',
-                show_color_dropdown: false,
-                filtered_colors: [],
-                serial: '',
-                quantity: 1,
-                prefix: '',
-                cost_price: 0,
-                base_cost_price: 0,
-                sale_price: 0,
-                seller_id: 1,
-                warehouse_id: '',
-                barcode: '',
-                reason_id: 9,
-                tracking_quantity: 0,
-                discount: 0,
-                tax: 20,
-                description: ''
-            });
-        },
-        
-        removeItem(index) {
-            if (this.form.items.length > 1) {
-                this.form.items.splice(index, 1);
-            }
-        },
-        
-        calculateItemTotal(index) {
-            // Real-time calculation if needed
-        },
-        
-        // Stock Autocomplete Methods
-        filterStocks(index) {
-            try {
-                const item = this.form.items[index];
-                const searchTerm = item.stock_search ? item.stock_search.trim().toLowerCase() : '';
-                
-                // Clear previous results
-                item.filtered_stocks = [];
-                item.show_stock_dropdown = false;
-                
-                // Minimum search length
-                if (searchTerm.length < 2) {
-                    return;
+            },
+            watch: {},
+            async mounted() {
+
+                try {
+                    // Load common data from global store
+                    await this.loadGlobalData();
+
+
+                } catch (error) {
+                    console.error('Error loading global data:', error);
                 }
-                
-                // Ensure stocks is an array
-                if (!Array.isArray(this.stocks) || this.stocks.length === 0) {
-                    console.warn('Stocks data not available or empty');
-                    return;
-                }
-                
-                // Advanced filtering with multiple criteria
-                const filtered = this.stocks.filter(stock => {
-                    if (!stock || !stock.name) return false;
-                    
-                    const stockName = stock.name.toLowerCase();
-                    const brandName = stock.brand_name?.toLowerCase() || '';
-                    const sku = stock.sku?.toLowerCase() || '';
-                    const barcode = stock.barcode?.toLowerCase() || '';
-            
-                    // Multiple search criteria
-                    return stockName.includes(searchTerm) ||
-                           brandName.includes(searchTerm) ||
-                           sku.includes(searchTerm) ||
-                           barcode.includes(searchTerm);
-                })
-                .sort((a, b) => {
-                    // Prioritize exact matches
-                    const aName = a.name.toLowerCase();
-                    const bName = b.name.toLowerCase();
-                    
-                    if (aName.startsWith(searchTerm) && !bName.startsWith(searchTerm)) return -1;
-                    if (!aName.startsWith(searchTerm) && bName.startsWith(searchTerm)) return 1;
-                    
-                    // Then by name similarity
-                    return aName.localeCompare(bName);
-                })
-                .slice(0, 15); // Increased limit for better UX
-                
-                // Update results
-                item.filtered_stocks = filtered;
-                item.show_stock_dropdown = filtered.length > 0;
-                
-            } catch (error) {
-                console.error('Error filtering stocks:', error);
-                this.form.items[index].filtered_stocks = [];
-                this.form.items[index].show_stock_dropdown = false;
-            }
-        },
-        
-        showStockDropdown(index) {
-            try {
-                const item = this.form.items[index];
-                
-                // Only show if there's a search term
-                if (item.stock_search && item.stock_search.trim().length >= 2) {
-                    item.show_stock_dropdown = true;
-                    this.filterStocks(index);
+
+                if (initialMovements.length > 0) {
+                    this.form.items = initialMovements.map(movement => this.createItem({
+                        stock_card_id: movement.stock_card_id || '',
+                        stock_search: movement.stock_name || '',
+                        color_id: movement.color_id || '',
+                        color_search: movement.color_name || '',
+                        serial: movement.serial || '',
+                        quantity: movement.quant ? Number(movement.quant) : 1,
+                        cost_price: Number(movement.cost_price) || 0,
+                        base_cost_price: Number(movement.base_cost_price) || 0,
+                        sale_price: Number(movement.sale_price) || 0,
+                        seller_id: movement.seller_id || '',
+                        warehouse_id: movement.warehouse_id || '',
+                        barcode: movement.barcode || '',
+                        reason_id: movement.reason_id || 9,
+                        tracking_quantity: movement.tracking_quantity || 0,
+                        discount: movement.discount || 0,
+                        tax: Number(movement.tax) || 20,
+                        description: movement.description || ''
+                    }));
                 } else {
-                    item.show_stock_dropdown = false;
+                    this.form.items = [this.createItem()];
                 }
-                
-            } catch (error) {
-                console.error('Error showing stock dropdown:', error);
-            }
-        },
-        
-        hideStockDropdown(index) {
-            // Use a more reliable delay mechanism
-            this.hideTimeout = setTimeout(() => {
-                if (this.form.items[index]) {
-                    this.form.items[index].show_stock_dropdown = false;
+
+                if (initialInvoice) {
+                    this.form.number = initialInvoice.number || '';
+                    this.form.create_date = initialInvoice.create_date || this.form.create_date;
+                    this.form.payment_status = initialInvoice.paymentStatus || this.form.payment_status;
+                    this.form.description = initialInvoice.description || '';
+                    this.form.customer_id = initialInvoice.customer_id ? String(initialInvoice.customer_id) : this.form.customer_id;
+
+                    let fallbackCustomerName = this.customer_search;
+                    if (initialInvoice.customer_name) {
+                        fallbackCustomerName = initialInvoice.customer_name;
+                    }
+
+                    const matchCustomer = Array.isArray(this.customers)
+                        ? this.customers.find(c => Number(c.id) === Number(initialInvoice.customer_id))
+                        : null;
+
+                    if (matchCustomer) {
+                        this.customer_search = matchCustomer.fullname ||
+                            ((matchCustomer.firstname || '') + ' ' + (matchCustomer.lastname || '')).trim() ||
+                            fallbackCustomerName;
+                    } else {
+                        this.customer_search = fallbackCustomerName;
+                    }
                 }
-            }, 300);
-        },
-        
-        cancelHideDropdown() {
-            if (this.hideTimeout) {
-                clearTimeout(this.hideTimeout);
-                this.hideTimeout = null;
-            }
-        },
-        
-        selectStock(index, stock) {
-            try {
-                // Cancel any pending hide operations
-                this.cancelHideDropdown();
-                
-                const item = this.form.items[index];
-                
-                // Validate stock data
-                if (!stock || !stock.id) {
-                    console.error('Invalid stock data:', stock);
-                    return;
+
+                // Pre-select stock if passed from URL
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const stockId = urlParams.get('id');
+                    if (stockId && this.form.items[0]) {
+                        this.form.items[0].stock_card_id = stockId;
+                        this.onStockChange(0);
+                    }
+                } catch (error) {
+                    console.error('Error handling URL params:', error);
                 }
-                
-                // Update item with selected stock
-                item.stock_card_id = stock.id;
-                item.stock_search = `${stock.name}${stock.brand?.name ? ' - ' + stock.brand.name : ''}${stock.version_names ? ' - ' + stock.version_names : ''}`;
-                item.show_stock_dropdown = false;
-                item.filtered_stocks = [];
-                
-                // Clear any previous error states
-                item.stock_error = null;
-                
-                // Force Vue.js to update
-                this.$forceUpdate();
-                
-            } catch (error) {
-                console.error('Error selecting stock:', error);
-                // Show error to user
-                this.form.items[index].stock_error = 'Stok seçimi sırasında hata oluştu';
-            }
-        },
-        
-        // Color Autocomplete Methods
-        filterColors(index) {
-            const item = this.form.items[index];
-            const searchTerm = item.color_search.toLowerCase();
-            
-            if (searchTerm.length < 1) {
-                item.filtered_colors = [];
-                return;
-            }
-            
-            item.filtered_colors = this.colors.filter(color => 
-                color.name.toLowerCase().includes(searchTerm)
-            ).slice(0, 10); // Limit to 10 results
-        },
-        
-        showColorDropdown(index) {
-            try {
-                const item = this.form.items[index];
-                item.show_color_dropdown = true;
-                
-                // If there's already a search term, filter immediately
-                if (item.color_search && item.color_search.length >= 1) {
-                    this.filterColors(index);
+
+                // Set initial customer search value
+                try {
+                    if (this.form.customer_id === '0') {
+                        this.customer_search = 'Genel Cari';
+                    }
+                } catch (error) {
+                    console.error('Error setting initial customer:', error);
                 }
-                
-            } catch (error) {
-                console.error('Error showing color dropdown:', error);
-            }
-        },
-        
-        hideColorDropdown(index) {
-            // Delay to allow click events
-            setTimeout(() => {
-                this.form.items[index].show_color_dropdown = false;
-            }, 200);
-        },
-        
-        selectColor(index, color) {
-            try {
-                const item = this.form.items[index];
-                item.color_id = color.id;
-                item.color_search = color.name;
-                item.show_color_dropdown = false;
-                item.filtered_colors = [];
-                
-                // Force Vue.js to update
-                this.$forceUpdate();
-                
-            } catch (error) {
-                console.error('Error selecting color:', error);
-            }
-        },
-        
-        formatCurrency(amount) {
-            if (!amount) return '0,00 ₺';
-            return new Intl.NumberFormat('tr-TR', {
-                style: 'currency',
-                currency: 'TRY'
-            }).format(amount);
-        },
-        
-        onCustomerChange() {
-            // Customer değiştiğinde yapılacak işlemler
-            console.log('Customer changed:', this.form.customer_id);
-        },
-        
-        openCustomerModal() {
-            // Müşteri modal'ını aç
-            console.log('Open customer modal');
-        },
-        
-        printInvoice() {
-            window.print();
-        },
-        
-        async submitForm() {
-            this.loading = true;
-            
-            try {
-                const response = await fetch('/invoice/update-movements', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
-                    },
-                    body: JSON.stringify({
-                        invoice_id: this.invoice ? this.invoice.id : null,
-                        invoice_data: {
-                            customer_id: this.form.customer_id,
-                            number: this.form.number,
-                            create_date: this.form.create_date,
-                            description: this.form.description,
-                            payment_type: this.form.payment_type,
-                            cash: this.form.cash,
-                            credit_card: this.form.credit_card,
-                            installment: this.form.installment
-                        },
-                        items: this.form.items.map(item => ({
-                            stock_card_id: item.stock_card_id,
-                            color_id: item.color_id,
-                            sale_price: item.sale_price,
-                            barcode: item.barcode
-                        }))
-                    })
+
+                // Listen for customerSaved event from modal component
+                window.addEventListener('customerSaved', (event) => {
+                    const customer = event.detail;
+                    if (customer && customer.id) {
+                        // Add to customers list if not exists
+                        const exists = this.customers.find(c => c.id === customer.id);
+                        if (!exists) {
+                            this.customers.push(customer);
+                        }
+
+                        // Add to global cache if not exists
+                        const cacheExists = this.globalStore.cache.customers.find(c => c.id === customer.id);
+                        if (!cacheExists) {
+                            this.globalStore.cache.customers.push(customer);
+                        }
+
+                        // Set as selected customer
+                        this.form.customer_id = customer.id;
+                        this.customer_search = customer.fullname ||
+                            ((customer.firstname || '') + ' ' + (customer.lastname || '')).trim() ||
+                            'Genel Cari';
+
+                        console.log('New customer added and selected:', customer);
+                    }
                 });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Show success message
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Başarılı',
-                            text: 'Fatura başarıyla güncellendi',
-                            customClass: {
-                                confirmButton: "btn btn-success"
+
+                // Ensure all dropdowns are closed on mount
+                this.closeAllDropdowns();
+            },
+            methods: {
+                closeAllDropdowns() {
+                    try {
+                        // Close customer dropdown
+                        this.show_customer_dropdown = false;
+                        this.filtered_customers = [];
+
+                        // Close all item dropdowns
+                        this.form.items.forEach(item => {
+                            item.show_stock_dropdown = false;
+                            item.show_color_dropdown = false;
+                            item.filtered_stocks = [];
+                            item.filtered_colors = [];
+                        });
+
+                    } catch (error) {
+                        console.error('Error closing dropdowns:', error);
+                    }
+                },
+                closeOtherDropdowns(currentIndex) {
+                    try {
+                        // Close other item dropdowns except current
+                        this.form.items.forEach((item, index) => {
+                            if (index !== currentIndex) {
+                                item.show_stock_dropdown = false;
+                                item.show_color_dropdown = false;
+                                item.filtered_stocks = [];
+                                item.filtered_colors = [];
                             }
                         });
-                    } else {
-                        alert('Fatura başarıyla güncellendi');
+
+                    } catch (error) {
+                        console.error('Error closing other dropdowns:', error);
                     }
-                } else {
-                    throw new Error(data.message || 'Güncelleme başarısız');
-                }
-            } catch (error) {
-                console.error('Update error:', error);
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Hata',
-                        text: 'Güncelleme sırasında bir hata oluştu',
-                        customClass: {
-                            confirmButton: "btn btn-danger"
+                },
+                async loadGlobalData() {
+                    try {
+                        // Check if globalStore exists
+                        if (typeof this.globalStore === 'undefined' || !this.globalStore) {
+                            console.warn('GlobalStore not available, using empty arrays');
+                            this.customers = [];
+                            this.sellers = [];
+                            this.colors = [];
+                            this.warehouses = [];
+                            return;
                         }
-                    });
-                } else {
-                    alert('Güncelleme sırasında bir hata oluştu');
-                }
-            } finally {
-                this.loading = false;
-            }
-        }
-    },
-    mounted() {
-        try {
-            console.log('Invoice form loaded:', this.invoice);
-            console.log('Stock movements:', this.stockCardMovements);
-            console.log('Customers:', this.customers);
-            console.log('Filtered customers:', this.filteredCustomers);
-            
-            // Initialize items
-            this.form.items = this.initializeItems();
-            
-            // Set default date if not provided
-            if (!this.form.create_date) {
-                this.form.create_date = new Date().toISOString().split('T')[0];
-            }
-            
-            // Listen for customerSaved event from modal component
-            window.addEventListener('customerSaved', (event) => {
-                const customer = event.detail;
-                if (customer && customer.id) {
-                    // Add to customers list if not exists
-                    const exists = this.customers.find(c => c.id === customer.id);
-                    if (!exists) {
-                        this.customers.push(customer);
+
+                        // Load from global store with error handling
+                        const customersData = this.globalStore.getCustomers();
+                        const sellersData = this.globalStore.getSellers();
+                        const colorsData = this.globalStore.getColors();
+                        const warehousesData = this.globalStore.getWarehouses();
+
+                        // Handle Promise responses
+                        this.customers = Array.isArray(customersData) ? customersData : [];
+                        this.sellers = Array.isArray(sellersData) ? sellersData : [];
+                        this.colors = Array.isArray(colorsData) ? colorsData : [];
+                        this.warehouses = Array.isArray(warehousesData) ? warehousesData : [];
+
+                        // If data is Promise, wait for it
+                        if (customersData && typeof customersData.then === 'function') {
+                            this.customers = await customersData || [];
+                        }
+                        if (sellersData && typeof sellersData.then === 'function') {
+                            this.sellers = await sellersData || [];
+                        }
+                        if (colorsData && typeof colorsData.then === 'function') {
+                            this.colors = await colorsData || [];
+                        }
+                        if (warehousesData && typeof warehousesData.then === 'function') {
+                            this.warehouses = await warehousesData || [];
+                        }
+
+                        // Debug data lengths
+
+
+                        // Debug customer data
+                        if (this.customers.length > 0) {
+                        }
+
+                    } catch (error) {
+                        console.error('Error loading global data:', error);
+                        // Fallback to empty arrays
+                        this.customers = [];
+                        this.sellers = [];
+                        this.colors = [];
+                        this.warehouses = [];
                     }
-                    
-                    // Set as selected customer
-                    this.form.customer_id = customer.id;
-                    
-                    console.log('New customer added and selected:', customer);
+                },
+                createItem(template = null) {
+                    const source = template || {};
+                    let defaultSellerId;
+
+                    if (source && source.seller_id !== undefined) {
+                        defaultSellerId = source.seller_id;
+                    } else {
+                        const sellerOne = Array.isArray(this.sellers)
+                            ? this.sellers.find(seller => {
+                                if (!seller || seller.id === undefined) {
+                                    return false;
+                                }
+                                const sellerId = seller.id;
+                                return sellerId === 1 || sellerId === '1' || Number(sellerId) === 1;
+                            })
+                            : null;
+
+                        if (sellerOne && sellerOne.id !== undefined) {
+                            defaultSellerId = sellerOne.id;
+                        } else if (Array.isArray(this.sellers) && this.sellers.length > 0 && this.sellers[0].id !== undefined) {
+                            defaultSellerId = this.sellers[0].id;
+                        } else {
+                            defaultSellerId = 1;
+                        }
+                    }
+
+                    return {
+                        stock_card_id: source.stock_card_id !== undefined ? source.stock_card_id : '',
+                        stock_search: source.stock_search !== undefined ? source.stock_search : '',
+                        show_stock_dropdown: false,
+                        filtered_stocks: [],
+                        loading_stocks: false,
+                        selected_stock_index: -1,
+                        stock_error: null,
+                        color_id: source.color_id !== undefined ? source.color_id : '',
+                        color_search: source.color_search !== undefined ? source.color_search : '',
+                        show_color_dropdown: false,
+                        filtered_colors: [],
+                        serial: source.serial !== undefined ? source.serial : '',
+                        quantity: source.quantity !== undefined ? source.quantity : 1,
+                        cost_price: source.cost_price !== undefined ? source.cost_price : 0,
+                        base_cost_price: source.base_cost_price !== undefined ? source.base_cost_price : 0,
+                        sale_price: source.sale_price !== undefined ? source.sale_price : 0,
+                        seller_id: defaultSellerId,
+                        warehouse_id: source.warehouse_id !== undefined ? source.warehouse_id : '',
+                        barcode: '',
+                        reason_id: source.reason_id !== undefined ? source.reason_id : 9,
+                        tracking_quantity: source.tracking_quantity !== undefined ? source.tracking_quantity : 0,
+                        discount: source.discount !== undefined ? source.discount : 0,
+                        tax: source.tax !== undefined ? source.tax : 20,
+                        description: source.description !== undefined ? source.description : '',
+                        stock_lookup_error: ''
+                    };
+                },
+                addItem(template = null) {
+                    if (template && template.preventDefault) {
+                        template.preventDefault();
+                        template = null;
+                    }
+
+                    const newItem = this.createItem(template);
+                    this.form.items.push(newItem);
+                },
+                removeItem(index) {
+                    if (this.form.items.length > 1) {
+                        this.form.items.splice(index, 1);
+                    }
+                },
+                onStockChange(index) {
+                    const stockId = this.form.items[index].stock_card_id;
+                    if (stockId) {
+                        // Fetch stock price data
+                        this.fetchStockPrice(stockId, index);
+                    }
+                },
+                async fetchStockPrice(stockId, index) {
+                    try {
+                        const response = await fetch(`/api/stock-price/${stockId}`);
+                        const data = await response.json();
+                        if (data) {
+                            this.form.items[index].cost_price = data.cost_price || 0;
+                            this.form.items[index].base_cost_price = data.base_cost_price || 0;
+                            this.form.items[index].sale_price = data.sale_price || 0;
+                        }
+                    } catch (error) {
+                    }
+                },
+                onCustomerChange() {
+                    // Customer specific logic can be added here
+                },
+                calculateItemTotal(index) {
+                    // Real-time calculation if needed
+                },
+                // Stock Autocomplete Methods - Improved
+                filterStocks(index) {
+                    try {
+                        const item = this.form.items[index];
+                        const searchTerm = item.stock_search ? item.stock_search.trim().toLowerCase() : '';
+
+                        // Clear previous results
+                        item.filtered_stocks = [];
+                        item.show_stock_dropdown = false;
+
+                        // Minimum search length
+                        if (searchTerm.length < 2) {
+                            return;
+                        }
+                        // Ensure stocks is an array
+                        if (!Array.isArray(this.stocks) || this.stocks.length === 0) {
+                            console.warn('Stocks data not available or empty');
+                            return;
+                        }
+                        // Advanced filtering with multiple criteria
+                        const filtered = this.stocks.filter(stock => {
+                            if (!stock || !stock.name) return false;
+
+                            const stockName = stock.name.toLowerCase();
+                            const brandName = stock.brand_name?.toLowerCase() || '';
+                            const sku = stock.sku?.toLowerCase() || '';
+                            const barcode = stock.barcode?.toLowerCase() || '';
+
+                            // Multiple search criteria
+                            return stockName.includes(searchTerm) ||
+                                brandName.includes(searchTerm) ||
+                                sku.includes(searchTerm) ||
+                                barcode.includes(searchTerm);
+                        })
+                            .sort((a, b) => {
+                                // Prioritize exact matches
+                                const aName = a.name.toLowerCase();
+                                const bName = b.name.toLowerCase();
+
+                                if (aName.startsWith(searchTerm) && !bName.startsWith(searchTerm)) return -1;
+                                if (!aName.startsWith(searchTerm) && bName.startsWith(searchTerm)) return 1;
+
+                                // Then by name similarity
+                                return aName.localeCompare(bName);
+                            })
+                            .slice(0, 50); // Increased limit for better UX
+
+                        // Update results
+                        item.filtered_stocks = filtered;
+                        item.show_stock_dropdown = filtered.length > 0;
+
+
+                    } catch (error) {
+                        console.error('Error filtering stocks:', error);
+                        this.form.items[index].filtered_stocks = [];
+                        this.form.items[index].show_stock_dropdown = false;
+                    }
+                },
+                showStockDropdown(index) {
+                    try {
+                        // Close other dropdowns first
+                        this.closeOtherDropdowns(index);
+
+                        const item = this.form.items[index];
+
+                        // Only show if there's a search term
+                        if (item.stock_search && item.stock_search.trim().length >= 2) {
+                            item.show_stock_dropdown = true;
+                            this.filterStocks(index);
+                        } else {
+                            item.show_stock_dropdown = false;
+                        }
+
+                    } catch (error) {
+                        console.error('Error showing stock dropdown:', error);
+                    }
+                },
+                hideStockDropdown(index) {
+                    // Use a more reliable delay mechanism
+                    this.hideTimeout = setTimeout(() => {
+                        if (this.form.items[index]) {
+                            this.form.items[index].show_stock_dropdown = false;
+                        }
+                    }, 300);
+                },
+                cancelHideDropdown() {
+                    if (this.hideTimeout) {
+                        clearTimeout(this.hideTimeout);
+                        this.hideTimeout = null;
+                    }
+                },
+                // Keyboard navigation
+                navigateDropdown(index, direction) {
+                    const item = this.form.items[index];
+                    if (!item.filtered_stocks || item.filtered_stocks.length === 0) return;
+
+                    // Initialize selected index if not exists
+                    if (item.selected_stock_index === undefined) {
+                        item.selected_stock_index = -1;
+                    }
+
+                    // Navigate
+                    item.selected_stock_index += direction;
+
+                    // Keep within bounds
+                    if (item.selected_stock_index < 0) {
+                        item.selected_stock_index = item.filtered_stocks.length - 1;
+                    } else if (item.selected_stock_index >= item.filtered_stocks.length) {
+                        item.selected_stock_index = 0;
+                    }
+                },
+                selectFirstStock(index) {
+                    const item = this.form.items[index];
+                    if (item.filtered_stocks && item.filtered_stocks.length > 0) {
+                        this.selectStock(index, item.filtered_stocks[0]);
+                    }
+                },
+                selectStock(index, stock) {
+                    try {
+                        // Cancel any pending hide operations
+                        this.cancelHideDropdown();
+
+                        const item = this.form.items[index];
+
+                        // Validate stock data
+                        if (!stock || !stock.id) {
+                            console.error('Invalid stock data:', stock);
+                            return;
+                        }
+
+                        // Update item with selected stock
+                        item.stock_card_id = stock.id;
+                        item.stock_search = `${stock.name}${stock.brand?.name ? ' - ' + stock.brand.name : ''}${stock.version_names ? ' - ' + stock.version_names : ''}`;
+                        item.show_stock_dropdown = false;
+                        item.filtered_stocks = [];
+
+                        // Clear any previous error states
+                        item.stock_error = null;
+
+                        // Trigger stock change handler
+                        this.onStockChange(index);
+
+                        // Force Vue.js to update
+                        this.$forceUpdate();
+
+
+                    } catch (error) {
+                        console.error('Error selecting stock:', error);
+                        // Show error to user
+                        this.form.items[index].stock_error = 'Stok seçimi sırasında hata oluştu';
+                    }
+                },
+                // Color Autocomplete Methods
+                filterColors(index) {
+                    const item = this.form.items[index];
+                    const searchTerm = item.color_search.toLowerCase();
+
+                    if (searchTerm.length < 1) {
+                        item.filtered_colors = [];
+                        return;
+                    }
+
+                    item.filtered_colors = this.colors.filter(color =>
+                        color.name.toLowerCase().includes(searchTerm)
+                    ).slice(0, 10); // Limit to 10 results
+                },
+                showColorDropdown(index) {
+                    try {
+                        // Close other dropdowns first
+                        this.closeOtherDropdowns(index);
+
+                        const item = this.form.items[index];
+                        item.show_color_dropdown = true;
+
+                        // If there's already a search term, filter immediately
+                        if (item.color_search && item.color_search.length >= 1) {
+                            this.filterColors(index);
+                        }
+
+                    } catch (error) {
+                        console.error('Error showing color dropdown:', error);
+                    }
+                },
+                hideColorDropdown(index) {
+                    // Delay to allow click events
+                    setTimeout(() => {
+                        this.form.items[index].show_color_dropdown = false;
+                    }, 200);
+                },
+                selectColor(index, color) {
+                    try {
+                        const item = this.form.items[index];
+                        item.color_id = color.id;
+                        item.color_search = color.name;
+                        item.show_color_dropdown = false;
+                        item.filtered_colors = [];
+
+                        // Force Vue.js to update
+                        this.$forceUpdate();
+
+                    } catch (error) {
+                        console.error('Error selecting color:', error);
+                    }
+                },
+                // Customer Autocomplete Methods
+                filterCustomers() {
+                    try {
+                        const searchTerm = this.customer_search.toLowerCase();
+
+                        if (searchTerm.length < 1) {
+                            this.filtered_customers = [];
+                            return;
+                        }
+
+                        // Ensure customers is an array
+                        if (!Array.isArray(this.customers)) {
+                            console.warn('Customers is not an array:', this.customers);
+                            this.filtered_customers = [];
+                            return;
+                        }
+
+                        this.filtered_customers = this.customers.filter(customer => {
+                            if (!customer) return false;
+
+                            // Get customer name - prefer fullname, fallback to firstname + lastname
+                            const customerName = customer.fullname ||
+                                ((customer.firstname || '') + ' ' + (customer.lastname || '')).trim();
+
+                            if (!customerName) return false;
+
+                            // Search in name, phone, and email
+                            const nameMatch = customerName.toLowerCase().includes(searchTerm);
+                            const phoneMatch = customer.phone1 && customer.phone1.includes(searchTerm);
+                            const emailMatch = customer.email && customer.email.toLowerCase().includes(searchTerm);
+
+                            return nameMatch || phoneMatch || emailMatch;
+                        }).slice(0, 10); // Limit to 10 results
+
+                    } catch (error) {
+                        console.error('Error filtering customers:', error);
+                        this.filtered_customers = [];
+                    }
+                },
+                showCustomerDropdown() {
+                    try {
+                        this.show_customer_dropdown = true;
+                        this.filterCustomers();
+                    } catch (error) {
+                        console.error('Error showing customer dropdown:', error);
+                    }
+                },
+                hideCustomerDropdown() {
+                    try {
+                        // Delay to allow click events
+                        setTimeout(() => {
+                            this.show_customer_dropdown = false;
+                        }, 200);
+                    } catch (error) {
+                        console.error('Error hiding customer dropdown:', error);
+                    }
+                },
+                selectCustomer(customer) {
+                    try {
+                        if (!customer) {
+                            console.error('No customer provided');
+                            return;
+                        }
+
+                        // Get customer name - prefer fullname, fallback to firstname + lastname
+                        const customerName = customer.fullname ||
+                            ((customer.firstname || '') + ' ' + (customer.lastname || '')).trim() ||
+                            'Genel Cari';
+
+                        this.form.customer_id = customer.id;
+                        this.customer_search = customerName;
+                        this.show_customer_dropdown = false;
+                        this.filtered_customers = [];
+                        this.onCustomerChange();
+
+                        // Force Vue.js to update
+                        this.$forceUpdate();
+
+                    } catch (error) {
+                        console.error('Error selecting customer:', error);
+                    }
+                },
+                async submitForm() {
+
+                    if (!this.isFormValid) {
+                        alert('Lütfen tüm gerekli alanları doldurun!');
+                        return;
+                    }
+
+                    this.submitting = true;
+
+                    try {
+                        const formData = new FormData();
+                        formData.append('type', '1');
+                        formData.append('customer_id', this.form.customer_id);
+                        formData.append('number', this.form.number);
+                        formData.append('create_date', this.form.create_date);
+                        formData.append('payment_status', this.form.payment_status);
+                        formData.append('invoice_description', this.form.description || '');
+
+                        // Add items as arrays
+                        this.form.items.forEach((item, index) => {
+                            Object.keys(item).forEach(key => {
+                                formData.append(`${key}[]`, item[key] || '');
+                            });
+                        });
+
+                        const totalCost = (this.totals && this.totals.cost != null) ? this.totals.cost : 0;
+                        const totalBase = (this.totals && this.totals.baseCost != null) ? this.totals.baseCost : 0;
+                        const totalSale = (this.totals && this.totals.sale != null) ? this.totals.sale : 0;
+                        const totalProfit = (this.totals && this.totals.profit != null) ? this.totals.profit : 0;
+                        const totalTax = (this.totals && this.totals.taxTotal != null) ? this.totals.taxTotal : 0;
+
+                        formData.append('total_cost', totalCost);
+                        formData.append('total_base_cost', totalBase);
+                        formData.append('total_sale', totalSale);
+                        formData.append('total_profit', totalProfit);
+                        formData.append('tax_total', totalTax);
+
+
+                        const response = await fetch("{{ route('invoice.stockcardmovementstore') }}", {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                    .content
+                            }
+                        });
+
+
+                        if (response.ok) {
+                            // JSON response'dan verileri al
+                            const result = await response.json();
+                            alert(result.message || 'Fatura başarıyla kaydedildi!');
+
+                            // Invoice ID'sini sakla ve modal'ı aç
+                            if (result.id) {
+                                this.lastInvoiceId = result.id;
+                                this.openSerialPrintModal();
+                            } else {
+                                alert('Invoice ID alınamadı, barkod yazdırma sayfası açılamadı!');
+                            }
+                        } else {
+                            const errorText = await response.text();
+                            console.error('Response error:', errorText);
+                            throw new Error('Form gönderimi başarısız: ' + response.status);
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Kaydetme sırasında hata oluştu: ' + error.message);
+                    } finally {
+                        this.submitting = false;
+                        this.resetForm();
+                    }
+                },
+                resetForm() {
+                    if (confirm('Formu sıfırlamak istediğinizden emin misiniz?')) {
+                        this.form = {
+                            customer_id: '0',
+                            number: '',
+                            create_date: new Date().toISOString().substr(0, 10),
+                            payment_status: 'unpaid',
+                            description: '',
+                            items: [this.createItem()]
+                        };
+                        this.customer_search = 'Genel Cari';
+                        this.show_customer_dropdown = false;
+                        this.filtered_customers = [];
+                    }
+                },
+                saveAsDraft() {
+                    // Draft save functionality
+                    localStorage.setItem('invoice_draft', JSON.stringify(this.form));
+                    alert('Taslak kaydedildi!');
+                },
+                openCustomerModal() {
+                    const modal = new bootstrap.Modal(document.getElementById('editUser'));
+                    modal.show();
+                },
+                openSerialPrintModal() {
+                    // Modal HTML'ini oluştur
+                    const modalHtml = `
+                        <div class="modal fade" id="serialPrintModal" tabindex="-1" aria-labelledby="serialPrintModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-xl">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="serialPrintModalLabel">Barkod Yazdırma</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <iframe id="serialPrintFrame" src="" width="100%" height="600px" style="border: none;"></iframe>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                                        <button type="button" class="btn btn-primary" onclick="printSerialFrame()">Yazdır</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Modal'ı DOM'a ekle
+                    if (!document.getElementById('serialPrintModal')) {
+                        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                        // Global print fonksiyonu ekle
+                        window.printSerialFrame = () => {
+                            const iframe = document.getElementById('serialPrintFrame');
+                            if (iframe && iframe.contentWindow) {
+                                try {
+                                    iframe.contentWindow.print();
+                                } catch (e) {
+                                    console.error('Print error:', e);
+                                    alert('Yazdırma işlemi başarısız!');
+                                }
+                            } else {
+                                alert('Sayfa henüz yüklenmedi, lütfen bekleyin!');
+                            }
+                        };
+                    }
+
+                    // Invoice ID'yi al (response'dan gelen ID'yi kullan)
+                    const invoiceId = this.getLastInvoiceId();
+                    const iframe = document.getElementById('serialPrintFrame');
+
+                    if (iframe && invoiceId) {
+                        iframe.src = `/invoice/serialprint?id=${invoiceId}`;
+
+                        // Iframe yüklendiğinde print butonunu aktif et
+                        iframe.onload = () => {
+                            console.log('Serial print page loaded successfully');
+                        };
+
+                        // Modal'ı göster
+                        const modal = new bootstrap.Modal(document.getElementById('serialPrintModal'));
+                        modal.show();
+                    } else {
+                        console.error('Invoice ID bulunamadı veya iframe yüklenemedi');
+                        alert('Barkod yazdırma sayfası açılamadı!');
+                    }
+                },
+                handleBarcodeEnter(index) {
+                    const currentItem = this.form.items[index];
+
+                    if (!currentItem || !currentItem.barcode) {
+                        return;
+                    }
+
+                    currentItem.barcode = String(currentItem.barcode).trim();
+
+                    if (!currentItem.barcode) {
+                        return;
+                    }
+
+                    if (index !== this.form.items.length - 1) {
+                        return;
+                    }
+
+                    this.calculateItemTotal(index);
+
+                    const newItemIndex = this.form.items.length;
+
+                    this.addItem(currentItem);
+
+                    this.$nextTick(() => {
+                        const nextInput = this.$el.querySelector(`input[data-barcode-index="${newItemIndex}"]`);
+                        if (nextInput && typeof nextInput.focus === 'function') {
+                            nextInput.focus();
+                            if (typeof nextInput.select === 'function') {
+                                nextInput.select();
+                            }
+                        }
+                        this.searchStockByBarcode(newItemIndex);
+                    });
+                },
+
+                async searchStockByBarcode(index) {
+                    const item = this.form.items[index];
+                    if (!item || !item.barcode) {
+                        return;
+                    }
+
+                    item.stock_lookup_error = '';
+                    this.scanningStates.loadingIndex = index;
+
+                    try {
+                        const normalizedBarcode = item.barcode.trim();
+                        const response = await axios.get('/stockcard/stocks-search', {
+                            params: {
+                                barcode: normalizedBarcode
+                            }
+                        });
+
+                        let stock = null;
+                        if (response.data) {
+                            if (response.data.stock) {
+                                stock = response.data.stock;
+                            } else if (Array.isArray(response.data.stocks)) {
+                                stock = response.data.stocks[0] || null;
+                            } else if (Array.isArray(response.data)) {
+                                stock = response.data[0] || null;
+                            }
+                        }
+
+                        if (!stock) {
+                            const fallback = await axios.get('/stockcard/stocks-search', {
+                                params: {
+                                    barcode: `B-${normalizedBarcode}`
+                                }
+                            });
+
+                            if (fallback.data) {
+                                if (fallback.data.stock) {
+                                    stock = fallback.data.stock;
+                                } else if (Array.isArray(fallback.data.stocks)) {
+                                    stock = fallback.data.stocks[0] || null;
+                                } else if (Array.isArray(fallback.data)) {
+                                    stock = fallback.data[0] || null;
+                                }
+                            }
+                        }
+
+                        if (!stock) {
+                            item.stock_lookup_error = 'Barkoda ait stok bulunamadı.';
+                            this.populateStockFromLookup(index, null);
+                        } else {
+                            this.populateStockFromLookup(index, stock);
+                        }
+                    } catch (error) {
+                        console.error('Barcode stock lookup error:', error);
+                        item.stock_lookup_error = 'Stok araması başarısız. Lütfen tekrar deneyin.';
+                    } finally {
+                        this.scanningStates.loadingIndex = null;
+                    }
+                },
+
+                populateStockFromLookup(index, stock) {
+                    const item = this.form.items[index];
+                    if (!item) {
+                        return;
+                    }
+
+                    if (!stock) {
+                        item.stock_card_id = '';
+                        item.stock_search = '';
+                        item.cost_price = 0;
+                        item.base_cost_price = 0;
+                        item.sale_price = 0;
+                        return;
+                    }
+
+                    item.stock_card_id = stock.id || '';
+                    if (!item.stock_card_id && stock.stock_card_id) {
+                        item.stock_card_id = stock.stock_card_id;
+                    }
+                    if (!item.stock_card_id && stock.stockcardid) {
+                        item.stock_card_id = stock.stockcardid;
+                    }
+                    if (!item.stock_card_id && stock.stock_card_movements?.stock_card_id) {
+                        item.stock_card_id = stock.stock_card_movements.stock_card_id;
+                    }
+
+                    item.stock_search = [
+                        stock.name || stock.text || '',
+                        stock.brand?.name || stock.brand_name || '',
+                        stock.version_names || ''
+                    ].filter(Boolean).join(' - ');
+
+                    if (stock.sale_price !== undefined) {
+                        item.sale_price = Number(stock.sale_price) || Number(stock.stockCardPrice?.sale_price) || item.sale_price;
+                    } else if (stock.stockCardPrice?.sale_price !== undefined) {
+                        item.sale_price = Number(stock.stockCardPrice.sale_price) || item.sale_price;
+                    }
+
+                    if (stock.cost_price !== undefined) {
+                        item.cost_price = Number(stock.cost_price) || item.cost_price;
+                    } else if (stock.stockCardPrice?.cost_price !== undefined) {
+                        item.cost_price = Number(stock.stockCardPrice.cost_price) || item.cost_price;
+                    }
+
+                    if (stock.base_cost_price !== undefined) {
+                        item.base_cost_price = Number(stock.base_cost_price) || item.base_cost_price;
+                    } else if (stock.stockCardPrice?.base_cost_price !== undefined) {
+                        item.base_cost_price = Number(stock.stockCardPrice.base_cost_price) || item.base_cost_price;
+                    }
+
+                    if (stock.tax !== undefined) {
+                        item.tax = Number(stock.tax) || item.tax;
+                    } else if (stock.stockCardPrice?.tax !== undefined) {
+                        item.tax = Number(stock.stockCardPrice.tax) || item.tax;
+                    }
+
+                    if (stock.warehouse_id !== undefined) {
+                        item.warehouse_id = stock.warehouse_id;
+                    }
+
+                    if (stock.seller_id !== undefined) {
+                        item.seller_id = stock.seller_id;
+                    }
+                },
+                getLastInvoiceId() {
+                    // Son kaydedilen invoice ID'sini döndür
+                    return this.lastInvoiceId || null;
                 }
-            });
-        } catch (error) {
-            console.error('Error in mounted:', error);
+            }
+        }).mount('#invoice-app');
+    </script>
+
+
+    <style>
+        /* Invoice Form - Uses project-base.css unified styles */
+        /* All styles inherited from base CSS, no custom styles needed */
+
+        .table-responsive {
+            max-height: 500px;
+            overflow-y: auto;
         }
-    }
-});
-
-// Set error handler for the app
-app.config.errorHandler = function (err, vm, info) {
-    console.error('Vue Error:', err);
-    console.error('Component:', vm);
-    console.error('Info:', info);
-};
-
-// Mount the app
-app.mount('#invoice-form-app');
-</script>
-
-<style>
-@media print {
-    .btn, .card-header .d-flex {
-        display: none !important;
-    }
-}
-</style>
+    </style>
 @endsection

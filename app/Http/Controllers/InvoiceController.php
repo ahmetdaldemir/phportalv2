@@ -29,6 +29,7 @@ use App\Services\User\UserService;
 use App\Services\Version\VersionService;
 use App\Services\Warehouse\WarehouseService;
 use App\Helper\BarcodeHelper;
+use App\Models\Color;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use elogo_api\elogo_api;
@@ -793,8 +794,8 @@ class InvoiceController extends Controller
                 }
             }
         }
-
         $data['stock_card_movements'] = $stock_card_movements;
+
         return view('module.invoice.stockcardmovementform', $data);
     }
 
@@ -967,12 +968,13 @@ class InvoiceController extends Controller
             $stockcardlist[$a]['barcode'] = BarcodeHelper::formatBarcode($request->barcode[$a] ?? null);
 
             try {
-                $stockData = StockCard::with(['brand', 'category'])
+                $stockData = StockCard::with(['brand', 'category', 'color'])
                     ->find($item);
 
                 if ($stockData) {
                     $stockName = $stockData->name ?? '';
                     $brandName = $stockData->brand->name ?? '';
+                    $colorName = $stockData->color->name ?? Color::find($request->color_id[$a])->name;
                     $categoryName = $stockData->category->name ?? '';
 
                     $modelName = '';
@@ -992,12 +994,14 @@ class InvoiceController extends Controller
                     $stockcardlist[$a]['brand_name'] = $brandName;
                     $stockcardlist[$a]['model_name'] = $modelName;
                     $stockcardlist[$a]['category_name'] = $categoryName;
+                    $stockcardlist[$a]['color_name'] = $colorName;
 
                     $summaryParts = array_filter([
                         $stockName,
                         $brandName,
                         $modelName,
-                        $categoryName
+                        $categoryName,
+                        $colorName
                     ]);
                     $stockcardlist[$a]['product_summary'] = implode(' | ', $summaryParts);
                 }

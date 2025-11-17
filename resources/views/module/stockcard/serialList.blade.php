@@ -299,15 +299,14 @@
                             <th style="width: 90px;"><i class="bx bx-dollar me-1"></i>Satış F.</th>
                             <th style="width: 90px;"><i class="bx bx-palette me-1"></i>Renk</th>
                             <th><i class="bx bx-purchase-tag me-1"></i>Marka</th>
-                            <th><i class="bx bx-mobile me-1"></i>Model</th>
                             <th><i class="bx bx-category me-1"></i>Kategori</th>
                             <th style="width: 100px;"><i class="bx bx-store me-1"></i>Şube</th>
                             <th><i class="bx bx-cog me-1"></i>İşlemler</th>
                         </tr>
                         </thead>
                         <tbody class="table-border-bottom-0 professional-tbody">
-                        <tr v-for="stockData in stockCards" 
-                            :key="stockData.id"
+                        <tr v-for="(stockData, idx) in stockCards" 
+                            :key="stockData.__key || stockData.id || stockData.serial_number || idx"
                             :data-type="stockData.type" 
                             :data-quantity="stockData.quantity"
                             v-show="stockData.quantity > 0"
@@ -325,10 +324,12 @@
                             <td>
                                 <div class="d-flex flex-column">
                                     <strong>@{{ stockData.serial_number }}</strong>
-                                    <a :href="'{{route('invoice.sales', ['id' => ''])}}' + stockData.stock.id + '&serial=' + stockData.serial_number" class="text-muted small">
+                                    <a v-if="stockData.stock && stockData.stock.id"
+                                       :href="`{{route('invoice.sales', ['id' => ''])}}${stockData.stock.id}&serial=${stockData.serial_number}`"
+                                       class="text-muted small">
                                         <i class="bx bx-receipt me-1"></i>#@{{ stockData.invoice_id }}
                                     </a>
-                                    <a :href="'{{route('invoice.sales', ['id' => ''])}}' + stockData.stock.id + '&serial=' + stockData.barcode" class="text-muted small">
+                                    <a :href="'{{route('invoice.stockcardmovementform', ['id' => ''])}}' + stockData.invoice_id" class="text-muted small">
                                         <i class="bx bx-barcode me-1"></i>@{{ stockData.barcode }}
                                     </a>
                                 </div>
@@ -341,9 +342,10 @@
                             @endrole
                             <td style="text-align: end;font-weight: bold;color: #f00000;font-size: 0.8rem;">@{{ formatPrice(stockData.sale_price) }}</td>
                             <td>@{{ stockData.color?.name || '-' }}</td>
-                            <td>@{{ stockData.stock?.brand?.name || '-' }}</td>
-                            <td v-html="stockData.stock?.version || '-'"></td>
-                            <td>@{{ stockData.categoryPath || '-' }}</td>
+                            <td>@{{ stockData.stock?.brand?.name || '-' }}
+                                 <span v-html="stockData.stock?.version || '-'"> </span>
+                                 </td>
+                             <td>@{{ stockData.categoryPath || '-' }}</td>
                             <td>@{{ stockData.seller?.name || '-' }}</td>
                             <td>
                                 <!-- Status Badges -->
@@ -363,6 +365,7 @@
                                 </div>
                                 <!-- Action Buttons -->
                                 <div v-else class="d-flex gap-1">
+
                                     <button type="button"
                                             @click="openTransferModal(stockData.serial_number)"
                                             title="Sevk Et"
@@ -370,6 +373,16 @@
                                         <i class="bx bxl-ok-ru"></i>
                                     </button>
                                     @role('Depo Sorumlusu|super-admin')
+                                    <a v-if="stockData.id"
+                                       :href="`{{route('stockcard.singleserialprint', ['id' => ''])}}${stockData.id}`" target="_blank"
+                                       title="Seri Numarası Yazdır" class="btn btn-sm btn-primary">
+                                        <i class="bx bx-barcode-reader"></i>
+                                    </a>
+                                    <a v-if="stockData.id"
+                                       :href="`{{route('stockcard.singleserialprintrefresh', ['id' => ''])}}${stockData.id}`" target="_blank"
+                                       title="QR Kod Yazdır" class="btn btn-sm btn-primary">
+                                        <i class="bx bx-refresh"></i>
+                                    </a>
                                     <button type="button"
                                             @click="openPriceModal(stockData.id)"
                                             class="btn btn-sm btn-danger"
@@ -384,12 +397,6 @@
                                     </button>
 
                                     @endrole
-                                    <button type="button"
-                                            @click="openDemandModal(stockData.id, stockData.stock?.name, stockData.color_id)"
-                                            class="btn btn-sm btn-info"
-                                            title="Talep Oluştur">
-                                        <i class="bx bx-radar"></i>
-                                    </button>
 
                                 </div>
                             </td>
@@ -640,9 +647,7 @@
                                     Gönderici Bayi
                                 </label>
                                 <select v-model="transferFormModal.main_seller_id" 
-                                        class="form-select" 
-                                        required
-                                        :disabled="!hasRole(['Depo Sorumlusu', 'super-admin'])">
+                                        class="form-select">
                                     <option value="">Bayi Seçiniz</option>
                                     <option v-for="seller in sellers" :key="seller.id" :value="seller.id" v-text="seller.name"></option>
                                 </select>
@@ -928,7 +933,13 @@
                         const response = await axios.get('/stockcard/serialList', { params });
                         
                         // Parse the response data
-                        this.stockCards = response.data.stockcards || [];
+                        const rows = Array.isArray(response.data?.stockcards) ? response.data.stockcards : [];
+                        this.stockCards = rows
+                            .filter(Boolean)
+                            .map((s, i) => {
+                                const key = s.id ?? s.stock_card_id ?? s.stockcardid ?? s.stock_card_movement_id ?? s.serial_number ?? `row-${i}`;
+                                return Object.assign({ __key: key }, s);
+                            });
                         this.pagination = response.data.pagination || null;
                     } catch (error) {
                         console.error('Stok kartları yüklenemedi:', error);
@@ -1023,19 +1034,23 @@
                     console.log('Opening price modal for ID:', id);
                     this.currentStockCardId = id;
 
+                    const form = document.getElementById('priceForm');
                     $('#priceModal #stockCardMovementId').val(id);
-                    
-                    // Find the stock card data and populate the form
-                    const stockCard = this.stockCards.find(item => item.stock && item.stock.id === id);
-                    if (stockCard) {
-                        // Set the current sale price in the form
-                        const salePriceInput = document.getElementById('serialBackdrop');
-                        if (salePriceInput) {
-                            salePriceInput.value = stockCard.sale_price || '';
-                        }
+
+                    const stockCard = this.stockCards.find(item => Number(item.id) === Number(id));
+                    if (stockCard && form) {
+                        const fillInput = (selector, value) => {
+                            const input = form.querySelector(selector);
+                            if (input) {
+                                input.value = value !== undefined && value !== null ? value : '';
+                            }
+                        };
+
+                        fillInput('input[name="cost_price"]', stockCard.cost_price);
+                        fillInput('input[name="base_cost_price"]', stockCard.base_cost_price);
+                        fillInput('input[name="sale_price"]', stockCard.sale_price);
                     }
-                    
-                    // Force Vue to update the DOM
+
                     this.$nextTick(() => {
                         console.log('Current stock card ID after update:', this.currentStockCardId);
                         $('#priceModal').modal('show');
@@ -1159,7 +1174,7 @@
                             sevkList: this.transferFormModal.sevkList,
                             description: this.transferFormModal.description,
                             type: this.transferFormModal.type,
-                            is_barcode_transfer: this.transferFormModal.is_barcode_transfer
+                            is_barcode_transfer: false
                         });
 
                         // Close modal

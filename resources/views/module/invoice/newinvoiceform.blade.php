@@ -52,7 +52,7 @@
                                                          @click="selectCustomer(customer)"
                                                          class="dropdown-item" 
                                                          style="cursor: pointer;"
-                                                         v-text="customer.fullname + (customer.phone1 ? ' - ' + customer.phone1 : '')">
+                                                         v-text="(customer.fullname || ((customer.firstname || '') + ' ' + (customer.lastname || '')).trim()) + (customer.phone1 ? ' - ' + customer.phone1 : '')">
                                                     </div>
                                                     <div v-if="filtered_customers.length === 0 && customer_search.length >= 1" class="dropdown-item text-muted">
                                                         Cari bulunamadı
@@ -257,8 +257,12 @@
 
                                             <!-- Seri No -->
                                             <td>
-                                                <input v-model="item.serial" type="text"
-                                                    class="form-control form-control-sm" placeholder="Seri No">
+                                                <input v-model="item.serial"
+                                                    type="text"
+                                                    class="form-control form-control-sm"
+                                                    placeholder="Seri No"
+                                                    @keydown.enter.prevent
+                                                    @keyup.enter.prevent>
                                             </td>
 
                                             <!-- Renk -->
@@ -601,7 +605,9 @@
                         
                         // Set as selected customer
                         this.form.customer_id = customer.id;
-                        this.customer_search = customer.fullname || (customer.firstname + ' ' + customer.lastname);
+                        this.customer_search = customer.fullname || 
+                            ((customer.firstname || '') + ' ' + (customer.lastname || '')).trim() || 
+                            'Genel Cari';
                         
                         console.log('New customer added and selected:', customer);
                     }
@@ -1013,15 +1019,21 @@
                             return;
                         }
                         
-                        
                         this.filtered_customers = this.customers.filter(customer => {
-                            if (!customer || !customer.fullname) return false;
+                            if (!customer) return false;
                             
-                            return customer.type === 'account' && (
-                                customer.fullname.toLowerCase().includes(searchTerm) ||
-                                (customer.phone1 && customer.phone1.includes(searchTerm)) ||
-                                (customer.email && customer.email.toLowerCase().includes(searchTerm))
-                            );
+                            // Get customer name - prefer fullname, fallback to firstname + lastname
+                            const customerName = customer.fullname || 
+                                ((customer.firstname || '') + ' ' + (customer.lastname || '')).trim();
+                            
+                            if (!customerName) return false;
+                            
+                            // Search in name, phone, and email
+                            const nameMatch = customerName.toLowerCase().includes(searchTerm);
+                            const phoneMatch = customer.phone1 && customer.phone1.includes(searchTerm);
+                            const emailMatch = customer.email && customer.email.toLowerCase().includes(searchTerm);
+                            
+                            return nameMatch || phoneMatch || emailMatch;
                         }).slice(0, 10); // Limit to 10 results
                         
                     } catch (error) {
@@ -1054,8 +1066,13 @@
                             return;
                         }
                         
+                        // Get customer name - prefer fullname, fallback to firstname + lastname
+                        const customerName = customer.fullname || 
+                            ((customer.firstname || '') + ' ' + (customer.lastname || '')).trim() ||
+                            'Genel Cari';
+                        
                         this.form.customer_id = customer.id;
-                        this.customer_search = customer.fullname;
+                        this.customer_search = customerName;
                         this.show_customer_dropdown = false;
                         this.filtered_customers = [];
                         this.onCustomerChange();

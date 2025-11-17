@@ -69,100 +69,47 @@
                             </div>
                         </div>
 
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="bx bx-package"></i> Stok Adı
-                            </label>
-                            <input type="text" class="filter-input" v-model="searchForm.stockName"
-                                @input="debouncedSearch()" placeholder="Stok adı ara...">
-                        </div>
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="bx bx-user"></i> Müşteri
+                                </label>
+                                <input type="text" class="filter-input" v-model="searchForm.customerName"
+                                       @input="debouncedSearch()" placeholder="Müşteri ara...">
+                            </div>
 
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="bx bx-tag"></i> Marka
-                            </label>
-                            <select class="filter-select" v-model="searchForm.brand" @change="debouncedSearch()">
-                                <option value="">Tüm Markalar</option>
-                                <option v-for="brand in globalBrands" :key="brand.id" :value="brand.id"
-                                    v-text="brand.name"></option>
-                            </select>
-                        </div>
 
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="bx bx-mobile"></i> Model
-                                <span v-if="loading.versions" class="spinner-border spinner-border-sm ms-1"></span>
-                            </label>
-                            <select class="filter-select" v-model="searchForm.version" @change="debouncedSearch()"
-                                :disabled="!searchForm.brand || loading.versions">
-                                <option value="" v-if="!searchForm.brand">Önce marka seçiniz</option>
-                                <option value="" v-else-if="loading.versions">Yükleniyor...</option>
-                                <option value="" v-else>Tüm Modeller</option>
-                                <option v-for="version in globalVersions" :key="version.id" :value="version.id"
-                                    v-text="version.name"></option>
-                            </select>
-                        </div>
+                            <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="bx bx-store"></i> Bayi
+                                </label>
+                                <select class="filter-select" v-model="searchForm.seller" @change="debouncedSearch()">
+                                    <option value="">Tüm Bayiler</option>
+                                    <option v-for="seller in globalSellers" :key="seller.id" :value="seller.id"
+                                            v-text="seller.name"></option>
+                                </select>
+                            </div>
 
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="bx bx-category"></i> Kategori
-                            </label>
-                            <select class="filter-select" v-model="searchForm.category" @change="debouncedSearch()">
-                                <option value="">Tüm Kategoriler</option>
-                                <option v-for="category in globalCategories" :key="category.id"
-                                    :value="category.id" v-text="category.name"></option>
-                            </select>
-                        </div>
-                    </div>
+                            <div class="filter-group auto">
+                                <label class="filter-label">
+                                    <i class="bx bx-search"></i> Ara
+                                </label>
+                                <button type="submit" class="filter-button primary" :disabled="loading.search">
+                                    <i class="bx bx-search me-1" v-if="!loading.search"></i>
+                                    <span v-if="loading.search">Aranıyor...</span>
+                                    <span v-else>Ara</span>
+                                </button>
+                            </div>
 
-                    <!-- Row 2: Secondary Filters -->
-                    <div class="filter-row">
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="bx bx-user"></i> Müşteri
-                            </label>
-                            <input type="text" class="filter-input" v-model="searchForm.customerName"
-                                @input="debouncedSearch()" placeholder="Müşteri ara...">
-                        </div>
-
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="bx bx-barcode"></i> Seri No
-                            </label>
-                            <input type="text" class="filter-input" v-model="searchForm.serialNumber"
-                                @input="debouncedSearch()" placeholder="Seri numarası...">
-                        </div>
-
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="bx bx-store"></i> Bayi
-                            </label>
-                            <select class="filter-select" v-model="searchForm.seller" @change="debouncedSearch()">
-                                <option value="">Tüm Bayiler</option>
-                                <option v-for="seller in globalSellers" :key="seller.id" :value="seller.id"
-                                    v-text="seller.name"></option>
-                            </select>
-                        </div>
-
-                        <div class="filter-group auto">
-                            <label class="filter-label">
-                                <i class="bx bx-search"></i> Ara
-                            </label>
-                            <button type="submit" class="filter-button primary" :disabled="loading.search">
-                                <i class="bx bx-search me-1" v-if="!loading.search"></i>
-                                <span v-if="loading.search">Aranıyor...</span>
-                                <span v-else>Ara</span>
-                            </button>
-                        </div>
-
-                        <div class="filter-group auto">
-                            <label class="filter-label">
-                                <i class="bx bx-refresh"></i> Temizle
-                            </label>
-                            <button type="button" class="filter-button secondary" @click="clearFilters()">
-                                <i class="bx bx-refresh me-1"></i>
-                                Temizle
-                            </button>
+                            <div class="filter-group auto">
+                                <label class="filter-label">
+                                    <i class="bx bx-refresh"></i> Temizle
+                                </label>
+                                <button type="button" class="filter-button secondary" @click="clearFilters()">
+                                    <i class="bx bx-refresh me-1"></i>
+                                    Temizle
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </form>

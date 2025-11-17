@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="{{asset('assets/css/table-page-framework.css')}}">
     <style>
         .invoice-detail-modal .modal-dialog {
-            max-width: 1020px;
+            max-width: 1320px;
         }
 
         .invoice-detail-modal .modal-content {
@@ -400,8 +400,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr v-for="invoice in invoices" :key="invoice.id" class="invoice-row"
-                        :style="invoice.detail == null ? {'background-color': '#f2dbdb'} : {}">
+                    <tr v-for="invoice in invoices" :key="invoice.id" class="invoice-row" :style="invoice.detail == null ? {'background-color': '#f2dbdb'} : {}">
                         <td>
                             <div class="d-flex flex-column">
                                 <a href="#" class="fw-bold text-primary" @click.prevent="openInvoiceModal(invoice)"
@@ -624,24 +623,20 @@
                                     <table class="table align-middle">
                                         <thead>
                                         <tr>
-                                            <th>Ürün</th>
-                                            <th>Marka</th>
-                                            <th>Seri / Barkod</th>
-                                            <th class="text-center">Adet</th>
-                                            <th class="text-end">Satış (₺)</th>
-                                            <th class="text-end">Maliyet (₺)</th>
-                                            <th class="text-end">Kar (₺)</th>
-                                            <th>Satışçı</th>
-                                        </tr>
+                                            <th style="width: 60%">Ürün</th>
+                                            <th style="width: 20%">Seri / Barkod</th>
+                                            <th style="width: 10%" class="text-center">Adet</th>
+                                            <th style="width: 10%" class="text-end">Satış (₺)</th>
+=                                        </tr>
                                         </thead>
                                         <tbody>
                                         <tr v-for="item in invoiceDetails.sales" :key="item.id">
                                             <td>
-                                                <div class="fw-semibold" v-text="item.stock_name || '-'"></div>
+                                                <div class="fw-semibold" v-text="item.product_summary || '-'"></div>
                                                 <div class="text-muted small" v-if="item.description"
                                                      v-text="item.description"></div>
                                             </td>
-                                            <td v-text="item.brand_name || '-'"></td>
+
                                             <td>
                                                 <code v-text="item.serial_number || '-'"></code>
                                             </td>
@@ -650,7 +645,6 @@
                                                       v-text="formatNumber(item.quantity || 1)"></span>
                                             </td>
                                             <td class="text-end" v-text="formatCurrency(item.sale_price)"></td>
-                                            <td class="text-end" v-text="formatCurrency(item.base_cost_price)"></td>
                                             <td class="text-end">
                                                     <span :class="{
                                                         'text-success fw-semibold': (item.profit || 0) > 0,
@@ -658,7 +652,6 @@
                                                     }" v-text="formatCurrency(item.profit)">
                                                     </span>
                                             </td>
-                                            <td v-text="item.seller_name || '-'"></td>
                                         </tr>
                                         <tr v-if="invoiceDetails.sales.length === 0">
                                             <td colspan="8" class="text-center text-muted py-4">
@@ -914,6 +907,7 @@
                         total_cost_price: 0,
                         total_profit: 0
                     };
+                    console.log(this.invoiceDetails.sales);
 
                     if (!this.detailModalInstance) {
                         const modalEl = document.getElementById('invoiceDetailModal');
@@ -981,9 +975,11 @@
                     const costPrice = this.sanitizeNumber(detailItem.cost_price, baseCost);
                     const profit = (salePrice - baseCost) * quantity;
 
+                    console.log(detailItem);
                     return {
                         id: detailItem.id || detailItem.invoice_detail_id || (invoice.id + '-' + index),
                         stock_name: this.resolveStockName(detailItem),
+                        product_summary: this.resolveProductSummary(detailItem),
                         brand_name: this.resolveBrandName(detailItem),
                         serial_number: this.resolveSerial(detailItem),
                         description: detailItem.description || '',
@@ -1073,6 +1069,16 @@
                     return 'Ürün';
                 },
 
+
+                resolveProductSummary(detailItem) {
+                    if (detailItem.product_summary) {
+                        return detailItem.product_summary;
+                    }
+
+                    return 'Ürün';
+                },
+
+
                 resolveBrandName(detailItem) {
                     if (detailItem.brand_name) {
                         return detailItem.brand_name;
@@ -1093,7 +1099,8 @@
 
                 resolveSerial(detailItem) {
                     if (detailItem.serial_number) {
-                        return detailItem.serial_number;
+                        return `${detailItem.serial_number}`;
+
                     }
                     if (detailItem.serial) {
                         return detailItem.serial;
@@ -1102,7 +1109,7 @@
                         return detailItem.imei;
                     }
                     if (detailItem.barcode) {
-                        return detailItem.barcode;
+                        return `${detailItem.barcode}`;
                     }
                     return '-';
                 },
