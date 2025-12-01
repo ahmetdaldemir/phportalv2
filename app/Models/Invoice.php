@@ -31,8 +31,6 @@ class Invoice extends BaseModel
         'description',
         'is_status',
         'total_price',
-        'paid_amount',
-        'remaining_balance',
         'tax_total',
         'discount_total',
         'staff_id',
@@ -194,32 +192,5 @@ class Invoice extends BaseModel
         return $x;
     }
 
-    /**
-     * Kalan borcu hesapla
-     */
-    public function calculateRemainingBalance(): float
-    {
-        $paid = floatval($this->paid_amount ?? 0);
-        $total = floatval($this->total_price ?? 0);
-        return max(0, $total - $paid);
-    }
-
-    /**
-     * Tam ödendi mi kontrol et
-     */
-    public function isFullyPaid(): bool
-    {
-        return $this->calculateRemainingBalance() <= 0.01; // 0.01 tolerans
-    }
-
-    /**
-     * Finans transaction'ları
-     */
-    public function paymentTransactions(): HasMany
-    {
-        return $this->hasMany(FinansTransaction::class, 'model_id', 'id')
-            ->where('model_class', self::class)
-            ->orderBy('created_at', 'desc');
-    }
 
 }
