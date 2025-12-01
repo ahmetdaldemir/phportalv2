@@ -1,50 +1,123 @@
+version: '3.8'
+
 services:
+  # PHP-FPM Service
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phportal_php
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+      - ./docker/php/zz-docker.conf:/usr/local/etc/php-fpm.d/zz-docker.conf
+    networks:
+      - phportal_network
+      - global_databases_network
+    environment:
+      - PHP_IDE_CONFIG=serverName=phportal
+      - XDEBUG_MODE=develop,debug
+    depends_on:
+      - redis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
-    php:
-        image: webdevops/php-nginx:8.4
-        ports:
-            - "90:80"
-            - "443:443"
-        volumes:
-            - .:/var/www/html
-        environment:
-            - WEB_DOCUMENT_ROOT=/var/www/html/public
-        depends_on:
-            - mysql
-            - redis
-            - mongo
-        networks:
-            - phonehospital
-    mysql:
-        image: mysql:8.0
-        container_name: mysql
-        restart: unless-stopped
-        tty: true
-        ports:
-            - "3306:3306"
-        environment:
-            MYSQL_DATABASE: phportal
-            MYSQL_ROOT_PASSWORD: root
-            MYSQL_USER: phportal
-            MYSQL_PASSWORD: phportal
-            SERVICE_TAGS: dev
-            SERVICE_NAME: mysql
-        volumes:
-            - mysql_data:/var/lib/mysql
-        networks:
-            - phonehospital
-    redis:
-        image: redis:latest
-        networks:
-            - phonehospital
-    mongo:
-        image: mongo:latest
-        networks:
-            - phonehospital
+  # Nginx Service
+  nginx:
+    image: nginx:alpine
+    container_name: phportal_nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - .:/var/www
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      - phportal_network
+    depends_on:
+      - php
+
+  # Redis Service
+  redis:
+    image: redis:7-alpine
+    container_name: phportal_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - phportal_network
+
+  # MongoDB Service (Optional)
+  mongo:
+    image: mongo:7
+    container_name: phportal_mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./docker/mongodb/init.js:/docker-entrypoint-initdb.d/init.js:ro
+    networks:
+      - phportal_network
+    environment:
+      - MONGO_INITDB_DATABASE=phportal
+
+  # Laravel Horizon (Queue Worker)
+  horizon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phportal_horizon
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    networks:
+      - phportal_network
+      - global_databases_network
+    command: php artisan horizon
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  # Laravel Scheduler (Cron)
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phportal_scheduler
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    networks:
+      - phportal_network
+      - global_databases_network
+    command: >
+      sh -c "while true; do
+        php artisan schedule:run --verbose --no-interaction &
+        sleep 60
+      done"
+    depends_on:
+      - php
+
 volumes:
-    mysql_data:
+  redis_data:
+    driver: local
+  mongo_data:
+    driver: local
 
-#Docker Networks
 networks:
-    phonehospital:
-        driver: bridge
+  phportal_network:
+    driver: bridge
+  global_databases_network:
+    external: true

@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('type', 255)->nullable();
             $table->text('coating_information')->nullable();
             $table->text('print_information')->nullable();
-            $table->bigInteger('delivery_staff')->nullable();
+            $table->unsignedBigInteger('delivery_staff')->nullable();
             $table->foreignId('seller_id');
             $table->boolean('payment_status')->nullable()->default(0);
             $table->timestamps();

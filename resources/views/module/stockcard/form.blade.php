@@ -102,9 +102,7 @@
                             </div>
                     </div>
                 </div>
-            </div>
-                <!-- Stok Ayarları Kartı -->
-                <div class="card shadow-sm border-0 mb-4">
+
                     <div class="card-header bg-gradient-info text-white">
                         <h5 class="card-title mb-0">
                             <i class="bx bx-cog me-2"></i>Stok Ayarları
@@ -294,11 +292,11 @@
             margin-top: 4px;
         }
 
+
         .card {
             border-radius: 16px;
-            overflow: hidden;
+            overflow: visible; /* dışarı taşan dropdown/tooltip için visible yapılmalı */
         }
-
         .card-header {
             border: none;
             padding: 20px 24px;
@@ -479,19 +477,18 @@
         /* Autocomplete stilleri - Modern tasarım */
         .autocomplete-suggestions {
             position: absolute;
-            bottom: 100%;
+            top: calc(100% + 6px);
             left: 0;
             right: 0;
             background: #ffffff;
             border: 1px solid #e1e5e9;
-            border-bottom: none;
-            border-radius: 8px 8px 0 0;
+            border-radius: 8px;
             max-height: 250px;
             overflow-y: auto;
-            z-index: 9999;
-            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
-            backdrop-filter: blur(10px);
-            margin-bottom: 4px;
+            z-index: 99999;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(6px);
+            margin: 0;
         }
 
         .autocomplete-suggestion {
@@ -502,13 +499,15 @@
             font-size: 14px;
             color: #2d3748;
             position: relative;
+            background: #ffffff;
+            z-index: 100000;
+        }
+        .position-relative:focus-within .autocomplete-suggestions,
+        #name:focus ~ .autocomplete-suggestions {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
-        .autocomplete-suggestion:hover {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            transform: translateX(4px);
-        }
 
         .autocomplete-suggestion.active {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

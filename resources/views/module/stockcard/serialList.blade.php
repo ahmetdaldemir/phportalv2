@@ -318,9 +318,7 @@
                                        :value="stockData.id"
                                        class="form-check-input">
                             </td>
-                            <td style="width: 55px;text-align:center;cursor: pointer;"
-                                @click="openPriceModal(stockData.id)"
-                            >@{{ stockData.id }}</td>
+                            <td style="width: 55px;text-align:center;cursor: pointer;"  @click="openPriceModal(stockData.id)" >@{{ stockData.id }}</td>
                             <td>
                                 <div class="d-flex flex-column">
                                     <strong>@{{ stockData.serial_number }}</strong>
@@ -350,10 +348,7 @@
                             <td>
                                 <!-- Status Badges -->
                                 <span v-if="stockData.type == 4" class="badge badge-info">TRANSFER</span>
-                                <button v-if="stockData.type == 4"  type="button"
-                                        @click="updateTransfer(stockData.serial_number)"
-                                        class="btn btn-sm btn-info"
-                                        title="Talep Oluştur">
+                                <button v-if="stockData.type == 4"  type="button"  @click="updateTransfer(stockData.serial_number)"  class="btn btn-sm btn-info"  title="Talep Oluştur">
                                     <i class="bx bx-radar"></i>
                                 </button>
                                 <span v-else-if="stockData.type == 3" class="badge badge-warning">HASARLI</span>
@@ -395,9 +390,7 @@
                                             title="Sil">
                                         <i class="bx bx-trash"></i>
                                     </button>
-
                                     @endrole
-
                                 </div>
                             </td>
                         </tr>

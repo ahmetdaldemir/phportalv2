@@ -6,6 +6,7 @@ use App\Enums\Tax;
 use App\Models\AccountingCategory;
 use App\Models\City;
 use App\Models\Currency;
+use App\Models\FinansTransaction;
 use App\Models\Invoice;
 use App\Models\Phone;
 use App\Models\Refund;
@@ -268,8 +269,118 @@ class InvoiceController extends Controller
 
     protected function show(Request $request)
     {
-        $data['invoice'] = $this->invoiceService->find($request->id);
+        $invoice = $this->invoiceService->find($request->id);
+        
+        // Kalan borcu hesapla
+        if (!$invoice->paid_amount) {
+            $invoice->paid_amount = 0;
+        }
+        if (!$invoice->remaining_balance) {
+            $invoice->remaining_balance = $invoice->calculateRemainingBalance();
+            $invoice->save();
+        }
+        
+        // Ödeme geçmişini al
+        $paymentTransactions = FinansTransaction::where('model_class', Invoice::class)
+            ->where('model_id', $invoice->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        $data['invoice'] = $invoice;
+        $data['paymentTransactions'] = $paymentTransactions;
+        $data['safes'] = $this->safeService->all();
         return view('module.invoice.show', $data);
+    }
+
+    /**
+     * Kısmi ödeme al
+     */
+    public function addPartialPayment(Request $request)
+    {
+        $request->validate([
+            'invoice_id' => 'required|exists:invoices,id',
+            'amount' => 'required|numeric|min:0.01',
+            'payment_type' => 'required|in:cash,credit_card,installment',
+            'safe_id' => 'nullable|exists:safes,id',
+            'description' => 'nullable|string|max:500',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $invoice = Invoice::findOrFail($request->invoice_id);
+            
+            // Company kontrolü
+            if ($invoice->company_id != Auth::user()->company_id) {
+                return response()->json(['error' => 'Yetkisiz erişim'], 403);
+            }
+
+            $paymentAmount = floatval($request->amount);
+            $currentPaid = floatval($invoice->paid_amount ?? 0);
+            $totalPrice = floatval($invoice->total_price ?? 0);
+            $newPaid = $currentPaid + $paymentAmount;
+
+            // Negatif kalan borç kontrolü
+            if ($newPaid > $totalPrice) {
+                return response()->json([
+                    'error' => 'Ödeme tutarı toplam fiyattan fazla olamaz. Maksimum: ' . number_format($totalPrice - $currentPaid, 2, ',', '.') . ' ₺'
+                ], 400);
+            }
+
+            // Invoice'u güncelle
+            $invoice->paid_amount = $newPaid;
+            $invoice->remaining_balance = $totalPrice - $newPaid;
+            
+            // Eğer tam ödendiyse paymentStatus'u güncelle
+            if ($invoice->remaining_balance <= 0.01) {
+                $invoice->paymentStatus = 'paid';
+                $invoice->paymentDate = now()->format('Y-m-d');
+            } else {
+                $invoice->paymentStatus = 'unpaid';
+            }
+            
+            $invoice->save();
+
+            // FinansTransaction kaydı oluştur
+            $transaction = new FinansTransaction();
+            $transaction->user_id = Auth::id();
+            $transaction->company_id = Auth::user()->company_id;
+            $transaction->safe_id = $request->safe_id ?? 1;
+            $transaction->model_class = Invoice::class;
+            $transaction->model_id = $invoice->id;
+            $transaction->price = $paymentAmount;
+            $transaction->payment_type = $request->payment_type;
+            $transaction->process_type = 'invoice_payment';
+            $transaction->description = $request->description ?? 'Fatura kısmi ödemesi';
+            $transaction->save();
+
+            // Safe güncellemesi (eğer cash ise)
+            if ($request->payment_type === 'cash' && $request->safe_id) {
+                $safe = Safe::find($request->safe_id);
+                if ($safe) {
+                    $safe->incash = ($safe->incash ?? 0) + $paymentAmount;
+                    $safe->amount = ($safe->amount ?? 0) + $paymentAmount;
+                    $safe->save();
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Ödeme başarıyla kaydedildi',
+                'invoice' => [
+                    'paid_amount' => $invoice->paid_amount,
+                    'remaining_balance' => $invoice->remaining_balance,
+                    'payment_status' => $invoice->paymentStatus,
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => 'Ödeme kaydedilirken hata oluştu: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     protected function movement(Request $request)
@@ -391,11 +502,11 @@ class InvoiceController extends Controller
             $data = [];
             $movements = $this->stockCardService->getInvoiceForSerial($request->id);
             foreach ($movements as $item) {
-                $barcodeData = $item->barcode ?? $item->serial_number;
+                $barcodeData = (isset($item->barcode) && trim((string)$item->barcode) !== '') ? $item->barcode : $item->serial_number;
 
                 $data[] = [
                     'id' => $item->id,
-                    'serial_number' => BarcodeHelper::formatSerialNumber($barcodeData),
+                    'serial_number' => $barcodeData,
                     'sale_price' => $item->sale_price,
                     'brand_name' => $item->stock->brand->name ?? 'Bulunamadı',
                     'stock_name' => $item->stock->name ?? 'Bulunamadı',
@@ -406,7 +517,6 @@ class InvoiceController extends Controller
                     'versions' => $item->stock && method_exists($item->stock, 'version') ? $this->getVersionMap($item->stock->version()) : [],
                 ];
             }
-
             return view('module.stockcard.barcode', compact('data'));
             // $pdf = PDF::loadView('module.stockcard.print', ['data' => $data]);
             // return $pdf->stream('codesolutionstuff.pdf');
@@ -483,7 +593,7 @@ class InvoiceController extends Controller
         $data['warehouses'] = $this->warehouseService->get();
         $data['sellers'] = $this->sellerService->get();
         $data['colors'] = $this->colorService->get();
-        $data['users'] = $this->userService->get()->where('is_status', 1);
+        $data['users'] = $this->userService->get()->where('is_status', 1)->where('personel', 1);
         $data['reasons'] = $this->reasonService->get();
         $data['customers'] = $this->customerService->all();
         $data['citys'] = City::all();
@@ -683,66 +793,111 @@ class InvoiceController extends Controller
 
     public function salesupdate(Request $request)
     {
-
-        foreach ($request->group_a as $item) {
-            $stockcard = StockCardMovement::where('serial_number', $item['serial'])->where('type', 2)->orderBy('id', 'desc')->first();
-            if (!$stockcard) {
-                return false;
+        DB::beginTransaction();
+        try {
+            // Seri numarası kontrolü
+            if (isset($request->group_a)) {
+                foreach ($request->group_a as $item) {
+                    $stockcard = StockCardMovement::where('serial_number', $item['serial'])->where('type', 2)->orderBy('id', 'desc')->first();
+                    if (!$stockcard) {
+                        return response()->json('Seri numarası bulunamadı: ' . $item['serial'], 400);
+                    }
+                }
             }
-        }
 
-        $data = array(
-            'type' => $request->type,
-            'number' => $request->number ?? null,
-            'create_date' => Carbon::parse($request->create_date)->format('Y-m-d') ?? null,
-            'credit_card' => $request->payment_type['credit_card'],
-            'cash' => $request->payment_type['cash'],
-            'installment' => $request->payment_type['installment'],
-            'description' => $request->description ?? null,
-            'is_status' => 1,
-            'total_price' => 1,
-            'tax_total' => 1,
-            'discount_total' => 1,
-            'staff_id' => $request->staff_id ?? null,
-            'customer_id' => $request->customer_id ?? null,
-            'user_id' => Auth::user()->id,
-            'company_id' => Auth::user()->company_id,
-            'exchange' => $request->exchange ?? null,
-            'tax' => $request->tax ?? null,
-            'file' => $request->file ?? null,
-            'paymentStatus' => $request->paymentStatus ?? null,
-            'paymentDate' => $request->paymentDate ?? null,
-            'paymentStaff' => $request->paymentStaff ?? null,
-            'periodMounth' => $request->periodMounth ?? null,
-            'periodYear' => $request->periodYear ?? null,
-            'accounting_category_id' => $request->accounting_category_id ?? null,
-            'currency' => $request->currency ?? null,
-            'safe_id' => $request->safe_id ?? null,
-        );
-        $this->invoiceService->update($request->id, $data);
-        $invoiceID = $this->invoiceService->find($request->id);
-        if (isset($request->group_a)) {
-            $this->stockCardService->add_movement_update($request->group_a, $invoiceID, $request->type);
-            $total = 0;
-            $taxtotal = 0;
-            $discount_total = 0;
-
-            foreach ($request->group_a as $item) {
-                $total += $item['sale_price'] + (($item['sale_price'] * 18) / 100) * 1;
-                $taxtotal += (($item['sale_price'] * 18) / 100) * 1;
-                $discount_total += (($item['sale_price'] * $item['discount'] ?? 0) / 100) * 1;
+            // Tarih formatını düzelt (d-m-Y veya Y-m-d formatlarını destekle)
+            $createDate = null;
+            if ($request->filled('create_date')) {
+                try {
+                    // Önce d-m-Y formatını dene
+                    $createDate = Carbon::createFromFormat('d-m-Y', $request->create_date);
+                } catch (\Exception $e) {
+                    try {
+                        // Sonra Y-m-d formatını dene
+                        $createDate = Carbon::parse($request->create_date);
+                    } catch (\Exception $e2) {
+                        $createDate = Carbon::now();
+                    }
+                }
+                $createDate = $createDate->format('Y-m-d');
             }
-            $totalprice = $total - $discount_total;
 
-            $newdata = array(
-                'total_price' => $totalprice,
-                'discount_total' => $discount_total,
-                'taxtotal' => $taxtotal,
+            // Ödeme tipi toplamını hesapla
+            $paymentTotal = 0;
+            if (isset($request->payment_type)) {
+                $paymentTotal = ($request->payment_type['cash'] ?? 0) + 
+                               ($request->payment_type['credit_card'] ?? 0) + 
+                               ($request->payment_type['installment'] ?? 0);
+            }
+
+            // Toplam fiyat hesaplama
+            $totalPrice = 0;
+            $taxTotal = 0;
+            $discountTotal = 0;
+
+            if (isset($request->group_a)) {
+                foreach ($request->group_a as $item) {
+                    $salePrice = floatval($item['sale_price'] ?? 0);
+                    $discount = floatval($item['discount'] ?? 0);
+                    
+                    $totalPrice += $salePrice;
+                    $taxTotal += (($salePrice * 18) / 100);
+                    $discountTotal += (($salePrice * $discount) / 100);
+                }
+                $totalPrice = $totalPrice - $discountTotal + $taxTotal;
+            } else {
+                // Eğer group_a yoksa, mevcut invoice'dan total_price'i al
+                $existingInvoice = Invoice::find($request->id);
+                if ($existingInvoice) {
+                    $totalPrice = $existingInvoice->total_price;
+                    $taxTotal = $existingInvoice->tax_total;
+                    $discountTotal = $existingInvoice->discount_total;
+                }
+            }
+
+            $data = array(
+                'type' => $request->type ?? 2,
+                'number' => $request->number ?? null,
+                'create_date' => $createDate,
+                'credit_card' => floatval($request->payment_type['credit_card'] ?? 0),
+                'cash' => floatval($request->payment_type['cash'] ?? 0),
+                'installment' => floatval($request->payment_type['installment'] ?? 0),
+                'description' => $request->description ?? null,
+                'is_status' => 1,
+                'total_price' => $totalPrice,
+                'tax_total' => $taxTotal,
+                'discount_total' => $discountTotal,
+                'staff_id' => $request->staff_id ?? null,
+                'customer_id' => $request->customer_id ?? null,
+                'user_id' => Auth::user()->id,
+                'company_id' => Auth::user()->company_id,
+                'exchange' => $request->exchange ?? null,
+                'tax' => $request->tax ?? null,
+                'file' => $request->file ?? null,
+                'paymentStatus' => $request->paymentStatus ?? null,
+                'paymentDate' => $request->paymentDate ? Carbon::parse($request->paymentDate)->format('Y-m-d') : null,
+                'paymentStaff' => $request->paymentStaff ?? null,
+                'periodMounth' => $request->periodMounth ?? null,
+                'periodYear' => $request->periodYear ?? null,
+                'accounting_category_id' => $request->accounting_category_id ?? null,
+                'currency' => $request->currency ?? null,
+                'safe_id' => $request->safe_id ?? null,
             );
 
-            $this->invoiceService->update($invoiceID->id, $newdata);
+            $this->invoiceService->update($request->id, $data);
+            $invoiceID = $this->invoiceService->find($request->id);
+
+            // Stock card movement güncelleme
+            if (isset($request->group_a)) {
+                $this->stockCardService->add_movement_update($request->group_a, $invoiceID, $request->type);
+            }
+
+            DB::commit();
+            return response()->json('Fatura başarıyla güncellendi', 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json('Hata: ' . $e->getMessage(), 500);
         }
-        return response()->json('Kaydedildi', 200);
     }
 
     public function stockcardmovementform(Request $request)
@@ -1074,6 +1229,92 @@ class InvoiceController extends Controller
 
         $invoiceID->detail = $stockcardlist;
         $invoiceID->save();
+
+        // JSON response döndür (modal için)
+        return response()->json([
+            'success' => true,
+            'message' => 'Fatura başarıyla kaydedildi!',
+            'id' => $invoiceID->id
+        ], 200);
+
+    }
+
+
+
+
+    public function stockcardmovementupdate(Request $request)
+    {
+        $invoiceID = Invoice::find($request->id);
+        if(!$invoiceID){
+            return response()->json([
+                'success' => false,
+                'message' => 'Fatura bulunamadı'
+            ], 404);
+        }
+        $invoiceDescription = $request->invoice_description ?? null;
+        if (is_array($invoiceDescription)) {
+            $invoiceDescription = array_filter($invoiceDescription, static function ($value) {
+                return $value !== null && $value !== '';
+            });
+            $invoiceDescription = reset($invoiceDescription) ?: null;
+        }
+
+        $invoiceID->description = $invoiceDescription;
+
+
+        $a = 0;
+        foreach ($request->stock_card_id as $item) {
+            $colorId = $request->color_id[$a] ?? null;
+
+            // Hazırla: sadece boş olmayan alanları güncellemek için değerleri al
+            $costPrice = (isset($request->cost_price[$a]) && $request->cost_price[$a] !== '') ? str_replace(",", ".", $request->cost_price[$a]) : null;
+            $baseCostPrice = (isset($request->base_cost_price[$a]) && $request->base_cost_price[$a] !== '') ? str_replace(",", ".", $request->base_cost_price[$a]) : null;
+            $salePrice = (isset($request->sale_price[$a]) && $request->sale_price[$a] !== '') ? str_replace(",", ".", $request->sale_price[$a]) : null;
+            $barcodeInput = $request->barcode[$a] ?? null;
+            $formattedBarcode = ($barcodeInput !== null && $barcodeInput !== '') ? BarcodeHelper::formatBarcode((string)$barcodeInput) : null;
+
+            // StockCardMovement'leri güncelle (sadece sağlanan alanlar)
+            $stockcardmodevements = StockCardMovement::where('invoice_id', $invoiceID->id)
+                ->where('stock_card_id', $item)
+                ->where('color_id', $colorId)
+                ->get();
+
+          foreach ($stockcardmodevements as $stockcardmovement) {
+                if ($costPrice !== null) {
+                    $stockcardmovement->cost_price = $costPrice;
+                }
+                if ($baseCostPrice !== null) {
+                    $stockcardmovement->base_cost_price = $baseCostPrice;
+                }
+                if ($salePrice !== null) {
+                    $stockcardmovement->sale_price = $salePrice;
+                }
+                if ($formattedBarcode !== null) {
+                    $stockcardmovement->barcode = $formattedBarcode;
+                }
+                $stockcardmovement->save();
+            }
+
+            // Invoice->detail içindeki ilgili kayıtları kısmi olarak güncelle
+            $detailArray = is_string($invoiceID->detail) ? json_decode($invoiceID->detail, true) : (array)$invoiceID->detail;
+            foreach ($detailArray as &$d) {
+                if ((string)($d['stockcardid'] ?? '') === (string)$item && (string)($d['color_id'] ?? '') === (string)($request->color_id[$a] ?? '')) {
+                    if (isset($request->sale_price[$a]) && $request->sale_price[$a] !== '') {
+                        $d['cost_price'] = str_replace(',', '.', $request->cost_price[$a]);
+                        $d['base_cost_price'] = str_replace(',', '.', $request->base_cost_price[$a]);
+                        $d['sale_price'] = str_replace(',', '.', $request->sale_price[$a]);
+                    }
+                    if (isset($request->barcode[$a]) && $request->barcode[$a] !== '') {
+                        $d['barcode'] = BarcodeHelper::formatBarcode((string)$request->barcode[$a]);
+                    }
+                }
+            }
+            $invoiceID->detail = $detailArray;
+            unset($d);
+            $a++;
+        }
+
+         $invoiceID->save();
 
         // JSON response döndür (modal için)
         return response()->json([

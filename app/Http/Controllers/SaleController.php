@@ -211,54 +211,70 @@ class SaleController extends Controller
             // User authenticated
             
             // Step 1: Get invoices directly with filters (much faster)
-            $invoiceQuery = Invoice::where('company_id', $user->company_id)
-                ->with(['account:id,fullname', 'staff:id,name']);
+            $invoiceQuery = Invoice::where('company_id', $user->company_id)->with(['account:id,fullname', 'staff:id,name'])->where('type', 2);
 
-            // Invoice query initialized
-        
-
-            // Date filter on invoices
+            // Date filter on invoices - ÖNCE tarih filtresi uygulanmalı
             if ($request->filled('daterange')) {
-                $daterange = explode(" to ", $request->daterange);
-                if (isset($daterange[1])) {
+                // URL decode ve normalize et (2025-11-14+to+2025-11-22 -> 2025-11-14 to 2025-11-22)
+                $daterangeStr = urldecode($request->daterange);
+                // + karakterini boşluğa çevir (URL encoding)
+                $daterangeStr = str_replace('+', ' ', $daterangeStr);
+                $daterange = explode(" to ", $daterangeStr);
+                
+                if (count($daterange) >= 2 && !empty(trim($daterange[0])) && !empty(trim($daterange[1]))) {
                     $startDate = Carbon::createFromFormat('Y-m-d', trim($daterange[0]))->startOfDay();
                     $endDate = Carbon::createFromFormat('Y-m-d', trim($daterange[1]))->endOfDay();
                     $invoiceQuery->whereBetween('created_at', [$startDate, $endDate]);
-                } else {
+                } elseif (count($daterange) == 1 && !empty(trim($daterange[0]))) {
                     $date = Carbon::createFromFormat('Y-m-d', trim($daterange[0]));
                     $invoiceQuery->whereDate('created_at', $date);
                 }
             } else {
+                // Tarih filtresi yoksa bugünün tarihini kullan
                 $invoiceQuery->whereDate('created_at', Carbon::today());
             }
 
-            // Only get invoices that have sales
-            $invoiceQuery->where('type',2)->whereHas('sales');
-
+            // Seller filter - whereHas içinde
             if ($request->filled('seller')) {
                 $sellerId = $request->seller;
+                // Sale modelinde CompanyScope var, company_id kontrolü gereksiz
                 $invoiceQuery->whereHas('sales', function ($query) use ($sellerId) {
                     $query->where('seller_id', $sellerId);
                 });
+            } else {
+                // Seller filtresi yoksa sadece sales olan invoice'ları getir
+                // CompanyScope zaten company_id kontrolü yapıyor
+                $invoiceQuery->whereHas('sales');
             }
-            if($request->filled('customerName')){
+
+            // Customer name filter
+            if ($request->filled('customerName')) {
                 $customerName = $request->customerName;
                 $invoiceQuery->whereHas('account', function ($query) use ($customerName) {
-                    $query->where('fullname', 'like', '%' . $customerName . '%')
+                    $query->where(function($q) use ($customerName) {
+                        $q->where('fullname', 'like', '%' . $customerName . '%')
                           ->orWhere('phone1', 'like', '%' . $customerName . '%')
                           ->orWhere('phone2', 'like', '%' . $customerName . '%');
-                });
-            }
-            if($request->filled('category')){
-                $categoryId = $request->category;
-                $invoiceQuery->whereHas('category', function ($query) use ($categoryId) {
-                    $query->where('category_id', $categoryId);
+                    });
                 });
             }
 
+            // Category filter - Sales üzerinden StockCard'a gidip category kontrolü
+            if ($request->filled('category')) {
+                $categoryId = $request->category;
+                // CompanyScope zaten company_id kontrolü yapıyor
+                $invoiceQuery->whereHas('sales', function ($query) use ($categoryId) {
+                    $query->whereHas('stockCard', function ($q) use ($categoryId) {
+                        $q->where('category_id', $categoryId);
+                    });
+                });
+            }
+
+
+
             // Pagination on invoice level
             $invoices = $invoiceQuery->paginate(50);
-            
+
             // Step 2: Get sales count for each invoice (single query)
             $invoiceIds = $invoices->pluck('id')->toArray();
             $salesCounts = DB::table('sales')
@@ -318,11 +334,18 @@ class SaleController extends Controller
                     'stockCard.category:id,name', 
                     'stockCardMovement:id,serial_number,cost_price,base_cost_price',
                     'seller:id,name',
-                    'user:id,name'
+                    'user:id,name',
+                    'refund.reason'
                 ])
                 ->get();
 
             $formattedSales = $sales->map(function ($sale) {
+                // İade bilgilerini kontrol et
+                $isRefunded = !is_null($sale->refund_id);
+                $refund = $sale->refund;
+                $refundReason = $refund ? ($refund->reason->name ?? 'İade') : null;
+                $refundDate = $refund ? $refund->created_at->format('d.m.Y H:i') : null;
+
                 return [
                     'id' => $sale->id,
                     'stock_name' => $sale->stockCard->name ?? $sale->name ?? 'N/A',
@@ -337,7 +360,11 @@ class SaleController extends Controller
                     'profit' => ($sale->sale_price ?? 0) - ($sale->stockCardMovement->base_cost_price ?? $sale->base_cost_price ?? 0),
                     'seller_name' => $sale->seller->name ?? 'N/A',
                     'user_name' => $sale->user->name ?? 'N/A',
-                    'created_at' => $sale->created_at->format('d.m.Y H:i')
+                    'created_at' => $sale->created_at->format('d.m.Y H:i'),
+                    'is_refunded' => $isRefunded,
+                    'refund_id' => $sale->refund_id,
+                    'refund_reason' => $refundReason,
+                    'refund_date' => $refundDate,
                 ];
             });
 
@@ -368,7 +395,7 @@ class SaleController extends Controller
             $user = Auth::user();
             
             // Build same query as main listing
-            $invoiceQuery = Invoice::where('company_id', $user->company_id);
+            $invoiceQuery = Invoice::where('company_id', $user->company_id)->where('type',2);
 
             // Apply same filters
             if ($request->filled('daterange')) {
@@ -385,6 +412,12 @@ class SaleController extends Controller
                 $invoiceQuery->whereDate('created_at', Carbon::today());
             }
 
+            if ($request->filled('seller')) {
+                $sellerId = $request->seller;
+                $invoiceQuery->whereHas('user', function (Builder $q) use ($sellerId) {
+                    $q->where('seller_id', $sellerId);
+                });
+            }
             // Calculate totals using single aggregation query
             $totals = $invoiceQuery->selectRaw('
                 COUNT(*) as total_invoices,
@@ -396,33 +429,7 @@ class SaleController extends Controller
                 SUM(discount_total) as total_discount
             ')->first();
 
-            // Calculate profit using efficient join
-            $profitData = DB::table('invoices as i')
-                ->join('sales as s', 'i.id', '=', 's.invoice_id')
-                ->where('i.company_id', $user->company_id);
-
-            // Apply same date filter
-            if ($request->filled('daterange')) {
-                $daterange = explode(" to ", $request->daterange);
-                if (isset($daterange[1])) {
-                    $startDate = Carbon::createFromFormat('Y-m-d', trim($daterange[0]))->startOfDay();
-                    $endDate = Carbon::createFromFormat('Y-m-d', trim($daterange[1]))->endOfDay();
-                    $profitData->whereBetween('i.created_at', [$startDate, $endDate]);
-                } else {
-                    $date = Carbon::createFromFormat('Y-m-d', trim($daterange[0]));
-                    $profitData->whereDate('i.created_at', $date);
-                }
-            } else {
-                $profitData->whereDate('i.created_at', Carbon::today());
-            }
-
-            $profitCalc = $profitData->selectRaw('
-                SUM(i.total_price) as total_revenue,
-                SUM(s.base_cost_price) as total_cost
-            ')->first();
-
-            $totalProfit = ($profitCalc->total_revenue ?? 0) - ($profitCalc->total_cost ?? 0);
-
+ 
             return response()->json([
                 'totals' => [
                     'total_invoices' => $totals->total_invoices ?? 0,
@@ -432,7 +439,6 @@ class SaleController extends Controller
                     'gross_total' => $totals->total_revenue ?? 0,
                     'tax_total' => $totals->total_tax ?? 0,
                     'discount_total' => $totals->total_discount ?? 0,
-                    'profit' => $totalProfit
                 ]
             ]);
 
@@ -623,7 +629,7 @@ class SaleController extends Controller
     public function invoiceDetails($invoiceId)
     {
         try {
-            $invoice = Invoice::with('sales')->where('company_id', Auth::user()->company_id)->findOrFail($invoiceId);
+            $invoice = Invoice::with(['sales.refund', 'sales.refund.reason'])->where('company_id', Auth::user()->company_id)->findOrFail($invoiceId);
 
             $movements = $invoice->sales;
             $sales = collect($movements)->map(function ($movement) {
@@ -631,6 +637,12 @@ class SaleController extends Controller
                 $salePrice = (float) data_get($movement, 'sale_price', 0);
                 $baseCost = (float) data_get($movement, 'base_cost_price', data_get($movement, 'cost_price', 0));
                 $profit = $salePrice - $baseCost;
+
+                // İade bilgilerini kontrol et
+                $isRefunded = !is_null($movement->refund_id);
+                $refund = $movement->refund;
+                $refundReason = $refund ? ($refund->reason->name ?? 'İade') : null;
+                $refundDate = $refund ? $refund->created_at->format('d.m.Y H:i') : null;
 
                 return [
                     'id' => data_get($movement, 'id'),
@@ -643,6 +655,10 @@ class SaleController extends Controller
                     'profit' => $profit,
                     'quantity' => $quantity,
                     'seller_name' => data_get($movement, 'seller.name') ?? '',
+                    'is_refunded' => $isRefunded,
+                    'refund_id' => $movement->refund_id,
+                    'refund_reason' => $refundReason,
+                    'refund_date' => $refundDate,
                 ];
             });
 

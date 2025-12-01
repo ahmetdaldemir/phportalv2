@@ -1,39 +1,63 @@
 @extends('layouts.admin')
 
+@section('custom-css')
+    <link rel="stylesheet" href="{{asset('assets/css/form-page-base.css')}}">
+@endsection
+
 @section('content')
     <div class="container-xxl flex-grow-1 container-p-y">
-        <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Depolar /</span> @if(isset($warehouses)) {{$warehouses->name}} @endif</h4>
-        <div class="card  mb-4">
-            <h5 class="card-header">Depo Bilgileri</h5>
+        <!-- Standart Form Header Component -->
+        <x-form-page.header 
+            title="{{ isset($warehouses) ? 'Depo Düzenle' : 'Yeni Depo Ekle' }}"
+            icon="bx-package"
+            description="{{ isset($warehouses) ? $warehouses->name . ' deposunu düzenleyin' : 'Yeni bir depo ekleyin' }}"
+            :backRoute="route('warehouse.index')"
+        />
+
+        <!-- Standart Form Card Component -->
+        <x-form-page.card title="Depo Bilgileri" icon="bx-package">
             <form action="{{route('warehouse.store')}}" method="post">
                 @csrf
-                <input type="hidden" name="id" @if(isset($warehouses)) value="{{$warehouses->id}}" @endif />
-            <div class="card-body">
-                <div>
-                    <label for="defaultFormControlInput" class="form-label">Depo Adı</label>
-                    <input type="text" class="form-control" id="name"  @if(isset($warehouses)) value="{{$warehouses->name}}" @endif  name="name" aria-describedby="name">
-                    <div id="name" class="form-text">
-                        We'll never share your details with anyone else.
-                    </div>
+                <input type="hidden" name="id" value="{{ $warehouses->id ?? '' }}" />
+                
+                <div class="form-group">
+                    <label for="name" class="form-label">
+                        <i class="bx bx-package me-1"></i>Depo Adı
+                        <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="name"  
+                           value="{{ $warehouses->name ?? '' }}"  
+                           name="name" 
+                           placeholder="Depo adını giriniz..."
+                           required>
                 </div>
-                <div>
-                    <label for="defaultFormControlInput" class="form-label">Şube</label>
-                    <select name="seller_id" class="form-control">
+                
+                <div class="form-group">
+                    <label for="seller_id" class="form-label">
+                        <i class="bx bx-store me-1"></i>Şube
+                        <span class="text-danger">*</span>
+                    </label>
+                    <select name="seller_id" class="form-select" id="seller_id" required>
+                        <option value="">Şube Seçiniz</option>
                         @foreach($sellers as $seller)
-                            <option  @if(isset($warehouses)) {{ $warehouses->hasSeller($seller->id) ? 'selected' : '' }} @endif  value="{{$seller->id}}">{{$seller->name}}</option>
+                            <option value="{{$seller->id}}" {{ (isset($warehouses) && $warehouses->hasSeller($seller->id)) ? 'selected' : '' }}>
+                                {{$seller->name}}
+                            </option>
                         @endforeach
                     </select>
-                    <div id="seller_id" class="form-text">
-                        We'll never share your details with anyone else.
-                    </div>
                 </div>
-                <hr class="my-5">
-                <div>
-                    <button type="submit" class="btn btn-danger btn-buy-now">Kaydet</button>
+
+                <div class="form-actions">
+                    <a href="{{route('warehouse.index')}}" class="btn btn-outline-secondary">
+                        <i class="bx bx-x me-1"></i>İptal
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bx bx-save me-1"></i>Kaydet
+                    </button>
                 </div>
-            </div>
             </form>
-        </div>
-        <hr class="my-5">
+        </x-form-page.card>
     </div>
 @endsection

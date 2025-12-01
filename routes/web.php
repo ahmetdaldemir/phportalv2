@@ -278,6 +278,7 @@ Route::middleware(['companies'])->group(function () {
         Route::post('refund', [App\Http\Controllers\StockCardController::class, 'refund'])->name('refund');
         Route::get('refunddetail', [App\Http\Controllers\StockCardController::class, 'refunddetail'])->name('refunddetail');
         Route::post('refunddetailStore', [App\Http\Controllers\StockCardController::class, 'refunddetailStore'])->name('refunddetailStore');
+        Route::get('refunds/data', [App\Http\Controllers\StockCardController::class, 'getRefundsData'])->name('refunds.data');
         Route::get('refundlist', [App\Http\Controllers\StockCardController::class, 'refundlist'])->name('refundlist');
         Route::get('refundcomfirm', [App\Http\Controllers\StockCardController::class, 'refundcomfirm'])->name('refundcomfirm');
         Route::get('refundreturn', [App\Http\Controllers\StockCardController::class, 'refundreturn'])->name('refundreturn');
@@ -290,6 +291,8 @@ Route::middleware(['companies'])->group(function () {
         Route::get('serialList', [App\Http\Controllers\StockCardController::class, 'serialList'])->name('serialList');
         Route::get('stockforserial', [App\Http\Controllers\StockCardController::class, 'stockforserial'])->name('stockforserial');
         Route::get('getStockCardsData', [App\Http\Controllers\StockCardController::class, 'getStockCardsData'])->name('getStockCardsData');
+        Route::get('stocks-search', [App\Http\Controllers\StockCardController::class, 'searchStocksAjax'])->name('stocks.search');
+        Route::get('singleserialprintrefresh', [App\Http\Controllers\StockCardController::class, 'singleserialprintrefresh'])->name('singleserialprintrefresh');
         // AJAX endpoints - performans optimizasyonu (StockCardController)
         Route::get('/stockcard/sellers-ajax', [App\Http\Controllers\StockCardController::class, 'getSellersAjax'])->name('stockcard.sellers.ajax');
         Route::get('/stockcard/colors-ajax', [App\Http\Controllers\StockCardController::class, 'getColorsAjax'])->name('stockcard.colors.ajax');
@@ -311,9 +314,11 @@ Route::middleware(['companies'])->group(function () {
         Route::get('/incoming-ajax', [App\Http\Controllers\TransferController::class, 'getIncomingTransfersAjax'])->name('incoming.ajax');
         Route::get('/outgoing-ajax', [App\Http\Controllers\TransferController::class, 'getOutgoingTransfersAjax'])->name('outgoing.ajax');
         Route::get('/versions-ajax', [App\Http\Controllers\TransferController::class, 'getVersionsAjax'])->name('versions.ajax');
-        Route::get('/updateTransfer', [App\Http\Controllers\TransferController::class, 'updateTransfer'])->name('updateTransfer');
+
+
         // Specific routes before the catch-all {id} route
         Route::get('show', [App\Http\Controllers\TransferController::class, 'show'])->name('show');
+        Route::get('updateTransfer', [App\Http\Controllers\TransferController::class, 'updateTransfer'])->name('updateTransfer');
         Route::get('{id}', [App\Http\Controllers\TransferController::class, 'getTransferJson'])->where('id', '[0-9]+')->name('json');
     });
 
@@ -332,6 +337,7 @@ Route::middleware(['companies'])->group(function () {
         Route::get('create', [App\Http\Controllers\InvoiceController::class, 'create'])->name('create');
         Route::get('edit', [App\Http\Controllers\InvoiceController::class, 'edit'])->name('edit');
         Route::get('show', [App\Http\Controllers\InvoiceController::class, 'show'])->name('show');
+        Route::post('partial-payment', [App\Http\Controllers\InvoiceController::class, 'addPartialPayment'])->name('partial-payment');
         Route::get('delete', [App\Http\Controllers\InvoiceController::class, 'delete'])->name('delete');
         Route::post('store', [App\Http\Controllers\InvoiceController::class, 'store'])->name('store');
         Route::post('update', [App\Http\Controllers\InvoiceController::class, 'update'])->name('update');
@@ -342,6 +348,7 @@ Route::middleware(['companies'])->group(function () {
         Route::get('bank', [App\Http\Controllers\InvoiceController::class, 'bank'])->name('create.bank');
         Route::get('tax', [App\Http\Controllers\InvoiceController::class, 'tax'])->name('create.tax');
         Route::get('serialprint', [App\Http\Controllers\InvoiceController::class, 'serialprint'])->name('serialprint');
+        Route::get('qrprint', [App\Http\Controllers\InvoiceController::class, 'qrPrint'])->name('qrprint');
         Route::get('sales', [App\Http\Controllers\InvoiceController::class, 'sales'])->name('sales');
         Route::get('salesedit', [App\Http\Controllers\InvoiceController::class, 'salesedit'])->name('salesedit');
         Route::post('salesstore', [App\Http\Controllers\InvoiceController::class, 'salesstore'])->name('salesstore');
@@ -353,6 +360,7 @@ Route::middleware(['companies'])->group(function () {
         Route::get('stockmovementdelete', [App\Http\Controllers\InvoiceController::class, 'stockmovementdelete'])->name('stockmovementdelete');
         Route::get('pdf', [App\Http\Controllers\InvoiceController::class, 'pdf'])->name('pdf');
         Route::post('itemSave', [App\Http\Controllers\InvoiceController::class, 'itemSave'])->name('itemSave');
+        Route::post('stockcardmovementupdate', [App\Http\Controllers\InvoiceController::class, 'stockcardmovementupdate'])->name('stockcardmovementupdate');
 
     });
 
@@ -433,10 +441,10 @@ Route::middleware(['companies'])->group(function () {
         Route::post('store', [App\Http\Controllers\SaleController::class, 'store'])->name('store');
         Route::post('update', [App\Http\Controllers\SaleController::class, 'update'])->name('update');
         Route::get('show', [App\Http\Controllers\SaleController::class, 'show'])->name('show');
+        Route::get('invoice-details/{invoice}', [App\Http\Controllers\SaleController::class, 'invoiceDetails'])->name('invoice.details');
         
         // AJAX endpoints - Vue.js için
         Route::get('/ajax', [App\Http\Controllers\SaleController::class, 'getSalesAjax'])->name('ajax');
-        Route::get('/invoice-details/{id}', [App\Http\Controllers\SaleController::class, 'getInvoiceSalesDetails'])->name('invoice.details');
         Route::get('/totals-async', [App\Http\Controllers\SaleController::class, 'calculateTotalsAsync'])->name('totals.async');
         Route::get('/versions-ajax', [App\Http\Controllers\SaleController::class, 'getVersionsAjax'])->name('versions.ajax');
     });
@@ -508,6 +516,8 @@ Route::middleware(['companies'])->group(function () {
 
 
     Route::prefix('report')->name('report.')->middleware([])->group(function () {
+        Route::get('data', [App\Http\Controllers\ReportController::class, 'data'])->name('data');
+        Route::get('export', [App\Http\Controllers\ReportController::class, 'export'])->name('export');
         Route::get('excelReport', [App\Http\Controllers\ReportController::class, 'excelReport'])->name('excelReport');
         Route::post('print', [App\Http\Controllers\ReportController::class, 'excelreportprint'])->name('print');
     });

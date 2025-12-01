@@ -1,118 +1,73 @@
 #!/bin/bash
 
-# Docker Startup Script for Laravel Application
-# This script sets up the Laravel application in Docker
+echo "🚀 PHPortal Docker Setup Starting..."
 
-set -e
+# Check if .env exists
+if [ ! -f .env ]; then
+    echo "📝 Creating .env file from docker.env.example..."
+    cp docker.env.example .env
+    echo "⚠️  Please update .env file with your configuration!"
+fi
 
-echo "🚀 Starting PHP Portal Docker Setup..."
+# Check if global_databases_network exists
+if ! docker network ls | grep -q "global_databases_network"; then
+    echo "🌐 Creating global_databases_network..."
+    docker network create global_databases_network
+fi
+
+# Check if global_mysql container exists and is running
+if ! docker ps | grep -q "global_mysql"; then
+    echo "⚠️  global_mysql container is not running!"
+    echo "Please start global_mysql container first:"
+    echo "  docker start global_mysql"
+    exit 1
+fi
+
+# Connect global_mysql to network if not already connected
+if ! docker inspect global_mysql | grep -q "global_databases_network"; then
+    echo "🔗 Connecting global_mysql to global_databases_network..."
+    docker network connect global_databases_network global_mysql || true
+fi
+
+# Build and start containers
+echo "🔨 Building Docker images..."
+docker-compose build
+
+echo "🚀 Starting containers..."
+docker-compose up -d
 
 # Wait for services to be ready
 echo "⏳ Waiting for services to be ready..."
+sleep 10
 
-# Wait for MySQL
-echo "📦 Waiting for MySQL..."
-until docker-compose exec -T mysql mysqladmin ping -h"localhost" --silent; do
-    echo "MySQL is unavailable - sleeping"
-    sleep 2
-done
-echo "✅ MySQL is ready!"
+# Install dependencies
+echo "📦 Installing Composer dependencies..."
+docker-compose exec -T php composer install --no-interaction
 
-# Wait for Redis
-echo "📦 Waiting for Redis..."
-until docker-compose exec -T redis redis-cli ping; do
-    echo "Redis is unavailable - sleeping"
-    sleep 2
-done
-echo "✅ Redis is ready!"
-
-# Wait for MongoDB
-echo "📦 Waiting for MongoDB..."
-until docker-compose exec -T mongodb mongosh --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
-    echo "MongoDB is unavailable - sleeping"
-    sleep 2
-done
-echo "✅ MongoDB is ready!"
-
-# Wait for RabbitMQ
-echo "📦 Waiting for RabbitMQ..."
-until docker-compose exec -T rabbitmq rabbitmq-diagnostics ping > /dev/null 2>&1; do
-    echo "RabbitMQ is unavailable - sleeping"
-    sleep 2
-done
-echo "✅ RabbitMQ is ready!"
-
-echo "🎉 All services are ready!"
-
-# Copy environment file
-echo "📝 Setting up environment..."
-if [ ! -f .env ]; then
-    cp docker.env .env
-    echo "✅ Environment file created"
-else
-    echo "ℹ️  Environment file already exists"
+# Generate application key if not exists
+if ! grep -q "APP_KEY=base64" .env; then
+    echo "🔑 Generating application key..."
+    docker-compose exec -T php php artisan key:generate
 fi
 
-# Install Composer dependencies
-echo "📦 Installing Composer dependencies..."
-docker-compose exec app composer install --no-interaction --optimize-autoloader
-
-# Generate application key
-echo "🔑 Generating application key..."
-docker-compose exec app php artisan key:generate
-
-# Run database migrations
+# Run migrations
 echo "🗄️  Running database migrations..."
-docker-compose exec app php artisan migrate --force
+docker-compose exec -T php php artisan migrate --force
 
-# Seed database
-echo "🌱 Seeding database..."
-docker-compose exec app php artisan db:seed --force
-
-# Clear and cache configuration
+# Clear and cache config
 echo "🧹 Clearing and caching configuration..."
-docker-compose exec app php artisan config:clear
-docker-compose exec app php artisan config:cache
-docker-compose exec app php artisan route:clear
-docker-compose exec app php artisan route:cache
-docker-compose exec app php artisan view:clear
-docker-compose exec app php artisan view:cache
+docker-compose exec -T php php artisan config:clear
+docker-compose exec -T php php artisan cache:clear
+docker-compose exec -T php php artisan view:clear
+docker-compose exec -T php php artisan route:clear
 
-# Set proper permissions
-echo "🔐 Setting proper permissions..."
-docker-compose exec app chown -R phportal:phportal /var/www/storage
-docker-compose exec app chown -R phportal:phportal /var/www/bootstrap/cache
-docker-compose exec app chmod -R 775 /var/www/storage
-docker-compose exec app chmod -R 775 /var/www/bootstrap/cache
-
-# Create storage link
-echo "🔗 Creating storage link..."
-docker-compose exec app php artisan storage:link
-
-# Install Laravel Horizon (if not already installed)
-echo "📊 Setting up Laravel Horizon..."
-docker-compose exec app composer require laravel/horizon --no-interaction
-
-# Publish Horizon assets
-docker-compose exec app php artisan horizon:install
-
-# Clear all caches one more time
-echo "🧹 Final cache clearing..."
-docker-compose exec app php artisan optimize:clear
-
-echo "🎉 Setup completed successfully!"
+echo "✅ Setup complete!"
 echo ""
-echo "📋 Service URLs:"
-echo "   🌐 Web Application: http://localhost"
-echo "   🗄️  MySQL Database: localhost:3310"
-echo "   🔴 Redis Cache: localhost:6379"
-echo "   🍃 MongoDB: localhost:27017"
-echo "   🐰 RabbitMQ Management: http://localhost:15672"
-echo "   📊 Laravel Horizon: http://localhost/horizon"
+echo "🌐 Application URL: http://localhost:8080"
+echo "📊 Horizon Dashboard: http://localhost:8080/horizon"
 echo ""
-echo "🔑 Default Credentials:"
-echo "   MySQL: phportal_user / phportal_password"
-echo "   MongoDB: phportal_user / phportal_password"
-echo "   RabbitMQ: phportal_user / phportal_password"
-echo ""
-echo "🚀 You can now access your Laravel application!"
+echo "Useful commands:"
+echo "  docker-compose logs -f          # View logs"
+echo "  docker-compose exec php bash    # Enter PHP container"
+echo "  docker-compose down             # Stop containers"
+echo "  docker-compose restart          # Restart containers"

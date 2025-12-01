@@ -11,229 +11,7 @@
 
 @section('custom-css')
     <link rel="stylesheet" href="{{ asset('assets/css/table-page-framework.css') }}">
-    <style>
-        /* Text truncation with tooltip styles */
-        .text-truncate {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            cursor: help;
-        }
-
-        .text-truncate:hover {
-            background-color: rgba(0, 0, 0, 0.05);
-            border-radius: 3px;
-            padding: 2px 4px;
-            margin: -2px -4px;
-        }
-
-        /* Ensure table cells have proper width constraints */
-        .professional-table td {
-            vertical-align: middle;
-        }
-
-        /* Table width optimization */
-        .professional-table {
-            table-layout: fixed;
-            width: 100%;
-        }
-
-        .professional-table th,
-        .professional-table td {
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-
-        /* Compact button styles */
-        .btn-xs {
-            padding: 0.25rem 0.4rem;
-            font-size: 0.75rem;
-            line-height: 1.2;
-            border-radius: 0.2rem;
-        }
-
-        /* Action buttons container */
-        .d-flex.gap-1 {
-            gap: 2px !important;
-        }
-
-        /* Table row height optimization */
-        .professional-table tr {
-            height: auto;
-        }
-
-        .professional-table td {
-            padding: 0.5rem;
-            vertical-align: middle;
-        }
-
-        /* Modal table styles */
-        .modal-xl {
-            max-width: 95%;
-        }
-
-        .modal .table-responsive {
-            max-height: 60vh;
-            overflow-y: auto;
-        }
-
-        .modal .table th,
-        .modal .table td {
-            padding: 0.5rem 0.3rem;
-            font-size: 0.85rem;
-            white-space: nowrap;
-        }
-
-        .modal .btn-xs {
-            padding: 0.2rem 0.4rem;
-            font-size: 0.7rem;
-            line-height: 1;
-        }
-
-        /* Compact header styles */
-        .compact-header {
-            background-color: #f8f9fa;
-            font-weight: 600;
-            font-size: 0.8rem;
-            padding: 0.5rem 0.3rem;
-        }
-
-        .header-text {
-            display: inline-block;
-            margin-left: 0.25rem;
-        }
-
-        /* Autocomplete dropdown styles */
-        .autocomplete-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            max-height: 300px;
-            overflow-y: auto;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-top: 2px;
-        }
-
-        .autocomplete-item {
-            padding: 10px 12px;
-            cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
-            transition: all 0.2s;
-        }
-
-        .autocomplete-item:hover {
-            background-color: #f8f9fa;
-            border-left: 3px solid #696cff;
-            padding-left: 9px;
-        }
-
-        .autocomplete-item:last-child {
-            border-bottom: none;
-        }
-
-        .autocomplete-item strong {
-            color: #333;
-            font-size: 0.9rem;
-        }
-
-        .autocomplete-item small {
-            font-size: 0.75rem;
-            color: #6c757d;
-        }
-
-        .autocomplete-item .badge {
-            font-size: 0.7rem;
-            padding: 0.25rem 0.5rem;
-        }
-
-        .autocomplete-loading {
-            padding: 15px 12px;
-            text-align: center;
-            color: #6c757d;
-        }
-
-        .autocomplete-no-results {
-            padding: 15px 12px;
-            text-align: center;
-            color: #999;
-            font-size: 0.85rem;
-        }
-
-        /* Modal pagination styles */
-        .modal .pagination {
-            margin-bottom: 0;
-        }
-
-        .modal .pagination .page-link {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.8rem;
-        }
-
-        .modal .pagination-sm .page-link {
-            width: 100%;
-            height: 100%;
-            font-size: 0.75rem;
-        }
-
-        /* Transfer Modal Styles */
-        .bg-gradient-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-        }
-
-        #transferModal .modal-header {
-            border-radius: 0.5rem 0.5rem 0 0;
-        }
-
-        #transferModal .serial-list-container {
-            background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%);
-            border: 2px dashed #dee2e6;
-            transition: all 0.3s ease;
-        }
-
-        #transferModal .serial-list-container:hover {
-            border-color: #667eea;
-        }
-
-        .serial-list-container-modal {
-            background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%);
-            border: 2px dashed #dee2e6;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-        }
-
-        .serial-list-container-modal:hover {
-            border-color: #667eea;
-        }
-
-        #transferModal .form-select:focus,
-        #transferModal .form-control:focus,
-        #transferModal textarea:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-
-        #transferModal .input-group .btn-danger {
-            padding: 0.375rem 0.75rem;
-        }
-
-        #transferModal .input-group .btn-primary {
-            padding: 0.375rem 0.75rem;
-        }
-
-        #transferModal .alert-info {
-            background: linear-gradient(145deg, #e7f3ff 0%, #d4e9ff 100%);
-            border: 1px solid #667eea;
-        }
-
-        .btn-close-white {
-            filter: invert(1) grayscale(100%) brightness(200%);
-        }
-    </style>
+    <link rel="stylesheet" href="{{ asset('assets/css/list-page-general.css') }}">
 @endsection
 
 @section('content')
@@ -450,7 +228,7 @@
                             <thead>
                             <tr>
                                 <th style="width: 20px;">
-                                    <input type="checkbox" class="form-check-input" @change="toggleAllStockCards"
+                                    <input type="checkbox" class="form-check-input"   @change="toggleAllStockCards"
                                            :checked="allStockCardsSelected">
                                 </th>
                                 <th style="width: 30%;"><i class="bx bx-package me-1"></i>Stok Adı</th>
@@ -483,9 +261,7 @@
                             <tr v-else v-for="stockcard in stockcards" :key="stockcard.id" class="clickable-row"
                                 @click="openStockModal(stockcard.ids, stockcard.id, stockcard.stock_name)">
                                 <td style="width: 20px;text-align: center;" @click.stop>
-                                    <input type="checkbox" class="form-check-input" name="item[]"
-                                           :value="stockcard.ids" v-model="selectedStockCards"
-                                           @change="updateBarcodeButton">
+                                    <input type="checkbox" class="form-check-input" name="item[]"  :value="stockcard.id" v-model="selectedStockCards"  @change="updateBarcodeButton">
                                 </td>
                                 <td style="width:30%;">
                                         <span class="text-truncate d-inline-block" :title="stockcard.stock_name"
@@ -692,8 +468,7 @@
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    <tr v-for="item in stockDetails" :key="item.id"
-                                        :class="getRowClass(item)" v-show="item.quantity > 0">
+                                    <tr v-for="item in stockDetails" :key="item.id"   :class="getRowClass(item)" v-show="item.quantity > 0">
                                         <td class="text-center">
                                             <input type="checkbox" v-model="selectedItems" :value="item.id"
                                                    class="form-check-input">
@@ -1964,7 +1739,7 @@
         var selected = [];
         $(document).ready(function () {
             $("#multiplepriceUpdate").click(function (e) {
-                $("input:checkbox[name^='selected']:checked").each(function () {
+                $("input:checkbox[name^='item']:checked").each(function () {
                     selected.push($(this).val());
                 });
                 if (selected.length > 0) {

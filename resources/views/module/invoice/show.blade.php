@@ -196,6 +196,198 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Ödeme Bilgileri ve Kısmi Ödeme -->
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Ödeme Bilgileri</h6>
+                        @if($invoice->remaining_balance > 0.01)
+                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#partialPaymentModal">
+                                <i class="bx bx-money me-1"></i> Kısmi Ödeme Al
+                            </button>
+                        @endif
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body text-center">
+                                        <small class="text-muted d-block mb-1">Toplam Tutar</small>
+                                        <h5 class="mb-0 text-primary">{{ number_format($invoice->total_price, 2, ',', '.') }} ₺</h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-success-subtle border-0">
+                                    <div class="card-body text-center">
+                                        <small class="text-muted d-block mb-1">Ödenen</small>
+                                        <h5 class="mb-0 text-success">{{ number_format($invoice->paid_amount ?? 0, 2, ',', '.') }} ₺</h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-{{ $invoice->remaining_balance > 0.01 ? 'warning' : 'success' }}-subtle border-0">
+                                    <div class="card-body text-center">
+                                        <small class="text-muted d-block mb-1">Kalan Borç</small>
+                                        <h5 class="mb-0 text-{{ $invoice->remaining_balance > 0.01 ? 'warning' : 'success' }}">{{ number_format($invoice->remaining_balance ?? $invoice->total_price, 2, ',', '.') }} ₺</h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-info-subtle border-0">
+                                    <div class="card-body text-center">
+                                        <small class="text-muted d-block mb-1">Ödeme Durumu</small>
+                                        <h6 class="mb-0">
+                                            @if($invoice->paymentStatus == 'paid' || $invoice->remaining_balance <= 0.01)
+                                                <span class="badge bg-success">Ödendi</span>
+                                            @elseif($invoice->paymentStatus == 'unpaid')
+                                                <span class="badge bg-warning">Ödenecek</span>
+                                            @else
+                                                <span class="badge bg-secondary">{{ $invoice->paymentStatus }}</span>
+                                            @endif
+                                        </h6>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if(isset($paymentTransactions) && $paymentTransactions->count() > 0)
+                            <hr>
+                            <h6 class="mb-3">Ödeme Geçmişi</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Tarih</th>
+                                            <th>Tutar</th>
+                                            <th>Ödeme Tipi</th>
+                                            <th>Açıklama</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($paymentTransactions as $transaction)
+                                            <tr>
+                                                <td>{{ $transaction->created_at->format('d.m.Y H:i') }}</td>
+                                                <td class="fw-semibold">{{ number_format($transaction->price, 2, ',', '.') }} ₺</td>
+                                                <td>
+                                                    @if($transaction->payment_type == 'cash')
+                                                        <span class="badge bg-success">Nakit</span>
+                                                    @elseif($transaction->payment_type == 'credit_card')
+                                                        <span class="badge bg-primary">Kredi Kartı</span>
+                                                    @else
+                                                        <span class="badge bg-info">Taksit</span>
+                                                    @endif
+                                                </td>
+                                                <td>{{ $transaction->description ?? '-' }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- Kısmi Ödeme Modal -->
+    <div class="modal fade" id="partialPaymentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Kısmi Ödeme Al</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="partialPaymentForm">
+                    <div class="modal-body">
+                        <input type="hidden" name="invoice_id" value="{{ $invoice->id }}">
+                        <div class="mb-3">
+                            <label class="form-label">Ödeme Tutarı (₺) *</label>
+                            <input type="number" step="0.01" min="0.01" max="{{ $invoice->remaining_balance }}" 
+                                   class="form-control" name="amount" required 
+                                   placeholder="Maksimum: {{ number_format($invoice->remaining_balance, 2, ',', '.') }} ₺">
+                            <small class="text-muted">Kalan borç: {{ number_format($invoice->remaining_balance, 2, ',', '.') }} ₺</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Ödeme Tipi *</label>
+                            <select class="form-select" name="payment_type" required>
+                                <option value="cash">Nakit</option>
+                                <option value="credit_card">Kredi Kartı</option>
+                                <option value="installment">Taksit</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Kasa</label>
+                            <select class="form-select" name="safe_id">
+                                @foreach($safes ?? [] as $safe)
+                                    <option value="{{ $safe->id }}">{{ $safe->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Açıklama</label>
+                            <textarea class="form-control" name="description" rows="2" placeholder="Opsiyonel açıklama"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                        <button type="submit" class="btn btn-primary">Ödemeyi Kaydet</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('partialPaymentForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Kaydediliyor...';
+
+            try {
+                const response = await fetch('/invoice/partial-payment', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Başarılı!',
+                        text: result.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Hata!',
+                        text: result.error || 'Ödeme kaydedilemedi'
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Hata!',
+                    text: 'Bağlantı hatası: ' + error.message
+                });
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Ödemeyi Kaydet';
+            }
+        });
+    </script>
 @endsection

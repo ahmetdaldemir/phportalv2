@@ -53,6 +53,17 @@ return [
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
         ],
 
+        'r2' => [
+            'driver' => 's3',
+            'key' => env('R2_ACCESS_KEY_ID', 'a3ce5a95c9d098f21ae7ebdf05334b13'),
+            'secret' => env('R2_SECRET_ACCESS_KEY', '592b17d479bd6fbc3be1a9db2b573f98d9f02b7d90fc3d2e572be6f2c0fd6136'),
+            'region' => env('R2_REGION', 'auto'),
+            'bucket' => env('R2_BUCKET', 'database-backups'),
+            'endpoint' => env('R2_ENDPOINT', 'https://074fb7979b46c1e051ee9633dec226c4.r2.cloudflarestorage.com'),
+            'use_path_style_endpoint' => true,
+            'visibility' => 'private',
+        ],
+
     ],
 
     /*

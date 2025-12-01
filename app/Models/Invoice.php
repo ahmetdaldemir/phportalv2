@@ -31,6 +31,8 @@ class Invoice extends BaseModel
         'description',
         'is_status',
         'total_price',
+        'paid_amount',
+        'remaining_balance',
         'tax_total',
         'discount_total',
         'staff_id',
@@ -52,13 +54,15 @@ class Invoice extends BaseModel
     ];
 
     public const INVOICE_TYPE = [
+        '1' => 'Gelen',
         '2' => 'Giden',
-        '1' => 'Gelen'
+        '3' => 'İade'
     ];
 
     public const INVOICE_TYPE_COLOR = [
         '1' => 'success',
-        '2' => 'danger'
+        '2' => 'danger',
+        '3' => 'warning'
     ];
     protected static function boot()
     {
@@ -98,6 +102,13 @@ class Invoice extends BaseModel
     public function staff(): BelongsTo
     {
         return $this->belongsTo(User::class, 'staff_id');
+
+    }
+
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
 
     }
 
@@ -183,5 +194,32 @@ class Invoice extends BaseModel
         return $x;
     }
 
+    /**
+     * Kalan borcu hesapla
+     */
+    public function calculateRemainingBalance(): float
+    {
+        $paid = floatval($this->paid_amount ?? 0);
+        $total = floatval($this->total_price ?? 0);
+        return max(0, $total - $paid);
+    }
+
+    /**
+     * Tam ödendi mi kontrol et
+     */
+    public function isFullyPaid(): bool
+    {
+        return $this->calculateRemainingBalance() <= 0.01; // 0.01 tolerans
+    }
+
+    /**
+     * Finans transaction'ları
+     */
+    public function paymentTransactions(): HasMany
+    {
+        return $this->hasMany(FinansTransaction::class, 'model_id', 'id')
+            ->where('model_class', self::class)
+            ->orderBy('created_at', 'desc');
+    }
 
 }

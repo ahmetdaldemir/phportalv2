@@ -1365,13 +1365,19 @@ SELECT * FROM category_path ORDER BY path;");
 
     public function multiplepriceupdate(Request $request)
     {
+
         // Aynı stock_card_id'ye sahip tüm StockCardMovement kayıtlarını bul
         if($request->filled('barcode')){
             $stockcardmovements = StockCardMovement::where('barcode', $request->barcode)->get();
         }else{
-            $stockcardmovements = StockCardMovement::where('stock_card_id', $request->stock_card_id_multiple)->get();
+            $ids = $request->get('stock_card_id_multiple', []);
+            if (!is_array($ids)) {
+                $ids = array_filter(array_map('intval', explode(',', (string) $ids)));
+            } else {
+                $ids = array_map('intval', $ids);
+            }
+            $stockcardmovements = StockCardMovement::whereIn('stock_card_id', $ids)->get();
         }
-        
         if ($stockcardmovements->isEmpty()) {
             return response()->json('Bu stok kartına ait hareket bulunamadı', 400);
         }
@@ -1507,80 +1513,147 @@ SELECT * FROM category_path ORDER BY path;");
 
     public function refund(Request $request)
     {
-
-        BarcodeHelper::formatSerialNumber($request->serial_number);
-        if ($request->filled('serial_number')) {
-            $serialNumber =  explode('-', $request->serial_number);
-            if($serialNumber[0] == 'B'){
-                $stockcardmovemet = StockCardMovement::where('barcode', $request->serial_number)->first();
-                if (!$stockcardmovemet) {
+        DB::beginTransaction();
+        try {
+            BarcodeHelper::formatSerialNumber($request->serial_number);
+            
+            // StockCardMovement bul
+            $stockcardmovement = null;
+            if ($request->filled('serial_number')) {
+                $serialNumber = explode('-', $request->serial_number);
+                if($serialNumber[0] == 'B'){
+                    $stockcardmovement = StockCardMovement::where('barcode', $request->serial_number)->first();
+                } else {
+                    $stockcardmovement = StockCardMovement::where('serial_number', $request->serial_number)->first();
+                }
+                
+                if (!$stockcardmovement) {
                     return response()->json('Stock Bulunamadı', 400);
                 }
-            }else{
-                $stockcardmovemet = StockCardMovement::where('serial_number', $request->serial_number)->first();
-                if (!$stockcardmovemet) {
-                    return response()->json('Stock Bulunamadı', 400);
-                }
+            } else {
+                return response()->json('Seri numarası gerekli', 400);
             }
-         }
 
-        $stockcard_id = $stockcardmovemet->stock_card_id;
+            $stockcard_id = $stockcardmovement->stock_card_id;
 
-        $refund                = new Refund();
-        $refund->stock_card_id = $stockcard_id;
-        $refund->company_id    = Auth::user()->company_id;
-        $refund->seller_id     = Auth::user()->seller_id;
-        $refund->user_id       = Auth::user()->id;
-        $refund->color_id      = $request->color_id;
-        $refund->reason_id     = $request->reason_id;
-        $refund->serial_number = BarcodeHelper::formatSerialNumber($request->serial_number);
-        $refund->description   = $request->description;
-        $refund->save();
+            // Orijinal satış kaydını bul
+            $originalSale = Sale::where('stock_card_movement_id', $stockcardmovement->id)->first();
+            $originalInvoice = $originalSale ? Invoice::find($originalSale->invoice_id) : null;
+            $originalCustomerId = $originalSale ? $originalSale->customer_id : ($originalInvoice ? $originalInvoice->customer_id : 1);
 
-        if($request->reason_id == 7){
-            $stockcardmovement = StockCardMovement::find($stockcardmovemet->id);
-            $stockcardmovement->type = 1;
+            // İade fiyatını belirle (orijinal satış fiyatı veya movement fiyatı)
+            $refundPrice = $originalSale ? $originalSale->sale_price : ($stockcardmovement->sale_price ?? 0);
+            $refundTax = ($refundPrice * 18) / 100;
+            $refundTotal = $refundPrice + $refundTax;
+
+            // İade faturası oluştur (type: 3)
+            $invoiceData = [
+                'type' => 3, // İade faturası
+                'number' => 'IADE-' . rand(1111, 9999) . date('m'),
+                'create_date' => Carbon::now()->format('Y-m-d'),
+                'credit_card' => 0,
+                'cash' => 0,
+                'installment' => 0,
+                'free_sale' => 0,
+                'description' => 'İADE - ' . ($request->description ?? ''),
+                'is_status' => 1,
+                'total_price' => $refundTotal,
+                'tax_total' => $refundTax,
+                'discount_total' => 0,
+                'staff_id' => Auth::user()->id,
+                'customer_id' => $originalCustomerId,
+                'user_id' => Auth::user()->id,
+                'company_id' => Auth::user()->company_id,
+                'exchange' => null,
+                'tax' => 18,
+                'file' => null,
+                'paymentStatus' => 'paid',
+                'paymentDate' => Carbon::now()->format('Y-m-d'),
+                'paymentStaff' => Auth::user()->id,
+                'periodMounth' => Carbon::now()->month,
+                'periodYear' => Carbon::now()->year,
+                'accounting_category_id' => 8, // İade kategorisi
+                'currency' => null,
+                'safe_id' => null,
+            ];
+
+            $refundInvoice = $this->invoiceService->create($invoiceData);
+
+            // Refund kaydı oluştur
+            $refund = new Refund();
+            $refund->stock_card_id = $stockcard_id;
+            $refund->company_id = Auth::user()->company_id;
+            $refund->seller_id = Auth::user()->seller_id;
+            $refund->user_id = Auth::user()->id;
+            $refund->color_id = $request->color_id ?? $stockcardmovement->color_id;
+            $refund->reason_id = $request->reason_id;
+            $refund->serial_number = BarcodeHelper::formatSerialNumber($request->serial_number);
+            $refund->description = $request->description;
+            $refund->invoice_id = $refundInvoice->id;
+            $refund->status = 1; // Normal iade
+            $refund->save();
+
+            // StockCardMovement güncelle (type: 3 - İade, invoice_id: iade faturası)
+            $stockcardmovement->type = 3; // İade
+            $stockcardmovement->invoice_id = $refundInvoice->id;
             $stockcardmovement->save();
+
+            // İade için Sale kaydı oluştur
+            $refundSale = new Sale();
+            $refundSale->stock_card_id = $stockcard_id;
+            $refundSale->stock_card_movement_id = $stockcardmovement->id;
+            $refundSale->invoice_id = $refundInvoice->id;
+            $refundSale->customer_id = $originalCustomerId;
+            $refundSale->sale_price = $refundPrice;
+            $refundSale->customer_price = $refundPrice;
+            $refundSale->name = StockCard::find($stockcard_id)->name ?? '';
+            $refundSale->seller_id = $stockcardmovement->seller_id;
+            $refundSale->company_id = Auth::user()->company_id;
+            $refundSale->user_id = Auth::user()->id;
+            $refundSale->serial = $refund->serial_number;
+            $refundSale->discount = 0;
+            $refundSale->base_cost_price = $stockcardmovement->base_cost_price ?? 0;
+            $refundSale->type = 6; // Diğer (İade için)
+            $refundSale->save();
+
+            // Orijinal sale kaydını iade edildi olarak işaretle
+            if ($originalSale) {
+                $originalSale->refund_id = $refund->id;
+                $originalSale->save();
+            }
+
+            // Özel durum: reason_id == 7 ise stoka geri dön
+            if($request->reason_id == 7){
+                $stockcardmovement->type = 1; // Satışta
+                $stockcardmovement->save();
+            }
+
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'İade kaydı başarıyla oluşturuldu',
+                'refund_id' => $refund->id,
+                'invoice_id' => $refundInvoice->id
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('İade kaydı oluşturulurken hata: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'İade kaydı oluşturulurken hata oluştu: ' . $e->getMessage()
+            ], 500);
         }
     }
 
     public function refundlist(Request $request)
     {
-        $x = Refund::with('stock','brand')->where('company_id', Auth::user()->company_id);
-
-        if ($request->filled('brand')) {
-            $x->whereHas('stock', function ($q) use ($request) {
-                $q->where('brand_id', $request->brand);
-            });
-        }
-
-        if ($request->filled('version')) {
-            $x->whereHas('version', function ($q) use ($request) {
-                $q->whereJsonContains('version_id', $request->version);
-            });
-        }
-
-        if ($request->filled('color')) {
-            $x->where('color_id', $request->color);
-        }
-
-        if ($request->filled('seller')) {
-            $x->where('seller_id', $request->seller);
-        }
-        if ($request->filled('reason')) {
-            $x->where('reason_id', $request->reason);
-        }
-
-        if ($request->filled('serial_number')) {
-            $x->where('serial_number', $request->serial_number);
-        }
-
-        $data['refunds'] = $x->orderBy('id', 'desc')->get();
+        // Sadece filter seçeneklerini döndür, veriler AJAX ile yüklenecek
         $data['brands'] = $this->brandService->get();
         $data['sellers'] = $this->sellerService->get();
         $data['colors'] = $this->colorService->get();
         $data['reasons'] = $this->reasonService->get();
-        $data['stocks'] = $this->stockcardService->all();
 
         return view('module.refund.index', $data);
     }
@@ -1592,6 +1665,7 @@ SELECT * FROM category_path ORDER BY path;");
             'color',
             'reason',
             'brand',
+            'seller',
         ])->where('company_id', Auth::user()->company_id);
 
         if ($request->filled('brand')) {
@@ -1623,10 +1697,18 @@ SELECT * FROM category_path ORDER BY path;");
             $query->where('serial_number', $serialNumber);
         }
 
-        $refunds = $query->orderByDesc('id')->get();
+        // Pagination ekle (performans için)
+        $perPage = $request->input('per_page', 50);
+        $refunds = $query->orderByDesc('id')->paginate($perPage);
 
         return response()->json([
-            'refunds' => $refunds,
+            'refunds' => $refunds->items(),
+            'pagination' => [
+                'current_page' => $refunds->currentPage(),
+                'last_page' => $refunds->lastPage(),
+                'per_page' => $refunds->perPage(),
+                'total' => $refunds->total(),
+            ],
             'filters' => [
                 'brands' => $this->brandService->get(),
                 'sellers' => $this->sellerService->get(),

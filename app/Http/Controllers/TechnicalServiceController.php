@@ -164,7 +164,7 @@ class TechnicalServiceController extends Controller
         $data['brands'] = $this->brandService->get();
         $data['sellers'] = $this->sellerService->get();
         $data['sms'] = Setting::where('category', 'sms')->get();
-        $data['users'] = $this->userService->get();
+        $data['users'] = $this->userService->get()->where('is_status', 1)->where('personel', 1);
 
         return view('module.technical_service.index', $data);
     }

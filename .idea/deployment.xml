@@ -3,6 +3,13 @@
   <component name="PublishConfigData" autoUpload="Always" serverName="phportal" remoteFilesAllowedToDisappearOnAutoupload="false" confirmBeforeUploading="false">
     <option name="confirmBeforeUploading" value="false" />
     <serverData>
+      <paths name="153.92.220.225">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="phportal">
         <serverdata>
           <mappings>

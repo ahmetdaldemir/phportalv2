@@ -8,37 +8,27 @@
 
 <div id="app">
     <div class="container-xxl flex-grow-1 container-p-y">
-        <!-- Table Page Header -->
-        <div class="table-page-header table-page-fade-in">
-            <div class="header-content">
-                <div class="header-left">
-                    <div class="header-icon">
-                        <i class="bx bx-shopping-bag"></i>
-                    </div>
-                    <div class="header-text">
-                        <h2>
-                            <i class="bx bx-shopping-bag me-2"></i>
-                            SATIŞ LİSTESİ
-                        </h2>
-                        <p>Satış fiyatları ve kar zarar yönetimi</p>
-                    </div>
-                </div>
-                <div class="header-actions">
-                    <button class="btn btn-success btn-sm">
-                        <i class="bx bx-printer me-1"></i>
-                        Yazdır
-                    </button>
-                    <button class="btn btn-warning btn-sm" @click="exportToExcel">
-                        <i class="bx bx-download me-1"></i>
-                        Excel
-                    </button>
-                    <a href="{{ route('invoice.sales') }}" class="btn btn-primary btn-sm">
-                        <i class="bx bx-plus me-1"></i>
-                        YENİ SATIŞ
-                    </a>
-                </div>
-            </div>
-        </div>
+        <!-- Standart Header Component -->
+        <x-list-page.header 
+            title="Satışlar"
+            :createRoute="null"
+            :count="0"
+            icon="bx-shopping-bag"
+            description="Satış fiyatları ve kar zarar yönetimi"
+        >
+            <button class="btn btn-success" @click="printSales">
+                <i class="bx bx-printer me-1"></i>
+                Yazdır
+            </button>
+            <button class="btn btn-warning" @click="exportToExcel">
+                <i class="bx bx-download me-1"></i>
+                Excel
+            </button>
+            <a href="{{ route('invoice.sales') }}" class="btn btn-primary">
+                <i class="bx bx-plus me-1"></i>
+                Yeni Satış
+            </a>
+        </x-list-page.header>
 
 
 
@@ -141,52 +131,25 @@
                     <div class="card-value" v-text="formatCurrency(totals.cash)"></div>
                     <div class="card-label">Nakit</div>
                 </div>
-
+                @role('Depo Sorumlusu|super-admin')
                 <div class="summary-card">
                     <div class="card-icon info">
                         <i class="bx bx-trending-up"></i>
                     </div>
-                    <div class="card-value" v-text="formatCurrency(totals.profit)"></div>
+                    <div class="card-value" v-text="formatCurrency(totals.profit)" ></div>
                     <div class="card-label">Kar</div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Detailed Totals -->
-        <div v-if="invoices.length > 0" class="table-page-totals table-page-fade-in-delay-2">
-            <div class="totals-header">
-                <h6>
-                    <i class="bx bx-calculator me-2"></i>
-                    Detaylı Toplamlar
-                </h6>
-            </div>
-            <div class="totals-grid">
-                <div class="total-item">
-                    <div class="total-value text-primary" v-text="formatCurrency(totals.gross_total)"></div>
-                    <div class="total-label">Brüt Toplam</div>
-                </div>
-
-                <div class="total-item">
-                    <div class="total-value text-danger" v-text="formatCurrency(totals.tax_total)"></div>
-                    <div class="total-label">KDV Toplam</div>
-                </div>
-
-                <div class="total-item">
-                    <div class="total-value text-warning" v-text="formatCurrency(totals.discount_total)"></div>
-                    <div class="total-label">İndirim Toplam</div>
-                </div>
-
-                <div class="total-item">
-                    <div class="total-value text-info" v-text="formatCurrency(totals.installment)"></div>
-                    <div class="total-label">Taksit</div>
-                </div>
-
-                <div class="total-item">
-                    <div class="total-value text-success" v-text="formatCurrency(totals.gross_total)"></div>
-                    <div class="total-label">Genel Toplam</div>
+                @endrole
+                <div class="summary-card">
+                    <div class="card-icon warning">
+                        <i class="bx bx-money"></i>
+                    </div>
+                    <div class="card-value" v-text="formatCurrency(totals.gross_total)"></div>
+                    <div class="card-label">Total</div>
                 </div>
             </div>
         </div>
+
 
         <!-- Data Table -->
         <div class="table-page-table table-page-fade-in-delay-3">
@@ -290,8 +253,18 @@
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td colspan="6" class="text-end">Toplam</td>
-                            <td class="text-end">
+                            <td   class="text-end">KK</td>
+                            <td    class="text-end">
+                                <span class="price-display fw-bold"
+                                      v-text="formatCurrency(invoices.reduce((acc, invoice) => acc + invoice.credit_card, 0))"></span>
+                            </td>
+                            <td class="text-end">Nakit</td>
+                            <td   class="text-end">
+                                <span class="price-display fw-bold"
+                                      v-text="formatCurrency(invoices.reduce((acc, invoice) => acc + invoice.cash, 0))"></span>
+                            </td>
+                            <td colspan="2"  class="text-end">Toplam</td>
+                            <td colspan="2" class="text-end">
                                 <span class="price-display fw-bold"
                                     v-text="formatCurrency(invoices.reduce((acc, invoice) => acc + invoice.total_price, 0))"></span>
                             </td>
@@ -382,29 +355,8 @@
                                     <div class="stat-label">Satış Toplamı</div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
-                                <div class="stat-card stat-card-warning">
-                                    <div class="stat-value"
-                                        v-text="formatCurrency((invoiceDetails.totals && invoiceDetails.totals.total_cost_price) || 0)">
-                                    </div>
-                                    <div class="stat-label">Maliyet Toplamı</div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="stat-card stat-card-primary">
-                                    <div class="stat-value"
-                                        :class="{
-                                            'text-success': (invoiceDetails.totals && invoiceDetails.totals
-                                                .total_profit) > 0,
-                                            'text-danger': (invoiceDetails.totals && invoiceDetails.totals
-                                                .total_profit) < 0
-                                        }">
-                                        <span
-                                            v-text="formatCurrency((invoiceDetails.totals && invoiceDetails.totals.total_profit) || 0)"></span>
-                                    </div>
-                                    <div class="stat-label">Net Kar</div>
-                                </div>
-                            </div>
+
+
                         </div>
 
                         <!-- Sales Detail Table -->
@@ -432,24 +384,25 @@
                                             <i class="bx bx-money me-1"></i>
                                             <span class="header-text">Satış<br><small>Fiyatı</small></span>
                                         </th>
-                                        <th class="compact-header text-end">
-                                            <i class="bx bx-calculator me-1"></i>
-                                            <span class="header-text">Maliyet</span>
-                                        </th>
-                                        <th class="compact-header text-end">
-                                            <i class="bx bx-trending-up me-1"></i>
-                                            <span class="header-text">Kar</span>
-                                        </th>
+
                                         <th class="compact-header">
                                             <i class="bx bx-user me-1"></i>
                                             <span class="header-text">Satışçı</span>
                                         </th>
+                                        <th class="compact-header">
+                                            <i class="bx bx-info-circle me-1"></i>
+                                            <span class="header-text">Durum</span>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="sale in (invoiceDetails.sales || [])" :key="sale.id">
+                                    <tr v-for="sale in (invoiceDetails.sales || [])" :key="sale.id" 
+                                        :class="{'table-warning': sale.is_refunded, 'opacity-75': sale.is_refunded}">
                                         <td class="text-truncate-custom">
                                             <span class="text-compact fw-semibold" v-text="sale.stock_name"></span>
+                                            <span v-if="sale.is_refunded" class="badge bg-danger ms-2" title="İade Edilmiş">
+                                                <i class="bx bx-undo"></i> İade
+                                            </span>
                                         </td>
                                         <td>
                                             <span class="text-compact" v-text="sale.brand_name"></span>
@@ -465,21 +418,21 @@
                                             <span class="price-display text-compact fw-bold"
                                                 v-text="formatCurrency(sale.sale_price)"></span>
                                         </td>
-                                        <td class="text-end">
-                                            <span class="price-display text-compact"
-                                                v-text="formatCurrency(sale.base_cost_price)"></span>
-                                        </td>
-                                        <td class="text-end">
-                                            <span class="price-display text-compact"
-                                                :class="{
-                                                    'text-success': sale.profit > 0,
-                                                    'text-danger': sale.profit < 0
-                                                }"
-                                                v-text="formatCurrency(sale.profit)">
-                                            </span>
-                                        </td>
+
                                         <td>
                                             <span class="text-compact" v-text="sale.seller_name"></span>
+                                        </td>
+                                        <td>
+                                            <span v-if="sale.is_refunded" class="badge bg-warning text-dark" 
+                                                :title="'İade Tarihi: ' + (sale.refund_date || '')">
+                                                <i class="bx bx-info-circle me-1"></i>
+                                                <span v-if="sale.refund_reason" v-text="sale.refund_reason"></span>
+                                                <span v-else>İade Edildi</span>
+                                            </span>
+                                            <span v-else class="badge bg-success">
+                                                <i class="bx bx-check-circle me-1"></i>
+                                                Aktif
+                                            </span>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -1188,6 +1141,17 @@
                 }
 
                 return rangeWithDots;
+            },
+
+            // Print sales functionality
+            printSales() {
+                try {
+                    // Mevcut sayfayı yazdır
+                    window.print();
+                } catch (error) {
+                    console.error('Print error:', error);
+                    this.showNotification('Hata', 'Yazdırma işlemi sırasında hata oluştu!', 'error');
+                }
             },
 
             // Excel export functionality

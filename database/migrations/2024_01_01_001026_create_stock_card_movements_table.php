@@ -41,7 +41,6 @@ return new class extends Migration
             $table->index('id');
             $table->index('serial_number');
             $table->index('company_id');
-            $table->index('serial_number');
             $table->foreign('color_id')->references('id')->on('colors');
             $table->foreign('invoice_id')->references('id')->on('invoices');
             $table->foreign('reason_id')->references('id')->on('reasons');

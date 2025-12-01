@@ -272,7 +272,7 @@
                                    class="btn btn-sm btn-secondary" title="Barkod">
                                     <i class="bx bx-barcode"></i>
                                 </a>
-                                <a :href="`/phone/printconfirm/${phone.id}`"
+                                <a :href="`/phone/printconfirm?id=${phone.id}`"
                                    class="btn btn-sm btn-dark" title="Yazdır">
                                     <i class="bx bx-printer"></i>
                                 </a>

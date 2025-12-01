@@ -26,8 +26,9 @@
                         </div>
                     </div>
          <!-- @submit.prevent="submitForm" -->
-                    <form  class="invoice-form">
+                    <form  @submit.prevent="submitForm" class="invoice-form">
                         <input type="hidden" name="type" value="1" />
+                        <input type="hidden" name="id" value="{{$invoice_id}}" />
 
                         <div class="card-body">
                             <!-- Header Section -->
@@ -191,8 +192,7 @@
                                     </tr>
                                     </thead>
                                     <tbody style="overflow: visible !important;">
-                                    <tr v-for="(item, index) in form.items" :key="index"
-                                        class="invoice-item-row" style="overflow: visible !important; position: relative !important;">
+                                    <tr v-for="(item, index) in form.items" :key="index"  class="invoice-item-row" style="overflow: visible !important; position: relative !important;">
                                         <!-- Stok -->
                                         <td style="overflow: visible !important; position: relative !important;">
                                             <div class="position-relative">
@@ -493,6 +493,7 @@
                 return {
                     form: {
                         customer_id: '0',
+                        id: null,
                         number: '',
                         create_date: new Date().toISOString().substr(0, 10),
                         payment_status: 'unpaid',
@@ -596,6 +597,7 @@
                     this.form.create_date = initialInvoice.create_date || this.form.create_date;
                     this.form.payment_status = initialInvoice.paymentStatus || this.form.payment_status;
                     this.form.description = initialInvoice.description || '';
+                    this.form.id = initialInvoice.id || 0;
                     this.form.customer_id = initialInvoice.customer_id ? String(initialInvoice.customer_id) : this.form.customer_id;
 
                     let fallbackCustomerName = this.customer_search;
@@ -616,10 +618,10 @@
                     }
                 }
 
-                // Pre-select stock if passed from URL
+                // Pre-select stock if passed from URL (use `stock_id` to avoid collision with invoice `id`)
                 try {
                     const urlParams = new URLSearchParams(window.location.search);
-                    const stockId = urlParams.get('id');
+                    const stockId = urlParams.get('stock_id'); // previously used 'id' which collided with invoice id
                     if (stockId && this.form.items[0]) {
                         this.form.items[0].stock_card_id = stockId;
                         this.onStockChange(0);
@@ -756,7 +758,15 @@
                     }
                 },
                 createItem(template = null) {
-                    const source = template || {};
+                    // Clone template to avoid mutating passed object and remove any unexpected id collisions
+                    const source = template ? Object.assign({}, template) : {};
+                    if (Object.prototype.hasOwnProperty.call(source, 'id')) {
+                        delete source.id;
+                    }
+                    if (Object.prototype.hasOwnProperty.call(source, 'invoice_id')) {
+                        delete source.invoice_id;
+                    }
+
                     let defaultSellerId;
 
                     if (source && source.seller_id !== undefined) {
@@ -782,6 +792,8 @@
                     }
 
                     return {
+                        // ensure no accidental `id` carries over from invoice
+                        id: '',
                         stock_card_id: source.stock_card_id !== undefined ? source.stock_card_id : '',
                         stock_search: source.stock_search !== undefined ? source.stock_search : '',
                         show_stock_dropdown: false,
@@ -1145,19 +1157,31 @@
 
                     try {
                         const formData = new FormData();
-                        formData.append('type', '1');
-                        formData.append('customer_id', this.form.customer_id);
-                        formData.append('number', this.form.number);
+                        formData.append('id', this.form.id);
                         formData.append('create_date', this.form.create_date);
-                        formData.append('payment_status', this.form.payment_status);
                         formData.append('invoice_description', this.form.description || '');
 
                         // Add items as arrays
                         this.form.items.forEach((item, index) => {
-                            Object.keys(item).forEach(key => {
-                                formData.append(`${key}[]`, item[key] || '');
+                            // Sadece sunucuya göndermek istediğimiz alanları ekle
+                            const fields = [
+                                'stock_card_id','stock_search','color_id','color_search','serial',
+                                'quantity','cost_price','base_cost_price','sale_price','seller_id',
+                                'warehouse_id','barcode','reason_id','tracking_quantity','discount',
+                                'tax','description'
+                            ];
+
+                            fields.forEach(key => {
+                                formData.append(`${key}[]`, item[key] !== undefined ? item[key] : '');
                             });
+
+                            // Eğer kalem ID'si gerekiyorsa, çakışmayı önlemek için farklı isimle gönder
+                            if (item.id) {
+                                formData.append(`item_id[]`, item.id);
+                            }
                         });
+
+
 
                         const totalCost = (this.totals && this.totals.cost != null) ? this.totals.cost : 0;
                         const totalBase = (this.totals && this.totals.baseCost != null) ? this.totals.baseCost : 0;
@@ -1172,7 +1196,7 @@
                         formData.append('tax_total', totalTax);
 
 
-                        const response = await fetch("{{ route('invoice.stockcardmovementstore') }}", {
+                        const response = await fetch("{{ route('invoice.stockcardmovementupdate') }}", {
                             method: 'POST',
                             body: formData,
                             headers: {
