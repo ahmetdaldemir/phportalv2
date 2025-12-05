@@ -16,6 +16,17 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
+        
+        // Veritabanı yedeği - Her gün saat 00:00'da Cloudflare R2'ye yükle
+        $schedule->command('db:backup-r2 --compress')
+            ->dailyAt('00:00')
+            ->timezone('Europe/Istanbul')
+            ->onFailure(function () {
+                \Log::error('Database backup to R2 failed at ' . now());
+            })
+            ->onSuccess(function () {
+                \Log::info('Database backup to R2 completed successfully at ' . now());
+            });
     }
 
     /**

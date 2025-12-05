@@ -39,4 +39,24 @@ class Refund extends Model
     {
         return $this->belongsTo(Brand::class,'brand_id','id');
     }
+
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class,'invoice_id','id');
+    }
+
+    public function seller(): BelongsTo
+    {
+        return $this->belongsTo(Seller::class,'seller_id','id');
+    }
+
+    public function sales(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Sale::class, 'refund_id', 'id');
+    }
+
+    public function originalSale(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Sale::class, 'refund_id', 'id')->whereNotNull('refund_id');
+    }
 }

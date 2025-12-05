@@ -33,6 +33,7 @@ class StockCardMovement extends BaseModel
         'user_id',
         'color_id',
         'warehouse_id',
+        'place_of_production',
         'seller_id',
         'reason_id',
         'type',

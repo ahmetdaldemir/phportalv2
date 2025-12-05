@@ -52,13 +52,15 @@ class Invoice extends BaseModel
     ];
 
     public const INVOICE_TYPE = [
-        '2' => 'Giden Fatura',
-        '1' => 'Gelen Fatura'
+        '1' => 'Gelen',
+        '2' => 'Giden',
+        '3' => 'İade'
     ];
 
     public const INVOICE_TYPE_COLOR = [
         '1' => 'success',
-        '2' => 'danger'
+        '2' => 'danger',
+        '3' => 'warning'
     ];
     protected static function boot()
     {
@@ -98,6 +100,13 @@ class Invoice extends BaseModel
     public function staff(): BelongsTo
     {
         return $this->belongsTo(User::class, 'staff_id');
+
+    }
+
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
 
     }
 

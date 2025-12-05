@@ -112,6 +112,19 @@ class Sale extends Model
         return $this->belongsTo(User::class, 'delivery_personnel');
     }
 
+    public function refund(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Refund::class, 'refund_id', 'id');
+    }
+
+    /**
+     * Satışın iade edilip edilmediğini kontrol et
+     */
+    public function isRefunded(): bool
+    {
+        return !is_null($this->refund_id);
+    }
+
 
     public static function totalMonthlySales($user, $type,$period)
     {

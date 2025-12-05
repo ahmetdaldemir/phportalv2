@@ -131,13 +131,6 @@ SELECT * FROM category_path ORDER BY path;");
 
     public function store(Request $request)
     {
-        Log::info('Transfer store method called', [
-            'user_id' => Auth::id(),
-            'request_data' => $request->all(),
-            'user_agent' => $request->userAgent(),
-            'ip' => $request->ip()
-        ]);
-
         DB::beginTransaction();
         try {
             Log::info('Starting authorization check');
@@ -301,6 +294,7 @@ SELECT * FROM category_path ORDER BY path;");
                             'color' => $stockcheck->color->name,
                             'serials' => $serialnumberf
                         );
+
                     }
                 }
             }
@@ -321,7 +315,7 @@ SELECT * FROM category_path ORDER BY path;");
                 'is_status' => $status,
                 'main_seller_id' => $request->main_seller_id ?? Auth::user()->seller_id,
                 'description' => $request->description,
-                'number' => $request->number ?? null,
+                'number' => $request->number ?? 'TRF' . Carbon::now()->format('YmdHis'),
                 'stocks' => $request->is_barcode_transfer ? array_unique(array_map(function($it){ if (is_array($it) && isset($it['barcode'])) return $it['barcode']; if (is_string($it)) return $it; return json_encode($it); }, $request->sevkList ?? [])) : array_unique($request->sevkList ?? []),
                 'serial_list' => $request->sevkList,
                 'is_barcode_transfer' =>$request->is_barcode_transfer,
@@ -330,11 +324,13 @@ SELECT * FROM category_path ORDER BY path;");
                 'detail' => $detail,
                 'delivery_seller_id' => $request->delivery_seller_id,
             );
+
             if (empty($request->id)) {
                 $transfer = $this->transferService->create($data);
             } else {
                 $transfer = $this->transferService->update($request->id, $data);
             }
+
             //$this->dispatch(new SendTransferInfo($transfer));
 
         } catch (\Exception $e) {

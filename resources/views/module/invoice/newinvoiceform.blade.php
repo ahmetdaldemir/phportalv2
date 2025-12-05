@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div id="invoice-app" class="container-xxl flex-grow-1 container-p-y">
+    <div id="invoice-app" class="container-xxl flex-grow-1 container-p-y" data-stocks='@json($stocks ?? [])'>
         <div class="row invoice-add">
             <div class="col-12">
                 <div class="card invoice-preview-card">
@@ -52,7 +52,7 @@
                                                          @click="selectCustomer(customer)"
                                                          class="dropdown-item" 
                                                          style="cursor: pointer;"
-                                                         v-text="customer.fullname + (customer.phone1 ? ' - ' + customer.phone1 : '')">
+                                                         v-text="(customer.fullname || ((customer.firstname || '') + ' ' + (customer.lastname || '')).trim()) + (customer.phone1 ? ' - ' + customer.phone1 : '')">
                                                     </div>
                                                     <div v-if="filtered_customers.length === 0 && customer_search.length >= 1" class="dropdown-item text-muted">
                                                         Cari bulunamadı
@@ -66,6 +66,18 @@
                                         <small class="text-muted">Müşteri bilgilerini seçin veya yeni müşteri
                                             ekleyin</small>
                                     </div>
+                                    <div class="col-12 mt-3">
+                                            <label class="form-label fw-semibold">
+                                                <i class="bx bx-comment-detail me-1"></i>Fatura Açıklaması
+                                            </label>
+                                            <textarea
+                                                v-model="form.description"
+                                                class="form-control"
+                                                rows="3"
+                                                placeholder="Fatura ile ilgili not ekleyebilirsiniz (opsiyonel)"
+                                            ></textarea>
+                                            <small class="text-muted">Bu açıklama kaydedildiğinde faturaya not olarak eklenir.</small>
+                                        </div>
                                 </div>
 
                                 <div class="col-md-6 mb-4">
@@ -80,7 +92,7 @@
                                                     placeholder="Otomatik oluşturulacak">
                                             </div>
                                         </div>
-                                        <div class="col-12">
+                                        <div class="col-12 mb-3">
                                             <label class="form-label fw-semibold">Fatura Tarihi</label>
                                             <div class="input-group">
                                                 <span class="input-group-text">
@@ -89,6 +101,17 @@
                                                 <input v-model="form.create_date" type="date" class="form-control">
                                             </div>
                                         </div>
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold">
+                                                <i class="bx bx-wallet me-1"></i>Ödeme Durumu
+                                            </label>
+                                            <select v-model="form.payment_status" class="form-select">
+                                                <option value="unpaid">Ödenmedi</option>
+                                                <option value="paid">Ödendi</option>
+                                                <option value="paidOutOfPocket">Cebinden Ödedi</option>
+                                            </select>
+                                        </div>
+                                      
                                     </div>
                                 </div>
                             </div>
@@ -128,8 +151,8 @@
                                                 <span class="header-text">Adet</span>
                                             </th>
                                             <th class="compact-header">
-                                                <i class="bx bx-code me-1"></i>
-                                                <span class="header-text">Prefix</span>
+                                                <i class="bx bx-percent me-1"></i>
+                                                <span class="header-text">KDV</span>
                                             </th>
                                             <th class="compact-header">
                                                 <i class="bx bx-money me-1"></i>
@@ -149,7 +172,7 @@
                                             </th>
                                             <th class="compact-header">
                                                 <i class="bx bx-building me-1"></i>
-                                                <span class="header-text">Depo</span>
+                                                <span class="header-text">UT&Tarih</span>
                                             </th>
                                             <th class="compact-header">
                                                 <i class="bx bx-qr me-1"></i>
@@ -234,8 +257,12 @@
 
                                             <!-- Seri No -->
                                             <td>
-                                                <input v-model="item.serial" type="text"
-                                                    class="form-control form-control-sm" placeholder="Seri No">
+                                                <input v-model="item.serial"
+                                                    type="text"
+                                                    class="form-control form-control-sm"
+                                                    placeholder="Seri No"
+                                                    @keydown.enter.prevent
+                                                    @keyup.enter.prevent>
                                             </td>
 
                                             <!-- Renk -->
@@ -274,11 +301,18 @@
                                                     @input="calculateItemTotal(index)">
                                             </td>
 
-                                            <!-- Prefix -->
+                                            <!-- Tax -->
                                             <td>
-                                                <input v-model="item.prefix" type="text"
-                                                    class="form-control form-control-sm" maxlength="3"
-                                                    @input="item.prefix = item.prefix.toUpperCase()" pattern="[A-Z]+">
+                                                <select
+                                                    v-model.number="item.tax"
+                                                    class="form-select form-select-sm"
+                                                    @change="calculateItemTotal(index)"
+                                                >
+                                                    <option :value="1">1%</option>
+                                                    <option :value="8">8%</option>
+                                                    <option :value="18">18%</option>
+                                                    <option :value="20">20%</option>
+                                                </select>
                                             </td>
 
                                             <!-- Gerçek Maliyet -->
@@ -313,24 +347,37 @@
 
                                             <!-- Depo -->
                                             <td>
-                                                <select v-model="item.warehouse_id" class="form-select form-select-sm">
-                                                    <option value="">Depo</option>
-                                                    <option v-for="warehouse in warehouses" :key="warehouse.id"
-                                                        :value="warehouse.id" v-text="warehouse.name">
-                                                    </option>
-                                                </select>
+
+                                                <input
+                                                        v-model="item.place_of_production"
+                                                        type="text"
+                                                        class="form-control form-control-sm"
+                                                        placeholder="Uyeri & Tarih"
+                                                >
                                             </td>
 
                                             <!-- Barkod -->
                                             <td>
-                                                <input
-                                                    v-model="item.barcode"
-                                                    @keydown.enter.prevent="handleBarcodeEnter(index)"
-                                                    type="text"
-                                                    class="form-control form-control-sm"
-                                                    placeholder="Barkod"
-                                                    :data-barcode-index="index"
-                                                >
+                                                <div class="input-group input-group-sm">
+                                                    <input
+                                                        v-model="item.barcode"
+                                                        @keydown.enter.prevent="handleBarcodeEnter(index)"
+                                                        type="text"
+                                                        class="form-control form-control-sm"
+                                                        placeholder="Barkod"
+                                                        :data-barcode-index="index"
+                                                    >
+                                                    <button
+                                                        class="btn btn-outline-primary"
+                                                        type="button"
+                                                        @click="searchStockByBarcode(index)"
+                                                        :disabled="scanningStates.loadingIndex === index"
+                                                    >
+                                                        <span v-if="scanningStates.loadingIndex === index" class="spinner-border spinner-border-sm"></span>
+                                                        <span v-else><i class="bx bx-search"></i></span>
+                                                    </button>
+                                                </div>
+                                                <small v-if="item.stock_lookup_error" class="text-danger">@{{ item.stock_lookup_error }}</small>
                                             </td>
 
                                             <!-- İşlem -->
@@ -362,6 +409,10 @@
                                             <div class="d-flex justify-content-between mb-2">
                                                 <span>Toplam Satış:</span>
                                                 <strong class="text-primary" v-text="formatCurrency(totals.sale)"></strong>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Toplam KDV:</span>
+                                                <strong class="text-warning" v-text="formatCurrency(totals.taxTotal)"></strong>
                                             </div>
                                             <hr>
                                             <div class="d-flex justify-content-between">
@@ -399,15 +450,27 @@
             <script>
         // Disable AngularJS for this specific div to avoid conflicts
         const { createApp } = Vue;
+        const invoiceRootEl = document.getElementById('invoice-app');
+        let initialStocks = [];
+        if (invoiceRootEl && invoiceRootEl.dataset && invoiceRootEl.dataset.stocks) {
+            try {
+                initialStocks = JSON.parse(invoiceRootEl.dataset.stocks);
+            } catch (parseError) {
+                console.error('Initial stocks parse error:', parseError);
+                initialStocks = [];
+            }
+        }
 
         createApp({
             mixins: [VueGlobalMixin],
             data() {
                 return {
-                    form: {
-                        customer_id: '0',
-                        number: '',
-                        create_date: new Date().toISOString().substr(0, 10),
+                        form: {
+                            customer_id: '0',
+                            number: '',
+                            create_date: new Date().toISOString().substr(0, 10),
+                            payment_status: 'unpaid',
+                            description: '',
                         items: [{
                             stock_card_id: '',
                             stock_search: '',
@@ -422,21 +485,25 @@
                             filtered_colors: [],
                             serial: '',
                             quantity: 1,
-                            prefix: '',
                             cost_price: 0,
                             base_cost_price: 0,
                             sale_price: 0,
                             seller_id: 1,
-                            warehouse_id: '',
+                            warehouse_id: 1,
+                            place_of_production: '',
                             barcode: '',
                             reason_id: 9,
                             tracking_quantity: 0,
                             discount: 0,
                             tax: 20,
-                            description: ''
+                            description: '',
+                            stock_lookup_error: ''
                         }]
                     },
-                    stocks: @json($stocks ?? []),
+                    scanningStates: {
+                        loadingIndex: null
+                    },
+                    stocks: initialStocks,
                     customers: [],
                     sellers: [],
                     colors: [],
@@ -451,17 +518,34 @@
             computed: {
                 totals() {
                     const result = this.form.items.reduce((acc, item) => {
-                        const qty = item.quantity || 0;
-                        acc.cost += (item.cost_price || 0) * qty;
-                        acc.baseCost += (item.base_cost_price || 0) * qty;
-                        acc.sale += (item.sale_price || 0) * qty;
+                        const qty = Number(item.quantity) || 0;
+                        const costPrice = Number(item.cost_price) || 0;
+                        const baseCostPrice = Number(item.base_cost_price) || 0;
+                        const salePrice = Number(item.sale_price) || 0;
+                        const taxRate = Number(item.tax) || 0;
+                        const taxMultiplier = taxRate / 100;
+
+                        const costTotal = costPrice * qty;
+                        const baseCostTotal = baseCostPrice * qty;
+                        const saleTotal = salePrice * qty;
+                        const costTax = costTotal * taxMultiplier;
+                        const saleTax = saleTotal * taxMultiplier;
+
+                        acc.cost += costTotal;
+                        acc.baseCost += baseCostTotal;
+                        acc.sale += saleTotal;
+                        acc.tax += costTax + saleTax;
+
                         return acc;
                     }, {
                         cost: 0,
                         baseCost: 0,
-                        sale: 0
+                        sale: 0,
+                        tax: 0
                     });
+
                     result.profit = result.sale - result.cost;
+                    result.taxTotal = result.tax;
                     return result;
                 },
                 isFormValid() {
@@ -523,7 +607,9 @@
                         
                         // Set as selected customer
                         this.form.customer_id = customer.id;
-                        this.customer_search = customer.fullname || (customer.firstname + ' ' + customer.lastname);
+                        this.customer_search = customer.fullname || 
+                            ((customer.firstname || '') + ' ' + (customer.lastname || '')).trim() || 
+                            'Genel Cari';
                         
                         console.log('New customer added and selected:', customer);
                     }
@@ -622,36 +708,58 @@
                     }
                 },
                 createItem(template = null) {
-                    const defaultSellerId = (template && template.seller_id !== undefined)
-                        ? template.seller_id
-                        : (this.sellers && this.sellers.length ? this.sellers[0].id : 1);
+                    const source = template || {};
+                    let defaultSellerId;
+
+                    if (source && source.seller_id !== undefined) {
+                        defaultSellerId = source.seller_id;
+                    } else {
+                        const sellerOne = Array.isArray(this.sellers)
+                            ? this.sellers.find(seller => {
+                                if (!seller || seller.id === undefined) {
+                                    return false;
+                                }
+                                const sellerId = seller.id;
+                                return sellerId === 1 || sellerId === '1' || Number(sellerId) === 1;
+                            })
+                            : null;
+
+                        if (sellerOne && sellerOne.id !== undefined) {
+                            defaultSellerId = sellerOne.id;
+                        } else if (Array.isArray(this.sellers) && this.sellers.length > 0 && this.sellers[0].id !== undefined) {
+                            defaultSellerId = this.sellers[0].id;
+                        } else {
+                            defaultSellerId = 1;
+                        }
+                    }
 
                     return {
-                        stock_card_id: template?.stock_card_id ?? '',
-                        stock_search: template?.stock_search ?? '',
+                        stock_card_id: source.stock_card_id !== undefined ? source.stock_card_id : '',
+                        stock_search: source.stock_search !== undefined ? source.stock_search : '',
                         show_stock_dropdown: false,
                         filtered_stocks: [],
                         loading_stocks: false,
                         selected_stock_index: -1,
                         stock_error: null,
-                        color_id: template?.color_id ?? '',
-                        color_search: template?.color_search ?? '',
+                        color_id: source.color_id !== undefined ? source.color_id : '',
+                        color_search: source.color_search !== undefined ? source.color_search : '',
                         show_color_dropdown: false,
                         filtered_colors: [],
-                        serial: template?.serial ?? '',
-                        quantity: template?.quantity ?? 1,
-                        prefix: template?.prefix ?? '',
-                        cost_price: template?.cost_price ?? 0,
-                        base_cost_price: template?.base_cost_price ?? 0,
-                        sale_price: template?.sale_price ?? 0,
+                        serial: source.serial !== undefined ? source.serial : '',
+                        quantity: source.quantity !== undefined ? source.quantity : 1,
+                        cost_price: source.cost_price !== undefined ? source.cost_price : 0,
+                        base_cost_price: source.base_cost_price !== undefined ? source.base_cost_price : 0,
+                        sale_price: source.sale_price !== undefined ? source.sale_price : 0,
                         seller_id: defaultSellerId,
-                        warehouse_id: template?.warehouse_id ?? '',
+                        warehouse_id: source.warehouse_id !== undefined ? source.warehouse_id : '',
+                        place_of_production: source.place_of_production,
                         barcode: '',
-                        reason_id: template?.reason_id ?? 9,
-                        tracking_quantity: template?.tracking_quantity ?? 0,
-                        discount: template?.discount ?? 0,
-                        tax: template?.tax ?? 20,
-                        description: template?.description ?? ''
+                        reason_id: source.reason_id !== undefined ? source.reason_id : 9,
+                        tracking_quantity: source.tracking_quantity !== undefined ? source.tracking_quantity : 0,
+                        discount: source.discount !== undefined ? source.discount : 0,
+                        tax: source.tax !== undefined ? source.tax : 20,
+                        description: source.description !== undefined ? source.description : '',
+                        stock_lookup_error: ''
                     };
                 },
                 addItem(template = null) {
@@ -914,15 +1022,21 @@
                             return;
                         }
                         
-                        
                         this.filtered_customers = this.customers.filter(customer => {
-                            if (!customer || !customer.fullname) return false;
+                            if (!customer) return false;
                             
-                            return customer.type === 'account' && (
-                                customer.fullname.toLowerCase().includes(searchTerm) ||
-                                (customer.phone1 && customer.phone1.includes(searchTerm)) ||
-                                (customer.email && customer.email.toLowerCase().includes(searchTerm))
-                            );
+                            // Get customer name - prefer fullname, fallback to firstname + lastname
+                            const customerName = customer.fullname || 
+                                ((customer.firstname || '') + ' ' + (customer.lastname || '')).trim();
+                            
+                            if (!customerName) return false;
+                            
+                            // Search in name, phone, and email
+                            const nameMatch = customerName.toLowerCase().includes(searchTerm);
+                            const phoneMatch = customer.phone1 && customer.phone1.includes(searchTerm);
+                            const emailMatch = customer.email && customer.email.toLowerCase().includes(searchTerm);
+                            
+                            return nameMatch || phoneMatch || emailMatch;
                         }).slice(0, 10); // Limit to 10 results
                         
                     } catch (error) {
@@ -955,8 +1069,13 @@
                             return;
                         }
                         
+                        // Get customer name - prefer fullname, fallback to firstname + lastname
+                        const customerName = customer.fullname || 
+                            ((customer.firstname || '') + ' ' + (customer.lastname || '')).trim() ||
+                            'Genel Cari';
+                        
                         this.form.customer_id = customer.id;
-                        this.customer_search = customer.fullname;
+                        this.customer_search = customerName;
                         this.show_customer_dropdown = false;
                         this.filtered_customers = [];
                         this.onCustomerChange();
@@ -983,6 +1102,8 @@
                         formData.append('customer_id', this.form.customer_id);
                         formData.append('number', this.form.number);
                         formData.append('create_date', this.form.create_date);
+                        formData.append('payment_status', this.form.payment_status);
+                        formData.append('invoice_description', this.form.description || '');
 
                         // Add items as arrays
                         this.form.items.forEach((item, index) => {
@@ -991,13 +1112,20 @@
                             });
                         });
 
-                        formData.append('total_cost', this.totals.cost ?? 0);
-                        formData.append('total_base_cost', this.totals.baseCost ?? 0);
-                        formData.append('total_sale', this.totals.sale ?? 0);
-                        formData.append('total_profit', this.totals.profit ?? 0);
+                        const totalCost = (this.totals && this.totals.cost != null) ? this.totals.cost : 0;
+                        const totalBase = (this.totals && this.totals.baseCost != null) ? this.totals.baseCost : 0;
+                        const totalSale = (this.totals && this.totals.sale != null) ? this.totals.sale : 0;
+                        const totalProfit = (this.totals && this.totals.profit != null) ? this.totals.profit : 0;
+                        const totalTax = (this.totals && this.totals.taxTotal != null) ? this.totals.taxTotal : 0;
+
+                        formData.append('total_cost', totalCost);
+                        formData.append('total_base_cost', totalBase);
+                        formData.append('total_sale', totalSale);
+                        formData.append('total_profit', totalProfit);
+                        formData.append('tax_total', totalTax);
 
 
-                        const response = await fetch('{{ route('invoice.stockcardmovementstore') }}', {
+                        const response = await fetch("{{ route('invoice.stockcardmovementstore') }}", {
                             method: 'POST',
                             body: formData,
                             headers: {
@@ -1038,6 +1166,8 @@
                             customer_id: '0',
                             number: '',
                             create_date: new Date().toISOString().substr(0, 10),
+                            payment_status: 'unpaid',
+                            description: '',
                             items: [this.createItem()]
                         };
                         this.customer_search = 'Genel Cari';
@@ -1147,7 +1277,133 @@
                                 nextInput.select();
                             }
                         }
+                        this.searchStockByBarcode(newItemIndex);
                     });
+                },
+
+                async searchStockByBarcode(index) {
+                    const item = this.form.items[index];
+                    if (!item || !item.barcode) {
+                        return;
+                    }
+
+                    item.stock_lookup_error = '';
+                    this.scanningStates.loadingIndex = index;
+
+                    try {
+                        const normalizedBarcode = item.barcode.trim();
+                        const response = await axios.get('/stockcard/stocks-search', {
+                            params: {
+                                barcode: normalizedBarcode
+                            }
+                        });
+
+                        let stock = null;
+                        if (response.data) {
+                            if (response.data.stock) {
+                                stock = response.data.stock;
+                            } else if (Array.isArray(response.data.stocks)) {
+                                stock = response.data.stocks[0] || null;
+                            } else if (Array.isArray(response.data)) {
+                                stock = response.data[0] || null;
+                            }
+                        }
+
+                        if (!stock) {
+                            const fallback = await axios.get('/stockcard/stocks-search', {
+                                params: {
+                                    barcode: `B-${normalizedBarcode}`
+                                }
+                            });
+
+                            if (fallback.data) {
+                                if (fallback.data.stock) {
+                                    stock = fallback.data.stock;
+                                } else if (Array.isArray(fallback.data.stocks)) {
+                                    stock = fallback.data.stocks[0] || null;
+                                } else if (Array.isArray(fallback.data)) {
+                                    stock = fallback.data[0] || null;
+                                }
+                            }
+                        }
+
+                        if (!stock) {
+                        item.stock_lookup_error = 'Barkoda ait stok bulunamadı.';
+                        this.populateStockFromLookup(index, null);
+                    } else {
+                        this.populateStockFromLookup(index, stock);
+                    }
+                    } catch (error) {
+                        console.error('Barcode stock lookup error:', error);
+                        item.stock_lookup_error = 'Stok araması başarısız. Lütfen tekrar deneyin.';
+                    } finally {
+                        this.scanningStates.loadingIndex = null;
+                    }
+                },
+
+                populateStockFromLookup(index, stock) {
+                    const item = this.form.items[index];
+                    if (!item) {
+                        return;
+                    }
+
+                    if (!stock) {
+                        item.stock_card_id = '';
+                        item.stock_search = '';
+                        item.cost_price = 0;
+                        item.base_cost_price = 0;
+                        item.sale_price = 0;
+                        return;
+                    }
+
+                    item.stock_card_id = stock.id || '';
+                    if (!item.stock_card_id && stock.stock_card_id) {
+                        item.stock_card_id = stock.stock_card_id;
+                    }
+                    if (!item.stock_card_id && stock.stockcardid) {
+                        item.stock_card_id = stock.stockcardid;
+                    }
+                    if (!item.stock_card_id && stock.stock_card_movements?.stock_card_id) {
+                        item.stock_card_id = stock.stock_card_movements.stock_card_id;
+                    }
+
+                    item.stock_search = [
+                        stock.name || stock.text || '',
+                        stock.brand?.name || stock.brand_name || '',
+                        stock.version_names || ''
+                    ].filter(Boolean).join(' - ');
+
+                    if (stock.sale_price !== undefined) {
+                        item.sale_price = Number(stock.sale_price) || Number(stock.stockCardPrice?.sale_price) || item.sale_price;
+                    } else if (stock.stockCardPrice?.sale_price !== undefined) {
+                        item.sale_price = Number(stock.stockCardPrice.sale_price) || item.sale_price;
+                    }
+
+                    if (stock.cost_price !== undefined) {
+                        item.cost_price = Number(stock.cost_price) || item.cost_price;
+                    } else if (stock.stockCardPrice?.cost_price !== undefined) {
+                        item.cost_price = Number(stock.stockCardPrice.cost_price) || item.cost_price;
+                    }
+
+                    if (stock.base_cost_price !== undefined) {
+                        item.base_cost_price = Number(stock.base_cost_price) || item.base_cost_price;
+                    } else if (stock.stockCardPrice?.base_cost_price !== undefined) {
+                        item.base_cost_price = Number(stock.stockCardPrice.base_cost_price) || item.base_cost_price;
+                    }
+
+                    if (stock.tax !== undefined) {
+                        item.tax = Number(stock.tax) || item.tax;
+                    } else if (stock.stockCardPrice?.tax !== undefined) {
+                        item.tax = Number(stock.stockCardPrice.tax) || item.tax;
+                    }
+
+                    if (stock.warehouse_id !== undefined) {
+                        item.warehouse_id = stock.warehouse_id;
+                    }
+
+                    if (stock.seller_id !== undefined) {
+                        item.seller_id = stock.seller_id;
+                    }
                 },
                 getLastInvoiceId() {
                     // Son kaydedilen invoice ID'sini döndür

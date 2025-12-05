@@ -1,80 +1,165 @@
 @extends('layouts.admin')
 
+@section('custom-css')
+    <link rel="stylesheet" href="{{asset('assets/css/form-page-base.css')}}">
+@endsection
+
 @section('content')
     <div class="container-xxl flex-grow-1 container-p-y">
-        <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Kullanıcı /</span> @if(isset($users))
-                {{$users->name}}
-            @endif</h4>
-        <div class="card  mb-4">
-            <h5 class="card-header">Kullanıcı Bilgileri</h5>
+        <!-- Standart Form Header Component -->
+        <x-form-page.header 
+            title="{{ isset($users) ? 'Kullanıcı Düzenle' : 'Yeni Kullanıcı Ekle' }}"
+            icon="bx-user"
+            description="{{ isset($users) ? $users->name . ' kullanıcısını düzenleyin' : 'Yeni bir kullanıcı ekleyin' }}"
+            :backRoute="route('user.index')"
+        />
+
+        <!-- Standart Form Card Component -->
+        <x-form-page.card title="Kullanıcı Bilgileri" icon="bx-user">
             <form action="{{route('user.store')}}" method="post">
                 @csrf
-                <input type="hidden" name="id" @if(isset($users)) value="{{$users->id}}" @endif />
-                <div class="card-body">
-                    <div>
-                        <label for="defaultFormControlInput" class="form-label">İsim Soyisim</label>
-                        <input type="text" class="form-control" id="name" @if(isset($users)) value="{{$users->name}}"
-                               @endif  name="name" aria-describedby="name">
-                        <div id="name" class="form-text">
-                            We'll never share your details with anyone else.
-                        </div>
+                <input type="hidden" name="id" value="{{ $users->id ?? '' }}" />
+                
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="bx bx-user me-1"></i>Kişisel Bilgiler
                     </div>
-                    <div>
-                        <label for="defaultFormControlInput" class="form-label">Email</label>
-                        <input type="text" class="form-control" id="email" @if(isset($users)) value="{{$users->email}}"
-                               @endif  name="email" aria-describedby="email">
-                        <div id="email" class="form-text">
-                            We'll never share your details with anyone else.
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="name" class="form-label">
+                                    <i class="bx bx-user me-1"></i>İsim Soyisim
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="name" 
+                                       value="{{ $users->name ?? '' }}"
+                                       name="name" 
+                                       placeholder="İsim soyisim giriniz..."
+                                       required>
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <label for="defaultFormControlInput" class="form-label">Şifre</label>
-                        <input type="text" class="form-control" id="password" name="password" aria-describedby="password">
-                        <div id="password" class="form-text">
-                            We'll never share your details with anyone else.
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="email" class="form-label">
+                                    <i class="bx bx-envelope me-1"></i>Email
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input type="email" 
+                                       class="form-control" 
+                                       id="email" 
+                                       value="{{ $users->email ?? '' }}"
+                                       name="email" 
+                                       placeholder="Email adresi giriniz..."
+                                       required>
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <label for="defaultFormControlInput" class="form-label">Şube</label>
-                        <select name="seller_id" class="form-select"  @if($edit == 1) disabled @endif >
-                            @foreach($companys as $company)
-                            <optgroup label="{{$company->name}}">
-                                @foreach($sellers as $seller)
-                                    @if($seller->company_id == $company->id)
-                                    <option  @if(isset($users) && $seller->id == $users->seller_id) selected @endif  value="{{$seller->id}}">{{$seller->name}}</option>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="password" class="form-label">
+                                    <i class="bx bx-lock me-1"></i>Şifre
+                                    @if(!isset($users))
+                                        <span class="text-danger">*</span>
                                     @endif
-                                @endforeach
-                            </optgroup>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label for="defaultFormControlInput" class="form-label">Firma</label>
-                        <select name="company_id" class="form-control">
-                            @foreach($companys as $company)
-                                <option @if(isset($users) && $users->company_id == $company->id) selected @endif  value="{{$company->id}}">{{$company->name}}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label for="role" class="form-label">Role</label>
-                        <select name="role" class="form-control" id="role">
-                            @foreach($roles as $role)
-                                <option  @if(isset($users)) {{ $users->hasRole($role->name) ? 'selected' : '' }} @endif value="{{$role->id}}">{{$role->name}}</option>
-                            @endforeach
-                        </select>
-                        <div id="seller_id" class="form-text">
-                            We'll never share your details with anyone else.
+                                </label>
+                                <input type="password" 
+                                       class="form-control" 
+                                       id="password" 
+                                       name="password" 
+                                       placeholder="Şifre giriniz..."
+                                       {{ !isset($users) ? 'required' : '' }}>
+                                @if(isset($users))
+                                    <div class="form-text">Boş bırakırsanız şifre değişmez</div>
+                                @endif
+                            </div>
                         </div>
-                    </div>
-
-                    <hr class="my-5">
-                    <div>
-                        <button type="submit" class="btn btn-danger btn-buy-now">Kaydet</button>
                     </div>
                 </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="bx bx-building me-1"></i>Firma ve Şube Bilgileri
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="company_id" class="form-label">
+                                    <i class="bx bx-building me-1"></i>Firma
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <select name="company_id" class="form-select" id="company_id" required>
+                                    <option value="">Firma Seçiniz</option>
+                                    @foreach($companys as $company)
+                                        <option value="{{$company->id}}" {{ (isset($users) && $users->company_id == $company->id) ? 'selected' : '' }}>
+                                            {{$company->name}}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="seller_id" class="form-label">
+                                    <i class="bx bx-store me-1"></i>Şube
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <select name="seller_id" class="form-select" id="seller_id" required {{ (isset($edit) && $edit == 1) ? 'disabled' : '' }}>
+                                    <option value="">Şube Seçiniz</option>
+                                    @foreach($companys as $company)
+                                        <optgroup label="{{$company->name}}">
+                                            @foreach($sellers as $seller)
+                                                @if($seller->company_id == $company->id)
+                                                    <option value="{{$seller->id}}" {{ (isset($users) && $users->seller_id == $seller->id) ? 'selected' : '' }}>
+                                                        {{$seller->name}}
+                                                    </option>
+                                                @endif
+                                            @endforeach
+                                        </optgroup>
+                                    @endforeach
+                                </select>
+                                @if(isset($edit) && $edit == 1)
+                                    <input type="hidden" name="seller_id" value="{{ $users->seller_id ?? '' }}">
+                                    <div class="form-text">Şube bilgisi düzenlenemez</div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="bx bx-shield me-1"></i>Yetki Bilgileri
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="role" class="form-label">
+                                    <i class="bx bx-shield me-1"></i>Rol
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <select name="role" class="form-select" id="role" required>
+                                    <option value="">Rol Seçiniz</option>
+                                    @foreach($roles as $role)
+                                        <option value="{{$role->id}}" {{ (isset($users) && $users->hasRole($role->name)) ? 'selected' : '' }}>
+                                            {{$role->name}}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a href="{{route('user.index')}}" class="btn btn-outline-secondary">
+                        <i class="bx bx-x me-1"></i>İptal
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bx bx-save me-1"></i>Kaydet
+                    </button>
+                </div>
             </form>
-        </div>
-        <hr class="my-5">
+        </x-form-page.card>
     </div>
 @endsection

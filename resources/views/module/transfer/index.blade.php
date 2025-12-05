@@ -125,23 +125,20 @@
 @section('content')
 
     <div id="app" class="container-xxl flex-grow-1 container-p-y">
-        <!-- Professional Header -->
-        <div class="page-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h4 class="fw-bold mb-1">
-                        <i class="bx bx-transfer me-2"></i>Sevk Yönetimi
-                    </h4>
-                    <p class="mb-0 opacity-75">Gelen ve yapılan sevkleri yönetin</p>
-                </div>
-                
-                @role(['Depo Sorumlusu','super-admin','Bayi Yetkilisi'])
-                <button type="button" @click="openTransferModal" class="btn btn-light btn-lg shadow-sm">
-                    <i class="bx bx-plus me-2"></i>Yeni Sevk Ekle
+        <!-- Standart Header Component -->
+        <x-list-page.header 
+            title="Sevk Yönetimi"
+            :createRoute="null"
+            :count="0"
+            icon="bx-transfer"
+            description="Gelen ve yapılan sevkleri yönetin"
+        >
+            @role(['Depo Sorumlusu','super-admin','Bayi Yetkilisi'])
+                <button type="button" @click="openTransferModal" class="btn btn-primary">
+                    <i class="bx bx-plus me-1"></i>Yeni Sevk Ekle
                 </button>
-                @endrole
-            </div>
-        </div>
+            @endrole
+        </x-list-page.header>
 
         @if($errors->any())
             <div class="alert alert-warning alert-dismissible fade show" role="alert">

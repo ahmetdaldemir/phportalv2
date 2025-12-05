@@ -408,6 +408,12 @@ function save() {
         alert("Personel Seçimi Yapmadınız");
         return false;
     }
+
+    if ($("select.discountInput").val() > 10) {
+        alert("İndirim oranı max değerden fazla olamaz");
+        return false;
+    }
+
     // Tüm serial input'ları kontrol et
     let hasEmptySerial = false;
     $('input[name="serial[]"]').each(function() {

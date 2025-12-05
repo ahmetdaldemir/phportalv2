@@ -164,7 +164,7 @@ class TechnicalServiceController extends Controller
         $data['brands'] = $this->brandService->get();
         $data['sellers'] = $this->sellerService->get();
         $data['sms'] = Setting::where('category', 'sms')->get();
-        $data['users'] = $this->userService->get();
+        $data['users'] = $this->userService->get()->where('is_status', 1)->where('personel', 1);
 
         return view('module.technical_service.index', $data);
     }
@@ -200,7 +200,7 @@ class TechnicalServiceController extends Controller
     {
         DB::beginTransaction();
         try {
-            if (!$request->payment_type['free_sale']) {
+            if (!isset($request->payment_type['free_sale'])) {
           
             $total = $request->payment_type['cash'] + $request->payment_type['credit_card'] + $request->payment_type['installment'];
             if ($total != $request->totalprice) {
@@ -222,7 +222,7 @@ class TechnicalServiceController extends Controller
                 'credit_card' => $request->payment_type['credit_card'],
                 'cash' => $request->payment_type['cash'],
                 'installment' => $request->payment_type['installment'],
-                'free_sale' => $request->payment_type['free_sale'],
+                'free_sale' => isset($request->payment_type['free_sale']) ? 1 : 0,
                 'description' => "Teknik Servis",
                 'is_status' => 1,
                 'total_price' => $request->totalprice,
@@ -763,7 +763,7 @@ class TechnicalServiceController extends Controller
         DB::beginTransaction();
         try {
 
-            if ($request->payment_type['free_sale'] != 1) {
+            if (!isset($request->payment_type['free_sale'])) {
                 $total = $request->payment_type['cash'] + $request->payment_type['credit_card'];
                 if ($total != $request->customer_price) {
                     return redirect()->back()->with(['msg' => 'Tutarlar Eşleşmiyor']);;
@@ -788,7 +788,7 @@ class TechnicalServiceController extends Controller
                 'credit_card' => $request->payment_type['credit_card'],
                 'cash' => $request->payment_type['cash'],
                 'installment' => $request->payment_type['installment'],
-                'free_sale' => $request->payment_type['free_sale'],
+                'free_sale' => isset($request->payment_type['free_sale']) ? 1 : 0,
                 'description' => "Teknik Servis",
                 'is_status' => 1,
                 'total_price' => $request->customer_price,

@@ -508,6 +508,7 @@ class HomeController extends Controller
                     ->with('staff:id,name')
                     ->where('company_id', $companyId)
                     ->where('free_sale', 0)
+                    ->where('type', 2)
                     ->whereDate('created_at', $date)
                     ->groupBy('staff_id')
                     ->get();
@@ -517,6 +518,7 @@ class HomeController extends Controller
                     ->with('staff:id,name')
                     ->where('company_id', $companyId)
                     ->where('free_sale', 0)
+                    ->where('type', 2)
                     ->whereYear('created_at', substr($month, 0, 4))
                     ->whereMonth('created_at', substr($month, 5, 2))
                     ->groupBy('staff_id')

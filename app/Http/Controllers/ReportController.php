@@ -22,6 +22,7 @@ use App\Services\User\UserService;
 use App\Services\Version\VersionService;
 use App\Services\Warehouse\WarehouseService;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use App\Services\Modules\Report;
 use Exception;
 use Illuminate\Http\Request;
@@ -37,6 +38,7 @@ class ReportController extends Controller
     private CategoryService $categoryService;
     private ColorService $colorService;
     private VersionService $versionService;
+    private UserService $userService;
 
 
     public function __construct(
@@ -58,116 +60,339 @@ class ReportController extends Controller
 
     protected function index(Request $request)
     {
-        $reportdata = [];
-        $data['sellers'] = $this->sellerService->get();
-        $data['brands'] = $this->brandService->get();
-        $data['colors'] = $this->colorService->get();
-        $data['users'] = $this->userService->get();
-        $data['categories'] = $this->getCategoryPathList();
+        $filters = $this->prepareFilters($request);
 
-        $query = Sale::where('company_id', Auth::user()->company_id)->with(['phone', 'stock_card_list']);
-        if (isset($request->date1)) {
-            if ($request->date1 == $request->date2) {
-                $date1 = Carbon::parse($request->date1 . " 00:00:00")->format('Y-m-d H:i:s');
-                $date2 = Carbon::parse($request->date2 . " 23:59:59")->format('Y-m-d H:i:s');
-                $query->whereBetween('created_at', [$date1, $date2]);
-            } else {
-                $query->whereDate('created_at', '>=', Carbon::parse($request->date1)->format('Y-m-d') . ' 00:00:00')->whereDate('created_at', '<=', Carbon::parse($request->date2)->format('Y-m-d') . ' 23:59:59');
-            }
-        } else {
-            $query->whereMonth('created_at', Carbon::now()->month);
-        }
-
-        /*  DB::listen(function ($query) use($request) {
-              foreach ($query->bindings as &$binding) {
-                  if ($binding instanceof \DateTime) {
-                      $binding = $binding->format('Y-m-d H:i:s');
-                  }
-              }
-              $rawQuery = sprintf(str_replace("?", "'%s'", $query->sql), ...$query->bindings);
-              Log::debug("'{$rawQuery}' executed in {$query->time} ms");
-
-          });
-        */
-
-        if ($request->filled('seller')) {
-            $query->where('seller_id', $request->seller);
-        }
+        $data = [
+            'sellers' => $this->sellerService->get(),
+            'brands' => $this->brandService->get(),
+            'colors' => $this->colorService->get(),
+            'users' => $this->userService->get()->where('is_status', 1)->where('personel', 1),
+            'categories' => $this->getCategoryPathList(),
+            'types' => Sale::STATUS,
+            'sendData' => $this->buildSendData($request, $filters),
+        ];
 
 
-        if ($request->filled('brand')) {
-            $query->whereHas('stock_card', function ($q) use ($request) {
-                $q->where('brand_id', '=', $request->brand);
-            });
-        }
-
-        /*
-        if ($request->filled('category')) {
-            $query->where('type', $request->category);
-
-            if ($request->filled('technical_person')) {
-                if (in_array($request->category, [4, 5, 6])) {
-                    $query->where('user_id', $request->technical_person);
-                }
-            }
-
-            if ($request->filled('sales_person')) {
-                if (in_array($request->category, [1, 2, 3])) {
-                    $query->where('user_id', $request->sales_person);
-                }
-            }
-        }
-
-        if (!$request->filled('category')) {
-            if ($request->filled('technical_person')) {
-                $query->where('user_id', $request->technical_person);
-            }
-
-            if ($request->filled('sales_person')) {
-                $query->where('user_id', $request->sales_person);
-            }
-        }
-*/
-
-        /*      if ($request->filled('category')) {
-                  if($request->category == 1)
-                  {
-                      $query->whereHas('phone', function ($q) use ($request) {
-                          $q->where('category_id', '=', $request->category);
-                      });
-                  }else{
-                      $query->whereHas('stock_card_list', function ($q) use ($request) {
-                          $q->where('category_id', '=', $request->category);
-                      });
-                  }
-
-              }
-        */
-
-        if ($request->filled('category')) {
-            $query->where('type', $request->category);
-        }
-
-        if ($request->filled('technical_person')) {
-            $query->where('technical_service_person_id', $request->technical_person);
-        }
-        if ($request->filled('sales_person')) {
-            $query->where('user_id', $request->sales_person);
-        }
-
-        $data['seachType'] = 'other';
-        if ($request->filled('category')) {
-            $data['seachType'] = 'other';
-            $query->where('type', $request->category);
-        }
-
-        $data['report'] = $query->orderby('id', 'desc')->get();
-        $data['types'] = Sale::STATUS;
-        if ($request) {
-            $data['sendData'] = $request;
-        }
+        $data['report'] = $this
+            ->buildReportQuery($filters)
+            ->orderByDesc('id')
+            ->get();
 
         return view('module.report.index', $data);
+    }
+
+    /**
+     * JSON report data for Vue list
+     */
+    public function data(Request $request)
+    {
+        $filters = $this->prepareFilters($request);
+        $collection = $this->buildReportQuery($filters)
+            ->orderByDesc('id')
+            ->get();
+
+        $payload = $this->transformReportCollection($collection);
+
+        return response()->json([
+            'success' => true,
+            'items' => $payload['items'],
+            'totals' => $payload['totals'],
+        ]);
+    }
+
+    /**
+     * Export filtered report as CSV (Excel compatible)
+     */
+    public function export(Request $request)
+    {
+        $filters = $this->prepareFilters($request);
+        $collection = $this->buildReportQuery($filters)
+            ->orderByDesc('id')
+            ->get();
+
+        $payload = $this->transformReportCollection($collection);
+        $filename = 'report-' . now()->format('Ymd_His') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function () use ($payload) {
+            $handle = fopen('php://output', 'w');
+            // UTF-8 BOM
+            fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            fputcsv($handle, [
+                'Personel',
+                'Ürün Adı',
+                'Kategori',
+                'Seri',
+                'Tip',
+                'Marka / Model',
+                'Alış Fiyatı',
+                'Satış Fiyatı',
+                'Kar',
+                'Tarih',
+            ], ';');
+
+            foreach ($payload['items'] as $item) {
+                fputcsv($handle, [
+                    $item['person'],
+                    $item['product_name'],
+                    $item['category_path'],
+                    $item['serial'],
+                    $item['type_label'],
+                    trim($item['brand'] . ' / ' . $item['model'], ' / '),
+                    $item['cost_price'],
+                    $item['sale_price'],
+                    $item['profit'],
+                    $item['created_at_formatted'],
+                ], ';');
+            }
+
+            fclose($handle);
+        };
+
+        return response()->streamDownload($callback, $filename, $headers);
+    }
+
+    /**
+     * Hazır filtreleri hazırla ve normalize et
+     */
+    private function prepareFilters(Request $request): array
+    {
+        $hasCustomDate = $request->filled('date1') && $request->filled('date2');
+
+        if ($hasCustomDate) {
+            $dateFrom = $this->normalizeDate($request->input('date1'));
+            $dateTo = $this->normalizeDate($request->input('date2'), true);
+
+            if (!$dateFrom || !$dateTo) {
+                $hasCustomDate = false;
+            }
+        }
+
+        if (!$hasCustomDate) {
+            $dateFrom = Carbon::now()->startOfMonth();
+            $dateTo = Carbon::now()->endOfMonth();
+        }
+
+        return [
+            'company_id' => Auth::user()->company_id ?? 1,
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+            'has_custom_date' => $hasCustomDate,
+            'seller_id' => $request->filled('seller') ? (int)$request->input('seller') : null,
+            'brand_id' => $request->filled('brand') ? (int)$request->input('brand') : null,
+            'category' => $request->filled('category') ? (int)$request->input('category') : null,
+            'technical_person_id' => $request->filled('technical_person') ? (int)$request->input('technical_person') : null,
+            'sales_person_id' => $request->filled('sales_person') ? (int)$request->input('sales_person') : null,
+        ];
+    }
+
+    /**
+     * Rapor sorgusunu hazırla
+     */
+    private function buildReportQuery(array $filters)
+    {
+        $query = Sale::query()
+            ->with($this->reportRelations())
+            ->where('company_id', $filters['company_id'])
+            ->when(
+                $filters['date_from'] && $filters['date_to'],
+                fn($q) => $q->whereBetween('created_at', [$filters['date_from'], $filters['date_to']])
+            )
+            ->when(
+                $filters['seller_id'],
+                fn($q, $sellerId) => $q->where('seller_id', $sellerId)
+            )
+            ->when(
+                $filters['brand_id'],
+                fn($q, $brandId) => $q->whereHas('stock_card', function ($brandQuery) use ($brandId) {
+                    $brandQuery->where('brand_id', $brandId);
+                })
+            )
+            ->when(
+                $filters['category'],
+                fn($q, $category) => $q->where('type', $category)
+            )
+            ->when(
+                $filters['technical_person_id'],
+                fn($q, $technicalId) => $q->where('technical_service_person_id', $technicalId)
+            )
+            ->when(
+                $filters['sales_person_id'],
+                fn($q, $salesPersonId) => $q->where('user_id', $salesPersonId)
+            );
+
+        return $query;
+    }
+
+    /**
+     * View'da kullanılacak filtre değerleri
+     */
+    private function buildSendData(Request $request, array $filters): object
+    {
+        return (object)[
+            'date1' => $filters['has_custom_date']
+                ? $request->input('date1')
+                : $this->formatDateForInput($filters['date_from']),
+            'date2' => $filters['has_custom_date']
+                ? $request->input('date2')
+                : $this->formatDateForInput($filters['date_to']),
+            'brand' => $request->input('brand'),
+            'seller' => $request->input('seller'),
+            'category' => $request->input('category'),
+            'sales_person' => $request->input('sales_person'),
+            'technical_person' => $request->input('technical_person'),
+        ];
+    }
+
+    /**
+     * Tarih formatını normalize et
+     */
+    private function normalizeDate(?string $value, bool $endOfDay = false): ?Carbon
+    {
+        if (!$value) {
+            return null;
+        }
+
+        try {
+            $date = Carbon::createFromFormat('d-m-Y', $value);
+        } catch (\Exception $exception) {
+            try {
+                $date = Carbon::parse($value);
+            } catch (\Exception $exception) {
+                return null;
+            }
+        }
+
+        return $endOfDay ? $date->endOfDay() : $date->startOfDay();
+    }
+
+    /**
+     * Tarihi input formatında döndür
+     */
+    private function formatDateForInput(?Carbon $date): ?string
+    {
+        return $date ? $date->format('d-m-Y') : null;
+    }
+
+    /**
+     * Rapor sayfasında ihtiyaç duyulan ilişkiler
+     */
+    private function reportRelations(): array
+    {
+        return [
+            'user:id,name',
+            'seller:id,name',
+            'phone.brand',
+            'phone.version',
+            'stock_card.brand',
+            'stock_card.category.parent',
+            'stock_card_movement',
+            'stock_card_movement.stock.category.parent',
+        ];
+    }
+
+    /**
+     * Convert sales collection into payload for JSON / export
+     */
+    private function transformReportCollection(Collection $sales): array
+    {
+        $totals = [
+            'totalSale' => 0,
+            'totalCostPrice' => 0,
+            'totalBaseCostPrice' => 0,
+            'totalProfit' => 0,
+            'itemsCount' => $sales->count(),
+        ];
+
+        $items = $sales->map(function (Sale $sale) use (&$totals) {
+            $isPhone = (int)$sale->type === 1;
+            $salePrice = (float)($sale->sale_price ?? 0);
+            $stockCard = $sale->stock_card;
+
+            if ($isPhone) {
+                $costPrice = (float)($sale->phone->cost_price ?? 0);
+                $baseCostPrice = (float)($sale->phone->cost_price ?? 0);
+                $brandLabel = $sale->phone->brand->name ?? 'Bulunamadı';
+                $versionLabel = $sale->phone->version->name ?? '';
+                $productName = $sale->phone->name ?? ($sale->phone->brand->name ?? 'Ürün');
+
+                if (!$stockCard && $sale->stock_card_movement && $sale->stock_card_movement->stock) {
+                    $stockCard = $sale->stock_card_movement->stock;
+                }
+            } else {
+                $movement = $sale->stock_card_movement;
+                $stockCard = $stockCard ?: $sale->stock_card;
+                $costPrice = (float)($movement->cost_price ?? 0);
+                $baseCostPrice = (float)($movement->base_cost_price ?? 0);
+                $brandLabel = $stockCard->brand->name ?? 'Bulunamadı';
+                $versionLabel = '';
+                $productName = $stockCard->name ?? $brandLabel;
+
+                if ($stockCard && method_exists($stockCard, 'versionNames')) {
+                    $versionLabel = $stockCard->versionNames() ?? '';
+                }
+            }
+
+            $profit = $salePrice - $costPrice;
+            $categoryPath = $this->buildCategoryPath($stockCard);
+
+            $totals['totalSale'] += $salePrice;
+            $totals['totalCostPrice'] += $costPrice;
+            $totals['totalBaseCostPrice'] += $baseCostPrice;
+            $totals['totalProfit'] += $profit;
+
+            return [
+                'id' => $sale->id,
+                'person' => $sale->user->name ?? 'Personel Yok',
+                'serial' => $sale->serial ?? '—',
+                'product_name' => $productName,
+                'category_path' => $categoryPath,
+                'type_label' => $sale->statusName() ?? 'Bilinmiyor',
+                'brand' => $brandLabel,
+                'model' => $versionLabel ?: 'Model bilgisi yok',
+                'cost_price' => round($costPrice, 2),
+                'base_cost_price' => round($baseCostPrice, 2),
+                'sale_price' => round($salePrice, 2),
+                'profit' => round($profit, 2),
+                'created_at' => optional($sale->created_at)->toDateTimeString(),
+                'created_at_date' => optional($sale->created_at)->format('d M Y'),
+                'created_at_time' => optional($sale->created_at)->format('H:i'),
+                'created_at_formatted' => optional($sale->created_at)->format('d M Y H:i'),
+            ];
+        })->values()->all();
+
+        return [
+            'items' => $items,
+            'totals' => $totals,
+        ];
+    }
+
+    private function buildCategoryPath(?StockCard $stockCard): string
+    {
+        if (!$stockCard || !$stockCard->category) {
+            return '-';
+        }
+
+        $segments = [];
+        $category = $stockCard->category;
+        $safetyCounter = 0;
+
+        while ($category && $safetyCounter < 10) {
+            $segments[] = $category->name;
+
+            if (!$category->relationLoaded('parent')) {
+                $category->load('parent');
+            }
+
+            $category = $category->parent;
+            $safetyCounter++;
+        }
+
+        return implode(' / ', array_reverse($segments));
     }
 
     protected function newReport(Request $request)

@@ -366,7 +366,6 @@ class CustomController extends Controller
     {
 
         $searchInfo = SearchHelper::determineSearchType($request->id);
-
         if ($searchInfo) {
             $query = StockCardMovement::where('type', 1);
             if ($request->filled('seller_id')) {

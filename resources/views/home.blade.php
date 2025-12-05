@@ -54,13 +54,7 @@
                 </div>
                 <div class="quick-action-text">İade İşlemi</div>
             </a>
-            
-            <a href="{{ route('transfer.create') }}" class="quick-action-btn">
-                <div class="quick-action-icon text-info">
-                    <i class="bx bx-transfer"></i>
-                </div>
-                <div class="quick-action-text">Sevk İşlemi</div>
-            </a>
+
         </div>
 
         <!-- Satış Modal -->

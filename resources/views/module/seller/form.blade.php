@@ -1,45 +1,75 @@
 @extends('layouts.admin')
 
+@section('custom-css')
+    <link rel="stylesheet" href="{{asset('assets/css/form-page-base.css')}}">
+@endsection
+
 @section('content')
     <div class="container-xxl flex-grow-1 container-p-y">
-        <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Şubeler /</span> @if(isset($sellers)) {{$sellers->name}} @endif</h4>
-        <div class="card  mb-4">
-            <h5 class="card-header">Firma Bilgileri</h5>
+        <!-- Standart Form Header Component -->
+        <x-form-page.header 
+            title="{{ isset($sellers) ? 'Şube Düzenle' : 'Yeni Şube Ekle' }}"
+            icon="bx-store"
+            description="{{ isset($sellers) ? $sellers->name . ' şubesini düzenleyin' : 'Yeni bir şube ekleyin' }}"
+            :backRoute="route('seller.index')"
+        />
+
+        <!-- Standart Form Card Component -->
+        <x-form-page.card title="Şube Bilgileri" icon="bx-store">
             <form action="{{route('seller.store')}}" method="post">
                 @csrf
-                <input type="hidden" name="id" @if(isset($sellers)) value="{{$sellers->id}}" @endif />
-            <div class="card-body">
-                <div>
-                    <label for="defaultFormControlInput" class="form-label">Şube Adı</label>
-                    <input type="text" class="form-control" id="name"  @if(isset($sellers)) value="{{$sellers->name}}" @endif  name="name" aria-describedby="name">
-                    <div id="name" class="form-text">
-                        We'll never share your details with anyone else.
-                    </div>
+                <input type="hidden" name="id" value="{{ $sellers->id ?? '' }}" />
+                
+                <div class="form-group">
+                    <label for="name" class="form-label">
+                        <i class="bx bx-store me-1"></i>Şube Adı
+                        <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="name"  
+                           value="{{ $sellers->name ?? '' }}"  
+                           name="name" 
+                           placeholder="Şube adını giriniz..."
+                           required>
                 </div>
-                <div>
-                    <label for="defaultFormControlInput" class="form-label">Şube Telefon</label>
-                    <input type="text" class="form-control" id="phone" @if(isset($sellers)) value="{{$sellers->phone}}" @endif  name="phone" aria-describedby="phone">
-                    <div id="phone" class="form-text">
-                        We'll never share your details with anyone else.
-                    </div>
+                
+                <div class="form-group">
+                    <label for="phone" class="form-label">
+                        <i class="bx bx-phone me-1"></i>Şube Telefon
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="phone" 
+                           value="{{ $sellers->phone ?? '' }}"  
+                           name="phone" 
+                           placeholder="Telefon numarasını giriniz...">
                 </div>
-                <div>
-                    <label for="defaultFormControlInput" class="form-label">Firma</label>
-                    <select  name="company_id" class="form-select">
+                
+                <div class="form-group">
+                    <label for="company_id" class="form-label">
+                        <i class="bx bx-building me-1"></i>Firma
+                        <span class="text-danger">*</span>
+                    </label>
+                    <select name="company_id" class="form-select" id="company_id" required>
+                        <option value="">Firma Seçiniz</option>
                         @foreach($companys as $item)
-                                <option  @if(isset($sellers) && $sellers->company_id == $item->id) selected @endif  value="{{$item->id}}">{{$item->name}}</option>
-                         @endforeach
+                            <option value="{{$item->id}}" {{ (isset($sellers) && $sellers->company_id == $item->id) ? 'selected' : '' }}>
+                                {{$item->name}}
+                            </option>
+                        @endforeach
                     </select>
-
                 </div>
 
-                <hr class="my-5">
-                <div>
-                    <button type="submit" class="btn btn-danger btn-buy-now">Kaydet</button>
+                <div class="form-actions">
+                    <a href="{{route('seller.index')}}" class="btn btn-outline-secondary">
+                        <i class="bx bx-x me-1"></i>İptal
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bx bx-save me-1"></i>Kaydet
+                    </button>
                 </div>
-            </div>
             </form>
-        </div>
-        <hr class="my-5">
+        </x-form-page.card>
     </div>
 @endsection

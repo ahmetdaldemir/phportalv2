@@ -6,59 +6,86 @@
 
 @section('content')
     <div class="container-xxl flex-grow-1 container-p-y">
-        <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Kategoriler /</span> Kategori listesi</h4>
+        <!-- Standart Header Component -->
+        <x-list-page.header 
+            title="Kategoriler"
+            :createRoute="route('category.create')"
+            :count="$categories->count()"
+            icon="bx-category"
+            description="Kategori yönetimi ve düzenleme"
+        />
 
-        <div class="card">
-             <div class="card-header">
-                <a href="{{route('category.create')}}" class="btn btn-primary float-end">Yeni Kategori Ekle</a>
-            </div>
-             <div class="table-responsive text-nowrap">
-                <table class="table">
-                    <thead>
+        <!-- Standart Card Component -->
+        <x-list-page.card :title="'Kategori Listesi'" :badge="$categories->count() . ' Kategori'">
+            <x-list-page.table>
+                <thead>
                     <tr>
-                        <th>Kategori Adı</th>
-                        <th>Üst Kategori</th>
-                        <th>Kayıt Tarihi</th>
+                        <th style="width: 60px;"><i class="bx bx-hash me-1"></i>#</th>
+                        <th><i class="bx bx-category me-1"></i>Kategori Adı</th>
+                        <th><i class="bx bx-layer me-1"></i>Üst Kategori</th>
+                        <th style="width: 150px;"><i class="bx bx-calendar me-1"></i>Kayıt Tarihi</th>
                         @if(\Illuminate\Support\Facades\Auth::user()->company_id == 1)
-                        <th>Status</th>
-                        <th>Actions</th>
+                        <th style="width: 100px;"><i class="bx bx-check-circle me-1"></i>Durum</th>
                         @endif
                     </tr>
-                    </thead>
-                    <tbody class="table-border-bottom-0">
-                    @foreach($categories as $category)
+                </thead>
+                <tbody>
+                    @forelse($categories as $index => $category)
                         <tr>
-                             <td><i class="fab fa-angular fa-lg text-danger me-3"></i>
-                                <strong>{{$category->name}}</strong></td>
-                            <td><span class="badge bg-label-primary me-1">{{$category->parent_id == 0 ? 'Ana Kategori':$category->parentName->name??""}}</span></td>
-                            <td><span class="badge bg-label-primary me-1">{{$category->created_at}}</span></td>
-                            @if(\Illuminate\Support\Facades\Auth::user()->company_id == 1)
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark">{{ $index + 1 }}</span>
+                            </td>
                             <td>
-                                <div class="form-check form-switch mb-2">
-                                    <input class="form-check-input" type="checkbox"
-                                           onclick="updateStatus('category/update',{{$category->id}},{{$category->is_status == 1 ? 0:1}})"
-                                           id="flexSwitchCheckChecked" {{$category->is_status == 1 ? 'checked':''}} />
+                                <div class="d-flex align-items-center">
+                                    <div class="brand-icon me-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                        <i class="bx bx-category text-white"></i>
+                                    </div>
+                                    <div>
+                                        <div class="brand-name">{{ $category->name }}</div>
+                                        <small class="text-muted">ID: {{ $category->id }}</small>
+                                    </div>
                                 </div>
                             </td>
-                            <!--td>
-
-                                <a href="{{route('category.delete',['id' => $category->id])}}"
-                                   class="btn btn-icon btn-primary">
-                                    <span class="bx bxs-trash"></span>
-                                </a>
-                                <a href="{{route('category.edit',['id' => $category->id])}}"
-                                   class="btn btn-icon btn-primary">
-                                    <span class="bx bx-edit-alt"></span>
-                                </a>
-
-                            </td -->
+                            <td>
+                                <span class="badge bg-label-info status-badge">
+                                    {{ $category->parent_id == 0 ? 'Ana Kategori' : ($category->parentName->name ?? 'N/A') }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-label-primary status-badge">
+                                    {{ $category->created_at->format('d.m.Y') }}
+                                </span>
+                            </td>
+                            @if(\Illuminate\Support\Facades\Auth::user()->company_id == 1)
+                            <td>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox"
+                                           onclick="updateStatus('category/update',{{$category->id}},{{$category->is_status == 1 ? 0:1}})"
+                                           id="status_{{ $category->id }}" {{$category->is_status == 1 ? 'checked':''}} />
+                                    <label class="form-check-label" for="status_{{ $category->id }}">
+                                        {{ $category->is_status == 1 ? 'Aktif' : 'Pasif' }}
+                                    </label>
+                                </div>
+                            </td>
                             @endif
                         </tr>
-                    @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <hr class="my-5">
+                    @empty
+                        <tr>
+                            <td colspan="{{ \Illuminate\Support\Facades\Auth::user()->company_id == 1 ? '5' : '4' }}" class="text-center py-4">
+                                <div class="d-flex flex-column align-items-center">
+                                    <i class="bx bx-category display-4 text-muted mb-3"></i>
+                                    <h5 class="text-muted">Henüz kategori bulunmuyor</h5>
+                                    <p class="text-muted mb-3">İlk kategorinizi ekleyerek başlayın</p>
+                                    <a href="{{route('category.create')}}" class="btn btn-primary">
+                                        <i class="bx bx-plus me-1"></i>
+                                        Yeni Kategori Ekle
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </x-list-page.table>
+        </x-list-page.card>
     </div>
 @endsection

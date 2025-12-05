@@ -281,6 +281,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
+                this.invoiceItems.forEach((item, index) => {
+                    if (item.discount > 10) {
+                        alert("İndirim oranı max değerden fazla olamaz");
+                        return;
+                    }
+                });
+
+
                 // Form data preparation
                 const formData = new FormData();
                 formData.append('customer_id', this.selectedCustomerId);

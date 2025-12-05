@@ -123,7 +123,6 @@
                 <div data-i18n="Basic">Excel Rapor</div>
             </a>
         </li>
-
         @endrole
         <!-- Components -->
 

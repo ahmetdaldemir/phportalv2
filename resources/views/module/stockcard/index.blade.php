@@ -6,35 +6,19 @@
 
 @section('content')
     <div id="stockcard-list-app" class="container-xxl flex-grow-1 container-p-y">
-        <!-- Table Page Header -->
-        <div class="table-page-header table-page-fade-in">
-            <div class="header-content">
-                <div class="header-left">
-                    <div class="header-icon">
-                        <i class="bx bx-package"></i>
-                    </div>
-                    <div class="header-text">
-                        <h2>
-                            <i class="bx bx-package me-2"></i>
-                            STOK KART LİSTESİ
-                        </h2>
-                        <p>Stok kartları ve ürün yönetimi</p>
-                    </div>
-                </div>
-                <div class="header-actions">
-                    
-                        <a href="{{route('stockcard.create')}}" class="btn btn-primary btn-sm">
-                            <i class="bx bx-plus me-1"></i>
-                            Yeni Stok Ekle
-                        </a>
-                        <button class="btn btn-success btn-sm" @click="exportToExcel">
-                            <i class="bx bx-download me-1"></i>
-                            Excel
-                        </button>
-
-                </div>
-            </div>
-        </div>
+        <!-- Standart Header Component -->
+        <x-list-page.header 
+            title="Stok Kartları"
+            :createRoute="route('stockcard.create')"
+            :count="0"
+            icon="bx-package"
+            description="Stok kartları ve ürün yönetimi"
+        >
+            <button class="btn btn-success" @click="exportToExcel">
+                <i class="bx bx-download me-1"></i>
+                Excel
+            </button>
+        </x-list-page.header>
 
         <!-- Table Page Filters -->
         <div class="table-page-filters table-page-fade-in-delay-1">

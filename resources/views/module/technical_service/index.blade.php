@@ -23,35 +23,25 @@
 
 @section('content')
     <div class="container-xxl flex-grow-1 container-p-y">
-        <!-- Table Page Header -->
-        <div class="table-page-header table-page-fade-in">
-            <div class="header-content">
-                <div class="header-left">
-                    <div class="header-icon">
-                        <i class="bx bx-wrench"></i>
-                    </div>
-                    <div class="header-text">
-                        <h2>
-                            <i class="bx bx-wrench me-2"></i>
-                            TEKNİK SERVİS LİSTESİ
-                        </h2>
-                        <p>Teknik servis ve kaplama işlemleri yönetimi</p>
-                    </div>
-                </div>
-                <div class="header-actions">
-                    @role(['Satış Sorumlusu','super-admin','Bayi Yetkilisi'])
-                        <a href="{{route('technical_service.create')}}" class="btn btn-primary btn-sm">
-                            <i class="bx bx-plus me-1"></i>
-                            Yeni Teknik Servis
-                        </a>
-                        <a href="{{route('technical_service.covering')}}" class="btn btn-danger btn-sm">
-                            <i class="bx bx-plus me-1"></i>
-                            Yeni Kaplama
-                        </a>
-                    @endrole
-                </div>
-            </div>
-        </div>
+        <!-- Standart Header Component -->
+        <x-list-page.header 
+            title="Teknik Servis"
+            :createRoute="null"
+            :count="0"
+            icon="bx-wrench"
+            description="Teknik servis ve kaplama işlemleri yönetimi"
+        >
+            @role(['Satış Sorumlusu','super-admin','Bayi Yetkilisi'])
+                <a href="{{route('technical_service.create')}}" class="btn btn-primary">
+                    <i class="bx bx-plus me-1"></i>
+                    Yeni Teknik Servis
+                </a>
+                <a href="{{route('technical_service.covering')}}" class="btn btn-danger">
+                    <i class="bx bx-plus me-1"></i>
+                    Yeni Kaplama
+                </a>
+            @endrole
+        </x-list-page.header>
 
         <div class="nav-align-top mb-4">
             <ul class="nav nav-tabs" role="tablist">

@@ -1,42 +1,72 @@
 @extends('layouts.admin')
 
+@section('custom-css')
+    <link rel="stylesheet" href="{{asset('assets/css/form-page-base.css')}}">
+@endsection
+
 @section('content')
     <div class="container-xxl flex-grow-1 container-p-y">
-        <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Firmalar /</span> @if(isset($companies)) {{$companies->name}} @endif</h4>
-        <div class="card  mb-4">
-            <h5 class="card-header">Firma Bilgileri</h5>
+        <!-- Standart Form Header Component -->
+        <x-form-page.header 
+            title="{{ isset($companies) ? 'Firma Düzenle' : 'Yeni Firma Ekle' }}"
+            icon="bx-building"
+            description="{{ isset($companies) ? $companies->name . ' firmasını düzenleyin' : 'Yeni bir firma ekleyin' }}"
+            :backRoute="route('company.index')"
+        />
+
+        <!-- Standart Form Card Component -->
+        <x-form-page.card title="Firma Bilgileri" icon="bx-building">
             <form action="{{route('company.store')}}" method="post">
                 @csrf
-                <input type="hidden" name="id" @if(isset($companies)) value="{{$companies->id}}" @endif />
-            <div class="card-body">
-                <div>
-                    <label for="defaultFormControlInput" class="form-label">Firma Adı</label>
-                    <input type="text" class="form-control" id="name"  @if(isset($companies)) value="{{$companies->name}}" @endif  name="name" aria-describedby="name">
-                    <div id="name" class="form-text">
-                        We'll never share your details with anyone else.
-                    </div>
+                <input type="hidden" name="id" value="{{ $companies->id ?? '' }}" />
+                
+                <div class="form-group">
+                    <label for="name" class="form-label">
+                        <i class="bx bx-building me-1"></i>Firma Adı
+                        <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="name"  
+                           value="{{ $companies->name ?? '' }}"  
+                           name="name" 
+                           placeholder="Firma adını giriniz..."
+                           required>
                 </div>
-                <div>
-                    <label for="defaultFormControlInput" class="form-label">Firma Telefon</label>
-                    <input type="text" class="form-control" id="phone" @if(isset($companies)) value="{{$companies->phone}}" @endif  name="phone" aria-describedby="phone">
-                    <div id="phone" class="form-text">
-                        We'll never share your details with anyone else.
-                    </div>
+                
+                <div class="form-group">
+                    <label for="phone" class="form-label">
+                        <i class="bx bx-phone me-1"></i>Firma Telefon
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="phone" 
+                           value="{{ $companies->phone ?? '' }}"  
+                           name="phone" 
+                           placeholder="Telefon numarasını giriniz...">
                 </div>
-                <div>
-                    <label for="defaultFormControlInput" class="form-label">Firma Yetkili</label>
-                    <input type="text" class="form-control" id="authorized"  @if(isset($companies)) value="{{$companies->authorized}}"  @endif  name="authorized" aria-describedby="authorized">
-                    <div id="defaultFormControlHelp" class="form-text">
-                        We'll never share your details with anyone else.
-                    </div>
+                
+                <div class="form-group">
+                    <label for="authorized" class="form-label">
+                        <i class="bx bx-user me-1"></i>Firma Yetkili
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="authorized"  
+                           value="{{ $companies->authorized ?? '' }}"  
+                           name="authorized" 
+                           placeholder="Yetkili kişi adını giriniz...">
                 </div>
-                <hr class="my-5">
-                <div>
-                    <button type="submit" class="btn btn-danger btn-buy-now">Kaydet</button>
+
+                <div class="form-actions">
+                    <a href="{{route('company.index')}}" class="btn btn-outline-secondary">
+                        <i class="bx bx-x me-1"></i>İptal
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bx bx-save me-1"></i>Kaydet
+                    </button>
                 </div>
-            </div>
             </form>
-        </div>
-        <hr class="my-5">
+        </x-form-page.card>
     </div>
 @endsection

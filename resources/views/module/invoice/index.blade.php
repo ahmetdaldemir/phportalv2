@@ -296,20 +296,21 @@
                         Yeni Fatura
                     </a>
                     <div class="dropdown d-inline-block">
-                        <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+                                aria-expanded="false">
                             <i class="bx bx-dots-vertical me-1"></i>
                             Diğer
                         </button>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{{route('invoice.create.personal')}}">
-                                <i class="bx bx-user me-2"></i>Personel Gideri
-                            </a></li>
+                                    <i class="bx bx-user me-2"></i>Personel Gideri
+                                </a></li>
                             <li><a class="dropdown-item" href="{{route('invoice.create.bank')}}">
-                                <i class="bx bx-credit-card me-2"></i>Banka Gideri
-                            </a></li>
+                                    <i class="bx bx-credit-card me-2"></i>Banka Gideri
+                                </a></li>
                             <li><a class="dropdown-item" href="{{route('invoice.create.tax')}}">
-                                <i class="bx bx-calculator me-2"></i>Vergi / SGK Gideri
-                            </a></li>
+                                    <i class="bx bx-calculator me-2"></i>Vergi / SGK Gideri
+                                </a></li>
                         </ul>
                     </div>
                 </div>
@@ -332,14 +333,16 @@
                             <label class="filter-label">
                                 <i class="bx bx-search"></i> Genel Arama
                             </label>
-                            <input type="text" v-model="filters.search" class="filter-input" placeholder="Fatura no, cari adı...">
+                            <input type="text" v-model="filters.search" class="filter-input"
+                                   placeholder="Fatura no, cari adı...">
                         </div>
-                        
+
                         <div class="filter-group">
                             <label class="filter-label">
                                 <i class="bx bx-hash"></i> Fatura ID
                             </label>
-                            <input type="number" v-model="filters.invoice_id" class="filter-input" placeholder="Fatura ID...">
+                            <input type="number" v-model="filters.invoice_id" class="filter-input"
+                                   placeholder="Fatura ID...">
                         </div>
 
                         <div class="filter-group auto">
@@ -352,7 +355,7 @@
                                 <span v-text="loading.search ? 'Aranıyor...' : 'Ara'"></span>
                             </button>
                         </div>
-                        
+
                         <div class="filter-group auto">
                             <label class="filter-label">
                                 <i class="bx bx-refresh"></i> Temizle
@@ -374,103 +377,117 @@
                 <div class="spinner-border text-primary" role="status"></div>
                 <p class="text-primary mt-2">Faturalar yükleniyor...</p>
             </div>
-            
+
             <!-- Empty State -->
             <div v-else-if="invoices.length === 0" class="table-page-empty">
                 <i class="bx bx-receipt"></i>
                 <h4 class="mt-3">Fatura bulunamadı</h4>
                 <p class="text-muted">Arama kriterlerinize uygun fatura bulunamadı.</p>
             </div>
-            
+
             <!-- Table -->
             <div v-else class="table-responsive">
                 <table class="table table-hover">
                     <thead>
-                        <tr>
-                            <th style="width: 25%;"><i class="bx bx-hash me-1"></i>Fatura No / Tarih</th>
-                            <th style="width: 25%; text-align: right;"><i class="bx bx-hash me-1"></i>Tutar</th>
-                            <th style="width: 25%;" class="text-center"><i class="bx bx-user me-1"></i>Cari</th>
-                            <th style="width: 15%;" class="text-center"><i class="bx bx-category me-1"></i>Tipi</th>
-                            <th style="width: 20%;" class="text-center"><i class="bx bx-info-circle me-1"></i>Durum</th>
-                            <th style="width: 20%;" class="text-center"><i class="bx bx-info-circle me-1"></i>O. Durum</th>
-                            <th style="width: 15%;" class="text-center"><i class="bx bx-cog me-1"></i>İşlemler</th>
-                        </tr>
+                    <tr>
+                        <th style="width: 15%;"><i class="bx bx-hash me-1"></i>F. No / Tarih</th>
+                        <th style="width: 15%; text-align: right;"><i class="bx bx-hash me-1"></i>Tutar</th>
+                        <th style="width: 25%;" class="text-center"><i class="bx bx-user me-1"></i>Cari</th>
+                        <th style="width: 10%;" class="text-center"><i class="bx bx-category me-1"></i>Tipi</th>
+                        <th style="width: 20%;" class="text-center"><i class="bx bx-info-circle me-1"></i>Durum</th>
+                        <th style="width: 20%;" class="text-center"><i class="bx bx-info-circle me-1"></i>O. Durum</th>
+                        <th style="width: 25%;" class="text-center"><i class="bx bx-cog me-1"></i>İşlemler</th>
+                    </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="invoice in invoices" :key="invoice.id" class="invoice-row">
-                            <td>
-                                <div class="d-flex flex-column">
-                                    <a href="#" class="fw-bold text-primary" @click.prevent="openInvoiceModal(invoice)" v-text="'#' + invoice.number"></a>
-                                    <small class="text-muted" v-text="invoice.created_at"></small>
-                                </div>
-                            </td>
-                            <td class="text-right" style="font-size: 1.2rem;text-align: right">
-                                <span class="fw-bold text-danger" style="font-size: 1.2rem;" v-text="invoice.total_price"></span> ₺
-                            </td>
-                            <td class="text-center">
-                                <span class="fw-bold text-danger" v-text="invoice.customer_name"></span>
-                            </td>
-                            <td class="text-center">
-                                <span class="badge" :style="{background: invoice.type_color, color: '#000'}" v-text="invoice.type_name"></span>
-                            </td>
-                            <td class="text-center">
-                                <span v-if="invoice.is_status == 1" 
-                                      class="badge bg-warning" 
-                                      data-bs-toggle="tooltip" 
-                                      data-bs-html="true" 
+                    <tr v-for="invoice in invoices" :key="invoice.id" class="invoice-row"
+                        :style="invoice.detail == null ? {'background-color': '#f2dbdb'} : {}">
+                        <td>
+                            <div class="d-flex flex-column">
+                                <a href="#" class="fw-bold text-primary" @click.prevent="openInvoiceModal(invoice)"
+                                   v-text="'#' + invoice.number"></a>
+                                <small class="text-muted" v-text="invoice.created_at"></small>
+                            </div>
+                        </td>
+
+                        <td class="text-right" style="font-size: 1.2rem; text-align: right;">
+                            <span class="fw-bold text-danger" style="font-size: 1.2rem;"
+                                  v-text="formatCurrency(invoice.total_price)"></span>
+                        </td>
+                        <td class="text-center">
+                            <span class="fw-bold text-danger" v-text="invoice.customer_name"></span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge" :style="{background: invoice.type_color, color: '#000'}"
+                                  v-text="invoice.type_name"></span>
+                        </td>
+                        <td class="text-center">
+                                <span v-if="invoice.is_status == 1"
+                                      class="badge bg-warning"
+                                      data-bs-toggle="tooltip"
+                                      data-bs-html="true"
                                       :data-bs-original-title="`Gönderilmedi<br>Fiyat: ${invoice.total_price} ₺<br>Fatura Tarihi: ${invoice.create_date || '-'}`">
                                     <i class="bx bx-paper-plane me-1"></i>
                                     <span>Gönderilmedi</span>
                                 </span>
-                                <span v-else-if="invoice.is_status == 2" 
-                                      class="badge bg-success"
-                                      data-bs-toggle="tooltip" 
-                                      data-bs-html="true" 
-                                      :data-bs-original-title="`Kısmi Ödeme<br>Fiyat: ${invoice.total_price} ₺`">
+                            <span v-else-if="invoice.is_status == 2"
+                                  class="badge bg-success"
+                                  data-bs-toggle="tooltip"
+                                  data-bs-html="true"
+                                  :data-bs-original-title="`Kısmi Ödeme<br>Fiyat: ${invoice.total_price} ₺`">
                                     <i class="bx bx-adjust me-1"></i>
                                     <span>Kısmi Ödeme</span>
                                 </span>
-                                <span v-else-if="invoice.is_status == 3" 
-                                      class="badge bg-danger"
-                                      data-bs-toggle="tooltip" 
-                                      data-bs-html="true" 
-                                      :data-bs-original-title="`Vadesi Geçmiş<br>Fiyat: ${invoice.total_price} ₺`">
+                            <span v-else-if="invoice.is_status == 3"
+                                  class="badge bg-danger"
+                                  data-bs-toggle="tooltip"
+                                  data-bs-html="true"
+                                  :data-bs-original-title="`Vadesi Geçmiş<br>Fiyat: ${invoice.total_price} ₺`">
                                     <i class="bx bx-info-circle me-1"></i>
                                     <span>Vadesi Geçmiş</span>
                                 </span>
-                                <span v-else class="badge bg-secondary">
+                            <span v-else class="badge bg-secondary">
                                     <i class="bx bx-time me-1"></i>
                                     <span>Beklemede</span>
                                 </span>
-                            </td>
-                            <td class="text-center">
+                        </td>
+                        <td class="text-center">
                                 <span v-if="invoice.payment_status == 'unpaid'" class="badge bg-warning">
                                     <i class="bx bx-paper-plane me-1"></i>
                                     <span>Odenmedi</span>
                                 </span>
-                                <span v-else-if="invoice.is_status == 2" class="badge bg-success">
+                            <span v-else-if="invoice.is_status == 2" class="badge bg-success">
                                     <i class="bx bx-adjust me-1"></i>
                                     <span>Kısmi Ödeme</span>
                                 </span>
-                            <td class="text-center">
-                                <div class="d-flex gap-2 justify-content-center">
-                                    <a :href="`{{route('invoice.serialprint', ['id' => ''])}}${invoice.id}`" target="_blank" title="Seri Numarası Yazdır" class="btn btn-sm btn-primary">
-                                        <i class="bx bx-barcode-reader"></i>
-                                    </a>
-                                    <a :href="`{{route('invoice.qrprint', ['id' => ''])}}${invoice.id}`" target="_blank" title="QR Kod Yazdır" class="btn btn-sm btn-primary">
-                                        <i class="bx bx-qr"></i>
-                                    </a>
-                                    <a :href="`{{route('invoice.stockcardmovementform', ['id' => ''])}}${invoice.id}`" title="Düzenle" class="btn btn-sm btn-warning">
-                                        <i class="bx bx-edit-alt"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
+                        <td class="text-center">
+                            <div class="d-flex gap-2 justify-content-center">
+                                <a :href="`{{route('invoice.serialprint', ['id' => ''])}}${invoice.id}`" target="_blank"
+                                   title="Seri Numarası Yazdır" class="btn btn-sm btn-primary">
+                                    <i class="bx bx-barcode-reader"></i>
+                                </a>
+                                <a :href="`{{route('invoice.qrprint', ['id' => ''])}}${invoice.id}`" target="_blank"
+                                   title="QR Kod Yazdır" class="btn btn-sm btn-primary">
+                                    <i class="bx bx-qr"></i>
+                                </a>
+                                <a :href="`{{route('invoice.stockcardmovementform', ['id' => ''])}}${invoice.id}`"
+                                   title="Düzenle" class="btn btn-sm btn-warning">
+                                    <i class="bx bx-edit-alt"></i>
+                                </a>
+                                @role(['Depo Sorumlusu','super-admin'])
+                                <a  :href="`{{route('invoice.delete', ['id' => ''])}}${invoice.id}`"
+                                    title="Sil" class="btn btn-sm btn-danger" @click.prevent="deleteInvoice(invoice)">
+                                    <i class="bx bx-trash"></i>
+                                </a>
+                                @endrole
+                            </div>
+                        </td>
+                    </tr>
                     </tbody>
                 </table>
             </div>
         </div>
-        
+
         <!-- Invoice Detail Modal -->
         <div class="modal fade invoice-detail-modal" id="invoiceDetailModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -481,7 +498,8 @@
                                 <i class="bx bx-receipt"></i>
                             </div>
                             <div>
-                                <h5 class="modal-title" v-text="'Fatura Detayı - #' + ((selectedInvoice && selectedInvoice.number) || '')"></h5>
+                                <h5 class="modal-title"
+                                    v-text="'Fatura Detayı - #' + ((selectedInvoice && selectedInvoice.number) || '')"></h5>
                                 <div class="detail-header-meta" v-if="selectedInvoice">
                                     <small class="me-2">
                                         <i class="bx bx-user me-1"></i>
@@ -491,18 +509,21 @@
                                         <i class="bx bx-calendar me-1"></i>
                                         <span v-text="formatDate(selectedInvoice.create_date || selectedInvoice.created_at)"></span>
                                     </small>
-                                    <span v-if="detailBadges.type" class="detail-badge" :class="detailBadges.type.class">
+                                    <span v-if="detailBadges.type" class="detail-badge"
+                                          :class="detailBadges.type.class">
                                         <i :class="detailBadges.type.icon"></i>
                                         <span v-text="detailBadges.type.label"></span>
                                     </span>
-                                    <span v-if="detailBadges.status" class="detail-badge" :class="detailBadges.status.class">
+                                    <span v-if="detailBadges.status" class="detail-badge"
+                                          :class="detailBadges.status.class">
                                         <i :class="detailBadges.status.icon"></i>
                                         <span v-text="detailBadges.status.label"></span>
                                     </span>
                                 </div>
                             </div>
                         </div>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div v-if="loading.invoiceDetails" class="text-center py-5">
@@ -516,27 +537,33 @@
                                         <div class="info-grid">
                                             <div>
                                                 <div class="info-label">Fatura No</div>
-                                                <div class="info-value" v-text="'#' + ((selectedInvoice && selectedInvoice.number) || '-')"></div>
+                                                <div class="info-value"
+                                                     v-text="'#' + ((selectedInvoice && selectedInvoice.number) || '-')"></div>
                                             </div>
                                             <div>
                                                 <div class="info-label">Kayıt ID</div>
-                                                <div class="info-value" v-text="selectedInvoice ? selectedInvoice.id : '-'"></div>
+                                                <div class="info-value"
+                                                     v-text="selectedInvoice ? selectedInvoice.id : '-'"></div>
                                             </div>
                                             <div>
                                                 <div class="info-label">Oluşturma</div>
-                                                <div class="info-value" v-text="formatDate(selectedInvoice ? selectedInvoice.created_at : null)"></div>
+                                                <div class="info-value"
+                                                     v-text="formatDate(selectedInvoice ? selectedInvoice.created_at : null)"></div>
                                             </div>
                                             <div>
                                                 <div class="info-label">Fatura Tarihi</div>
-                                                <div class="info-value" v-text="formatDate(selectedInvoice ? selectedInvoice.create_date : null)"></div>
+                                                <div class="info-value"
+                                                     v-text="formatDate(selectedInvoice ? selectedInvoice.create_date : null)"></div>
                                             </div>
                                             <div>
                                                 <div class="info-label">Cari</div>
-                                                <div class="info-value" v-text="(selectedInvoice && selectedInvoice.customer_name) ? selectedInvoice.customer_name : 'Genel Cari'"></div>
+                                                <div class="info-value"
+                                                     v-text="(selectedInvoice && selectedInvoice.customer_name) ? selectedInvoice.customer_name : 'Genel Cari'"></div>
                                             </div>
                                             <div>
                                                 <div class="info-label">Toplam Tutar</div>
-                                                <div class="info-value" v-text="formatCurrency(selectedInvoice ? selectedInvoice.total_price : 0)"></div>
+                                                <div class="info-value"
+                                                     v-text="formatCurrency(selectedInvoice ? selectedInvoice.total_price : 0)"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -545,7 +572,8 @@
                                     <div class="detail-summary">
                                         <div class="detail-summary-card">
                                             <div class="summary-label">Toplam Ürün</div>
-                                            <div class="summary-value" v-text="formatNumber(invoiceDetails.totals.items_count || 0)"></div>
+                                            <div class="summary-value"
+                                                 v-text="formatNumber(invoiceDetails.totals.items_count || 0)"></div>
                                             <div class="summary-trend">
                                                 <i class="bx bx-list-ul"></i>
                                                 <span v-text="'Kalem: ' + formatNumber(invoiceDetails.sales.length || 0)"></span>
@@ -553,7 +581,8 @@
                                         </div>
                                         <div class="detail-summary-card success">
                                             <div class="summary-label">Satış Toplamı</div>
-                                            <div class="summary-value" v-text="formatCurrency(invoiceDetails.totals.total_sale_price)"></div>
+                                            <div class="summary-value"
+                                                 v-text="formatCurrency(invoiceDetails.totals.total_sale_price)"></div>
                                             <div class="summary-trend">
                                                 <i class="bx bx-receipt"></i>
                                                 <span v-text="'Fatura: ' + formatCurrency(selectedInvoice ? selectedInvoice.total_price : 0)"></span>
@@ -561,7 +590,8 @@
                                         </div>
                                         <div class="detail-summary-card warning">
                                             <div class="summary-label">Maliyet Toplamı</div>
-                                            <div class="summary-value" v-text="formatCurrency(invoiceDetails.totals.total_cost_price)"></div>
+                                            <div class="summary-value"
+                                                 v-text="formatCurrency(invoiceDetails.totals.total_cost_price)"></div>
                                             <div class="summary-trend">
                                                 <i class="bx bx-wallet"></i>
                                                 <span v-text="'Ortalama: ' + formatCurrency(calculateAverageCost(invoiceDetails.totals.total_cost_price, invoiceDetails.totals.items_count))"></span>
@@ -587,51 +617,54 @@
                             <div class="card detail-table-card">
                                 <div class="card-header d-flex justify-content-between align-items-center">
                                     <h6 class="mb-0"><i class="bx bx-list-check me-2"></i>Fatura Kalemleri</h6>
-                                    <span class="badge bg-light text-dark" v-text="'Kalem: ' + formatNumber(invoiceDetails.sales.length || 0)"></span>
+                                    <span class="badge bg-light text-dark"
+                                          v-text="'Kalem: ' + formatNumber(invoiceDetails.sales.length || 0)"></span>
                                 </div>
                                 <div class="table-responsive">
                                     <table class="table align-middle">
                                         <thead>
-                                            <tr>
-                                                <th>Ürün</th>
-                                                <th>Marka</th>
-                                                <th>Seri / Barkod</th>
-                                                <th class="text-center">Adet</th>
-                                                <th class="text-end">Satış (₺)</th>
-                                                <th class="text-end">Maliyet (₺)</th>
-                                                <th class="text-end">Kar (₺)</th>
-                                                <th>Satışçı</th>
-                                            </tr>
+                                        <tr>
+                                            <th>Ürün</th>
+                                            <th>Marka</th>
+                                            <th>Seri / Barkod</th>
+                                            <th class="text-center">Adet</th>
+                                            <th class="text-end">Satış (₺)</th>
+                                            <th class="text-end">Maliyet (₺)</th>
+                                            <th class="text-end">Kar (₺)</th>
+                                            <th>Satışçı</th>
+                                        </tr>
                                         </thead>
                                         <tbody>
-                                            <tr v-for="item in invoiceDetails.sales" :key="item.id">
-                                                <td>
-                                                    <div class="fw-semibold" v-text="item.stock_name || '-'"></div>
-                                                    <div class="text-muted small" v-if="item.description" v-text="item.description"></div>
-                                                </td>
-                                                <td v-text="item.brand_name || '-'"></td>
-                                                <td>
-                                                    <code v-text="item.serial_number || '-'"></code>
-                                                </td>
-                                                <td class="text-center">
-                                                    <span class="badge bg-light text-dark" v-text="formatNumber(item.quantity || 1)"></span>
-                                                </td>
-                                                <td class="text-end" v-text="formatCurrency(item.sale_price)"></td>
-                                                <td class="text-end" v-text="formatCurrency(item.base_cost_price)"></td>
-                                                <td class="text-end">
+                                        <tr v-for="item in invoiceDetails.sales" :key="item.id">
+                                            <td>
+                                                <div class="fw-semibold" v-text="item.stock_name || '-'"></div>
+                                                <div class="text-muted small" v-if="item.description"
+                                                     v-text="item.description"></div>
+                                            </td>
+                                            <td v-text="item.brand_name || '-'"></td>
+                                            <td>
+                                                <code v-text="item.serial_number || '-'"></code>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-light text-dark"
+                                                      v-text="formatNumber(item.quantity || 1)"></span>
+                                            </td>
+                                            <td class="text-end" v-text="formatCurrency(item.sale_price)"></td>
+                                            <td class="text-end" v-text="formatCurrency(item.base_cost_price)"></td>
+                                            <td class="text-end">
                                                     <span :class="{
                                                         'text-success fw-semibold': (item.profit || 0) > 0,
                                                         'text-danger fw-semibold': (item.profit || 0) < 0
                                                     }" v-text="formatCurrency(item.profit)">
                                                     </span>
-                                                </td>
-                                                <td v-text="item.seller_name || '-'"></td>
-                                            </tr>
-                                            <tr v-if="invoiceDetails.sales.length === 0">
-                                                <td colspan="8" class="text-center text-muted py-4">
-                                                    Bu faturaya ait kalem bulunamadı.
-                                                </td>
-                                            </tr>
+                                            </td>
+                                            <td v-text="item.seller_name || '-'"></td>
+                                        </tr>
+                                        <tr v-if="invoiceDetails.sales.length === 0">
+                                            <td colspan="8" class="text-center text-muted py-4">
+                                                Bu faturaya ait kalem bulunamadı.
+                                            </td>
+                                        </tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -654,22 +687,25 @@
                             <i class="bx bx-chevron-left"></i>
                         </a>
                     </li>
-                    
-                    <li v-for="page in getPageNumbers()" :key="page" class="page-item" :class="{ active: page === pagination.current_page }">
+
+                    <li v-for="page in getPageNumbers()" :key="page" class="page-item"
+                        :class="{ active: page === pagination.current_page }">
                         <a class="page-link" href="#" @click.prevent="changePage(page)" v-text="page"></a>
                     </li>
-                    
+
                     <li class="page-item" :class="{ disabled: pagination.current_page === pagination.last_page }">
                         <a class="page-link" href="#" @click.prevent="changePage(pagination.current_page + 1)">
                             <i class="bx bx-chevron-right"></i>
                         </a>
                     </li>
                 </ul>
-                
+
                 <div class="pagination-info">
                     <small class="text-muted">
-                        <span v-text="pagination.from"></span> - <span v-text="pagination.to"></span> / <span v-text="pagination.total"></span> kayıt
-                        (Sayfa <span v-text="pagination.current_page"></span> / <span v-text="pagination.last_page"></span>)
+                        <span v-text="pagination.from"></span> - <span v-text="pagination.to"></span> / <span
+                                v-text="pagination.total"></span> kayıt
+                        (Sayfa <span v-text="pagination.current_page"></span> / <span
+                                v-text="pagination.last_page"></span>)
                     </small>
                 </div>
             </nav>
@@ -681,8 +717,8 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script>
-        const { createApp } = Vue;
-        
+        const {createApp} = Vue;
+
         createApp({
             data() {
                 return {
@@ -723,7 +759,7 @@
                     }
                 }
             },
-            
+
             async mounted() {
                 const rootEl = document.getElementById('invoice-app');
                 if (rootEl && rootEl.dataset && rootEl.dataset.invoiceType) {
@@ -737,7 +773,7 @@
                 this.setupAxios();
                 await this.loadInvoices();
             },
-            
+
             methods: {
                 setupAxios() {
                     const token = document.querySelector('meta[name="csrf-token"]');
@@ -745,31 +781,31 @@
                         axios.defaults.headers.common['X-CSRF-TOKEN'] = token.getAttribute('content');
                     }
                 },
-                
+
                 async loadInvoices(page = 1) {
                     try {
                         this.loading.invoices = true;
-                        
+
                         const params = {
                             type: this.invoiceType,
                             page: page,
                             per_page: 15
                         };
-                        
+
                         if (this.filters.search) params.search = this.filters.search;
                         if (this.filters.invoice_id) params.invoice_id = this.filters.invoice_id;
                         if (this.filters.customer_id) params.customer_id = this.filters.customer_id;
-                        
-                        
+
+
                         const response = await axios.get('{{ route("invoice.invoices.data") }}', {
                             params: params
                         });
-                        
-                        
+
+
                         if (response.data && response.data.success) {
                             this.invoices = response.data.data || [];
                             this.pagination = response.data.pagination || {};
-                            
+
                             // Tooltip'leri yeniden başlat
                             this.$nextTick(() => {
                                 this.initializeTooltips();
@@ -778,7 +814,7 @@
                             console.error('API response error:', response.data);
                             this.invoices = [];
                         }
-                        
+
                     } catch (error) {
                         console.error('Faturalar yüklenirken hata:', error);
                         console.error('Error details:', error.response && error.response.data ? error.response.data : null);
@@ -788,13 +824,13 @@
                         this.loading.invoices = false;
                     }
                 },
-                
+
                 async searchInvoices() {
                     this.loading.search = true;
                     await this.loadInvoices(1);
                     this.loading.search = false;
                 },
-                
+
                 clearFilters() {
                     this.filters = {
                         search: '',
@@ -803,41 +839,41 @@
                     };
                     this.loadInvoices(1);
                 },
-                
+
                 changePage(page) {
                     if (page < 1 || page > this.pagination.last_page) {
                         return;
                     }
                     this.loadInvoices(page);
                 },
-                
+
                 getPageNumbers() {
                     const current = this.pagination.current_page;
                     const last = this.pagination.last_page;
                     const pages = [];
-                    
+
                     const maxPages = 7;
                     let start = Math.max(1, current - Math.floor(maxPages / 2));
                     let end = Math.min(last, start + maxPages - 1);
-                    
+
                     if (end - start < maxPages - 1) {
                         start = Math.max(1, end - maxPages + 1);
                     }
-                    
+
                     for (let i = start; i <= end; i++) {
                         pages.push(i);
                     }
-                    
+
                     return pages;
                 },
-                
+
                 initializeTooltips() {
                     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
                     tooltipTriggerList.map(function (tooltipTriggerEl) {
                         return new bootstrap.Tooltip(tooltipTriggerEl);
                     });
                 },
-                
+
                 showNotification(message, type = 'info') {
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({
@@ -1186,6 +1222,46 @@
 
                     const prefix = ratio > 0 ? '+' : ratio < 0 ? '-' : '';
                     return `${prefix}${formatted} %`;
+                },
+
+                async deleteInvoice(invoice) {
+                    if (!invoice || !invoice.id) {
+                        return;
+                    }
+
+                    let confirmed = true;
+                    if (typeof Swal !== 'undefined') {
+                        const result = await Swal.fire({
+                            title: 'Faturayı silmek istediğinize emin misiniz?',
+                            text: `#${invoice.number || invoice.id} numaralı fatura kalıcı olarak silinecek.`,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Evet, Sil',
+                            cancelButtonText: 'Vazgeç',
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#6c757d'
+                        });
+                        confirmed = result.isConfirmed;
+                    } else {
+                        confirmed = window.confirm('Faturayı silmek istediğinize emin misiniz?');
+                    }
+
+                    if (!confirmed) {
+                        return;
+                    }
+
+                    try {
+                        await axios.get("{{ route('invoice.delete') }}", {
+                            params: { id: invoice.id }
+                        });
+
+                        this.invoices = this.invoices.filter(item => item.id !== invoice.id);
+                        this.showNotification('Fatura başarıyla silindi.', 'success');
+                    } catch (error) {
+                        console.error('Delete invoice error:', error);
+                        const message = error?.response?.data?.message || 'Fatura silinirken bir hata oluştu.';
+                        this.showNotification(message, 'error');
+                    }
                 }
             }
         }).mount('#invoice-app');

@@ -150,10 +150,12 @@
                                         <select id="selectpickerLiveSearch" class="selectpicker w-100"
                                                 data-style="btn-default" name="staff_id" data-live-search="true">
                                             @foreach($users as $user)
+                                                @if($user->personel == 1)
                                                 <option @if(isset($invoices))
                                                             {{ $invoices->hasStaff($user->id) ? 'selected' : '' }}
                                                         @endif value="{{$user->id}}"
                                                         data-value="{{$user->id}}">{{$user->name}}</option>
+                                                @endif
                                             @endforeach
                                         </select>
                                     </div>
