@@ -129,36 +129,36 @@
                                 <input type="date" class="filter-input single-datepicker" v-model="filters.date2"
                                     @change="fetchReport()">
                             </div>
-                    </div>
+                        </div>
 
                     <div class="col-lg-2 col-md-4">
                         <label class="form-label">Marka</label>
                         <select name="brand" class="form-select" v-model="filters.brand" @change="fetchReport()">
-                            <option value="">Tümü</option>
+                                    <option value="">Tümü</option>
                             <option v-for="brand in options.brands"
                                     :key="`brand-${brand.id}`"
                                     :value="brand.id"
                                     v-text="brand.name"></option>
-                        </select>
-                    </div>
+                                </select>
+                            </div>
 
                     <div class="col-lg-2 col-md-4">
                         <label class="form-label">Model</label>
                         <select name="version" id="version_id" @change="fetchReport()" class="form-select" v-model="filters.version">
-                            <option value="">Tümü</option>
-                        </select>
-                    </div>
+                                        <option value="">Tümü</option>
+                                    </select>
+                                </div>
 
                     <div class="col-lg-2 col-md-4">
                         <label class="form-label">Şube</label>
                         <select name="seller" class="form-select"  @change="fetchReport()" v-model="filters.seller">
-                            <option value="">Tümü</option>
+                                        <option value="">Tümü</option>
                             <option v-for="seller in options.sellers"
                                     :key="`seller-${seller.id}`"
                                     :value="seller.id"
                                     v-text="seller.name"></option>
-                        </select>
-                    </div>
+                                    </select>
+                                </div>
 
                     <div class="col-lg-2 col-md-4">
                         <label class="form-label">Kategori</label>
@@ -168,33 +168,33 @@
                                     :key="`category-${typeKey}`"
                                     :value="typeKey"
                                     v-text="typeLabel"></option>
-                        </select>
-                    </div>
+                                    </select>
+                                </div>
 
                     <div class="col-lg-2 col-md-4">
                         <label class="form-label">Satışı Yapan Personel</label>
                         <select name="sales_person" class="form-select" @change="fetchReport()" v-model="filters.sales_person">
-                            <option value="">Tümü</option>
+                                        <option value="">Tümü</option>
                             <option v-for="user in options.users"
                                     :key="`sales-${user.id}`"
                                     :value="user.id"
                                     v-text="user.name"></option>
-                        </select>
-                    </div>
+                                    </select>
+                                </div>
 
                     <div class="col-lg-2 col-md-4">
                         <label class="form-label">Teknisyen</label>
                         <select name="technical_person" class="form-select" @change="fetchReport()" v-model="filters.technical_person">
-                            <option value="">Tümü</option>
+                                        <option value="">Tümü</option>
                             <option v-for="user in options.users"
                                     :key="`technical-${user.id}`"
                                     :value="user.id"
                                     v-text="user.name"></option>
-                        </select>
-                    </div>
+                                    </select>
+                                </div>
                 </form>
-            </div>
-        </div>
+                            </div>
+                        </div>
 
         <div class="row g-3 mb-4">
             <div class="col-sm-6 col-lg-4" v-for="card in summaryCards" :key="card.key">
@@ -278,7 +278,7 @@
                             <div class="fw-semibold" v-text="item.created_at_date || '-'"></div>
                             <div class="table-meta" v-text="item.created_at_time || ''"></div>
                         </td>
-                    </tr>
+                        </tr>
                     </tbody>
                     <tfoot>
                     <tr class="bg-primary text-white">

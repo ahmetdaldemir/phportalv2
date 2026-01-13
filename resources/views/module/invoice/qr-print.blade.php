@@ -108,11 +108,13 @@
             @php
                 $qrPayload = implode("\n", array_filter([
                     'Seri: ' . ($item['serial_number'] ?? ''),
+                    'Uretim Yeri / Tarih: ' . ($item['place_of_production'] ?? ''),
                     'Ürün: ' . ($item['stock_name'] ?? ''),
                     'Kategori: ' . ($item['category_name'] ?? ''),
                     'Marka: ' . ($item['brand_name'] ?? ''),
                     !empty($item['model_name']) ? 'Model: ' . $item['model_name'] : null,
                     'Fiyat: ' . number_format($item['sale_price'] ?? 0, 2) . ' ₺',
+
                 ]));
 
                 $qrUrl = url('/') . '?sale_serial=' . urlencode($item['serial_number'] ?? '');

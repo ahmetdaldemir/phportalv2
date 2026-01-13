@@ -87,6 +87,7 @@ class ReportController extends Controller
     public function data(Request $request)
     {
         $filters = $this->prepareFilters($request);
+
         $collection = $this->buildReportQuery($filters)
             ->orderByDesc('id')
             ->get();
@@ -195,6 +196,7 @@ class ReportController extends Controller
      */
     private function buildReportQuery(array $filters)
     {
+
         $query = Sale::query()
             ->with($this->reportRelations())
             ->where('company_id', $filters['company_id'])

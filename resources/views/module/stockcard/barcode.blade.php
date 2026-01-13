@@ -15,8 +15,9 @@
         <img src="{{asset('img/147836.png')}}" class="logoClass" style="rotate:-90deg;margin-top: 23px;width: 130px;margin-left: -35px;" alt=""></div>
     <div style="width: 85%; float: right;    text-transform: uppercase;">
         <div style="font-size: 1rem; width:85%;text-align: center; font-weight: bold;margin-right: 40px;">
-            <div style="font-size: 17px;">{!! $value['stock_name'] !!} {!! $value['brand_name'] !!} {!! $value['versions'] !!} - {!! $value['color_name'] !!}</div>
-            <div style="font-size: 15px;"> {{$value['category_sperator_name']}} {{$value['category_name']}}</div>
+            <div style="font-size: 15px;">{!! $value['stock_name'] !!} {!! $value['brand_name'] !!} {!! $value['versions'] !!} - {!! $value['color_name'] !!}</div>
+            <div style="font-size: 12px;">{{$value['place_of_production']}}</div>
+            <!-- div style="font-size: 15px;"> {{$value['category_sperator_name']}} {{$value['category_name']}}</div -->
         </div>
         <div style="position: relative; float: left; width: 100%; display: block;">
             <div style="width: 85%; float: left; margin-top: 4px;">

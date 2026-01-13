@@ -35,12 +35,12 @@
                             <div>
                                 <small class="text-muted text-uppercase fw-semibold">Müşteri</small>
                                 <p class="mb-0">{{ $customer->fullname ?? 'Genel Cari' }}</p>
-                            </div>
+                                </div>
                             <div class="vr d-none d-md-block"></div>
                             <div>
                                 <small class="text-muted text-uppercase fw-semibold">Personel</small>
                                 <p class="mb-0">{{ $personel }}</p>
-                            </div>
+                             </div>
                             <div class="vr d-none d-md-block"></div>
                             <div>
                                 <small class="text-muted text-uppercase fw-semibold">Toplam</small>
@@ -77,7 +77,7 @@
                                 <h4 class="mb-0">{{ number_format($summary['totalCost'],2,',','.') }} ₺</h4>
                             </div>
                         </div>
-                    </div>
+                                </div>
                     <div class="col-md-3 col-sm-6">
                         <div class="card info-card bg-info-subtle border-0 h-100">
                             <div class="card-body">
@@ -102,21 +102,21 @@
                         </a>
                     </div>
                     <div class="card-body p-0">
-                        <div class="table-responsive">
+                    <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="bg-light">
-                                <tr>
+                            <tr>
                                     <th>Ürün Bilgisi</th>
                                     <th>Seri / Barkod</th>
                                     <th class="text-end">Adet</th>
-                                    @role('admin')
+                                @role('admin')
                                     <th class="text-end">Alış</th>
                                     <th class="text-end">Destekli</th>
-                                    @endrole
+                                @endrole
                                     <th class="text-end">Satış</th>
-                                </tr>
-                                </thead>
-                                <tbody>
+                            </tr>
+                            </thead>
+                            <tbody>
                                 @forelse($detailCollection as $itemData)
                                     @php
                                         $stock = $itemData->stock ?? null;
@@ -144,20 +144,20 @@
                                             <small class="text-muted">{{ $barcodeNumber }}</small>
                                         </td>
                                         <td class="text-end">{{ $quantity }}</td>
-                                        @role('admin')
+                                         @role('admin')
                                         <td class="text-end">{{ number_format($costPrice,2,',','.') }} ₺</td>
                                         <td class="text-end">{{ number_format($baseCost,2,',','.') }} ₺</td>
-                                        @endrole
+                                         @endrole
                                         <td class="text-end fw-semibold">{{ number_format($salePrice,2,',','.') }} ₺</td>
                                     </tr>
                                 @empty
-                                    <tr>
+                                        <tr>
                                         <td colspan="6" class="text-center py-4 text-muted">Fatura kalemi bulunamadı.</td>
-                                    </tr>
+                                        </tr>
                                 @endforelse
                                 </tbody>
                                 <tfoot class="bg-light">
-                                <tr>
+                            <tr>
                                     <td colspan="@role('admin')4 @else 2 @endrole" class="text-start fw-semibold">Toplam</td>
                                     <td class="text-end fw-semibold">{{ $summary['quantity'] }}</td>
                                     @role('admin')
@@ -165,13 +165,13 @@
                                     <td class="text-end fw-semibold">{{ number_format($summary['totalSupport'],2,',','.') }} ₺</td>
                                     @endrole
                                     <td class="text-end fw-semibold text-primary">{{ number_format($summary['totalSale'],2,',','.') }} ₺</td>
-                                </tr>
+                            </tr>
                                 </tfoot>
-                            </table>
+                        </table>
                         </div>
                     </div>
                 </div>
-            </div>
+                    </div>
 
             <div class="col-lg-6">
                 <div class="card border-0 shadow-sm h-100">

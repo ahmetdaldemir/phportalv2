@@ -37,6 +37,8 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Milon\Barcode\DNS1D;
 use Milon\Barcode\DNS2D;
 use Picqer\Barcode\BarcodeGeneratorHTML;
@@ -398,6 +400,7 @@ class InvoiceController extends Controller
                     'serial_number' => BarcodeHelper::formatSerialNumber($barcodeData),
                     'sale_price' => $item->sale_price,
                     'brand_name' => $item->stock->brand->name ?? 'Bulunamadı',
+                    'place_of_production' => $item->place_of_production,
                     'stock_name' => $item->stock->name ?? 'Bulunamadı',
                     'color_name' => $item->color->name ?? 'Bulunamadı',
                     'category_sperator_name' => $item->stock->category ?
@@ -532,17 +535,42 @@ class InvoiceController extends Controller
 
     public function salesstore(Request $request)
     {
+        // Sale tablosunda seri numarası kontrolü - transaction başlamadan önce
+        // Eğer daha önce satılmış seri numaraları varsa, yeni benzersiz seri numarası üret ve güncelle
+        if ($request->filled('serial') && is_array($request->serial) && count($request->serial) > 0) {
+            $serialArray = $request->serial;
+            $updatedSerials = [];
+            
+            foreach ($serialArray as $index => $serialNumber) {
+                $existingSale = Sale::where('serial', $serialNumber)->first();
+                if ($existingSale) {
+                    // Daha önce satılmış, yeni seri numarası üret
+                    $newSerialNumber = $this->handleDuplicateSerialNumber($serialNumber);
+                    $updatedSerials[$index] = $newSerialNumber;
+                } else {
+                    $updatedSerials[$index] = $serialNumber;
+                }
+            }
+            
+            // Request'teki serial array'ini güncelle
+            $request->merge(['serial' => array_values($updatedSerials)]);
+        }
 
         DB::beginTransaction();
         try {
             $totalSalePrice = 0;
-            $x = array_count_values($request->serial);
-            $x = array_values($x);
-            foreach ($x as $i) {
-                if ($i > 1) {
-                    return response()->json("Aynı seri numarası eklenemez", 405);
+            
+            // Serial kontrolü en başta yapılmalı
+            if ($request->filled('serial') && is_array($request->serial) && count($request->serial) > 0) {
+                $x = array_count_values($request->serial);
+                $x = array_values($x);
+                foreach ($x as $i) {
+                    if ($i > 1) {
+                        return response()->json("Aynı seri numarası eklenemez", 405);
+                    }
                 }
             }
+            
             $total = 0;
             if ($request->payment_type['free_sale'] != 1) {
                 $total = $request->payment_type['credit_card'] + $request->payment_type['cash'] + $request->payment_type['installment'];
@@ -558,10 +586,12 @@ class InvoiceController extends Controller
 
             if (!Auth::user()->hasRole('super-admin')) // HAsarlı Sorgusu
             {
-                foreach ($request->serial as $item) {
-                    $stockcard = StockCardMovement::where('serial_number', $item)->where('type', 1)->where('seller_id', Auth::user()->seller_id)->first();
-                    if (!$stockcard) {
-                        return response()->json('Farklı bayiye ait ürün mevcuttur', 405);
+                if ($request->filled('serial') && is_array($request->serial)) {
+                    foreach ($request->serial as $item) {
+                        $stockcard = StockCardMovement::where('serial_number', $item)->where('type', 1)->where('seller_id', Auth::user()->seller_id)->first();
+                        if (!$stockcard) {
+                            return response()->json('Farklı bayiye ait ürün mevcuttur', 405);
+                        }
                     }
                 }
             }
@@ -620,24 +650,22 @@ class InvoiceController extends Controller
 
                     $stockcardmovement = StockCardMovement::where('type', 1)->where('serial_number', $request->serial[$i])->first();
 
-                    $SaleCheck = Sale::where('serial', $request->serial[$i])->first();
-                    if (!$SaleCheck) {
-                        $sale = new Sale();
-                        $sale->stock_card_id = $item;
-                        $sale->stock_card_movement_id = $stockcardmovement->id;
-                        $sale->invoice_id = $invoiceID->id;
-                        $sale->customer_id = $request->customer_id;
-                        $sale->sale_price = $request->sale_price[$i];
-                        $sale->customer_price = $stockcardmovement->sale_price - (($stockcardmovement->sale_price * $request->discount[$i]) / 100);
-                        $sale->name = StockCard::find($item)->name;
-                        $sale->seller_id = $stockcardmovement->seller_id;
-                        $sale->company_id = Auth::user()->company_id;
-                        $sale->user_id = $request->staff_id;
-                        $sale->serial = $request->serial[$i];
-                        $sale->discount = $request->discount[$i];
-                        $sale->base_cost_price = $stockcardmovement->base_cost_price;
-                        $sale->save();
-                    }
+                    // Sale kaydı oluştur (seri numarası kontrolü transaction başlamadan önce yapıldı)
+                    $sale = new Sale();
+                    $sale->stock_card_id = $item;
+                    $sale->stock_card_movement_id = $stockcardmovement->id;
+                    $sale->invoice_id = $invoiceID->id;
+                    $sale->customer_id = $request->customer_id;
+                    $sale->sale_price = $request->sale_price[$i];
+                    $sale->customer_price = $stockcardmovement->sale_price - (($stockcardmovement->sale_price * $request->discount[$i]) / 100);
+                    $sale->name = StockCard::find($item)->name;
+                    $sale->seller_id = $stockcardmovement->seller_id;
+                    $sale->company_id = Auth::user()->company_id;
+                    $sale->user_id = $request->staff_id;
+                    $sale->serial = $request->serial[$i];
+                    $sale->discount = $request->discount[$i];
+                    $sale->base_cost_price = $stockcardmovement->base_cost_price;
+                    $sale->save();
                     $stockcardmovement->type = 2;
                     $stockcardmovement->save();
                     $i++;
@@ -1232,6 +1260,84 @@ class InvoiceController extends Controller
             $this->newSerialNumberCreate();
         }
         return $newSerial;
+    }
+
+    /**
+     * Satış işlemi başladığında seri numarası daha önce satılmışsa,
+     * yeni benzersiz seri numarası üretir, StockCardMovement'ı günceller ve log yazar
+     * 
+     * @param string $oldSerialNumber Eski seri numarası
+     * @return string Yeni benzersiz seri numarası (UUID formatında)
+     */
+    private function handleDuplicateSerialNumber($oldSerialNumber)
+    {
+        // Sale tablosunda kontrol
+        $existingSale = Sale::where('serial', $oldSerialNumber)->first();
+        
+        if (!$existingSale) {
+            // Eğer Sale tablosunda yoksa, eski seri numarasını döndür
+            return $oldSerialNumber;
+        }
+
+        // Yeni benzersiz UUID seri numarası üret
+        $newSerialNumber = null;
+        $maxAttempts = 10;
+        $attempt = 0;
+        
+        while ($attempt < $maxAttempts) {
+            // UUID formatında benzersiz seri numarası üret (tire olmadan, büyük harf)
+            $newSerialNumber = strtoupper(str_replace('-', '', Str::uuid()->toString()));
+            
+            // Sale ve StockCardMovement tablolarında kontrol et
+            $existsInSale = Sale::where('serial', $newSerialNumber)->exists();
+            $existsInMovement = StockCardMovement::where('serial_number', $newSerialNumber)->exists();
+            
+            if (!$existsInSale && !$existsInMovement) {
+                // Benzersiz seri numarası bulundu
+                break;
+            }
+            
+            $attempt++;
+            $newSerialNumber = null;
+        }
+        
+        if (!$newSerialNumber) {
+            // Maksimum deneme sayısına ulaşıldı, son çare olarak timestamp + random kullan
+            $newSerialNumber = 'REGEN_' . time() . '_' . strtoupper(Str::random(8));
+        }
+
+        // StockCardMovement tablosunda güncelle
+        $stockCardMovement = StockCardMovement::where('serial_number', $oldSerialNumber)
+            ->where('type', 1)
+            ->first();
+        
+        if ($stockCardMovement) {
+            // Log dosyasına yaz
+            Log::channel('daily')->warning('Duplicate Serial Number Regenerated', [
+                'old_serial_number' => $oldSerialNumber,
+                'new_serial_number' => $newSerialNumber,
+                'stock_card_movement_id' => $stockCardMovement->id,
+                'stock_card_id' => $stockCardMovement->stock_card_id,
+                'user_id' => Auth::id(),
+                'company_id' => Auth::user()->company_id ?? null,
+                'timestamp' => now()->toDateTimeString(),
+            ]);
+            
+            // StockCardMovement'ta seri numarasını güncelle
+            $stockCardMovement->serial_number = $newSerialNumber;
+            $stockCardMovement->save();
+        } else {
+            // StockCardMovement bulunamadı, sadece log yaz
+            Log::channel('daily')->warning('Duplicate Serial Number - StockCardMovement Not Found', [
+                'old_serial_number' => $oldSerialNumber,
+                'new_serial_number' => $newSerialNumber,
+                'user_id' => Auth::id(),
+                'company_id' => Auth::user()->company_id ?? null,
+                'timestamp' => now()->toDateTimeString(),
+            ]);
+        }
+
+        return $newSerialNumber;
     }
 
 }

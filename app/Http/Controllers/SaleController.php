@@ -215,6 +215,7 @@ class SaleController extends Controller
 
             // Date filter on invoices - ÖNCE tarih filtresi uygulanmalı
             if ($request->filled('daterange')) {
+
                 // URL decode ve normalize et (2025-11-14+to+2025-11-22 -> 2025-11-14 to 2025-11-22)
                 $daterangeStr = urldecode($request->daterange);
                 // + karakterini boşluğa çevir (URL encoding)
@@ -696,3 +697,7 @@ class SaleController extends Controller
         }
     }
 }
+
+
+
+

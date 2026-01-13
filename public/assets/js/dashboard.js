@@ -431,7 +431,7 @@ createApp({
         openSaleModal(options = {}) {
             const { preserveInput = false } = options;
             if (!preserveInput) {
-                this.saleSearch.input = '';
+            this.saleSearch.input = '';
             }
             this.saleSearch.error = null;
             this.saleSearch.success = null;
